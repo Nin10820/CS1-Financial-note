@@ -9,6 +9,11 @@ const Root = () => (location.hash === "#/design-system" ? <DesignSystem /> : <Ap
 
 window.addEventListener("hashchange", () => location.reload())
 
+// Offline support for the installed app. Only in production builds — in dev it would cache stale code.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}))
+}
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <Root />
