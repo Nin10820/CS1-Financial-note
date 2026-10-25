@@ -36,7 +36,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
-  overflow: hidden;
+  overflow-x: clip;
   isolation: isolate;
   padding-top: env(safe-area-inset-top);
 }
@@ -170,6 +170,15 @@
 }
 .modal--tall {
   height: calc(100dvh - 54px);
+}
+.modal__grab {
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.modal__grab:active {
+  cursor: grabbing;
 }
 .modal__handle {
   flex-shrink: 0;

@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Amount, Button, IconButton, MonthCard, SegmentedTabs } from "../components/ui"
 import TabBar, { type Tab } from "../components/TabBar"
+import StickyHeader from "../components/StickyHeader"
 import { Icon } from "../components/Icon"
 import { money, today } from "../lib/format"
 import { addMonths, dueIn, installmentStep, lastDue, monthSummary, ym, type Bill } from "../lib/bills"
@@ -179,12 +180,19 @@ export function Installments({
   return (
     <div className="screen">
       <span className="screen__glow" aria-hidden="true" />
-      <header className="screen__header">
-        <IconButton icon="arrow-left" label="Back to Due" variant="glass" onClick={onBack} />
-        <div className="pill-group">
+      <StickyHeader
+        title={"Installments"}
+        left={
+          <>
+            <IconButton icon="arrow-left" label="Back to Due" variant="glass" onClick={onBack} />
+          </>
+        }
+        right={
+          <div className="pill-group">
           <IconButton icon="plus-18" label="Add an installment" variant="plain" iconSize={18} onClick={onAdd} />
         </div>
-      </header>
+        }
+      />
       <div className="screen__card due-card-wrap">
         <section className="fn-spend-card due-card" aria-label="Installments this month">
           <p className="t-body-16-m due-card__kicker">Statement · {monthLabel(month).replace(",", "")}</p>

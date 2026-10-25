@@ -49,7 +49,7 @@ export default function Home({
   return (
     <div className="screen">
       <span className="screen__glow" aria-hidden="true" />
-      <DayHeader day={day} onDayChange={onDayChange} />
+      <DayHeader day={day} onDayChange={onDayChange} title="Transaction" onProfile={() => onTab("profile")} />
 
       <PageSwitch title="Transaction" other="Note" onOther={onNote} />
 

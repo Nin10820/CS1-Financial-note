@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { Amount, Button, IconButton, Sheet } from "../components/ui"
 import TabBar, { type Tab } from "../components/TabBar"
+import StickyHeader from "../components/StickyHeader"
 import { Icon } from "../components/Icon"
 import { money, today } from "../lib/format"
 import { TILE, addMonths, monthSummary, ym, type Bill } from "../lib/bills"
@@ -71,14 +72,20 @@ export default function Due({
   return (
     <div className="screen">
       <span className="screen__glow" aria-hidden="true" />
-      <header className="screen__header">
-        <div className="due-head__left">
+      <StickyHeader
+        title={monthLabel(month)}
+        left={
+          <>
+            <div className="due-head__left">
           <span className="avatar" aria-label={`Signed in as ${name}`}>
             {name.slice(0, 2).toUpperCase()}
           </span>
           <IconButton icon="calendar" label="This month" variant="glass" onClick={() => onMonthChange(ym(today()))} style={{ color: "var(--grey-500)" }} />
         </div>
-        <div className="pill-group" ref={menuRef}>
+          </>
+        }
+        right={
+          <div className="pill-group" ref={menuRef}>
           <IconButton icon="dots-three" label="More" variant="plain" iconSize={24} aria-expanded={menu} aria-haspopup="menu" onClick={() => setMenu(!menu)} />
           <IconButton icon="plus-18" label="Add a bill" variant="plain" iconSize={18} onClick={onAdd} />
           {menu && (
@@ -100,7 +107,8 @@ export default function Due({
             </div>
           )}
         </div>
-      </header>
+        }
+      />
 
       <div className="due-month">
         <IconButton icon="caret-left" label="Previous month" variant="plain" size={32} iconSize={16} onClick={() => onMonthChange(addMonths(month, -1))} />
