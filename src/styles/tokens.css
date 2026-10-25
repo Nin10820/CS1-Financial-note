@@ -115,6 +115,18 @@
   --shadow-composer: 0 -1px 4px 1px var(--dark-2), 0 -6px 10px var(--dark-4);
   --glass-blur: 5px;
 
+  /* Liquid Glass (iOS 26/27-style floating bars). Web approximation: frosted fill, bright top
+     edge, soft rim and a specular sheen — real refraction isn't available in Safari. */
+  --lg-fill: rgb(255 255 255 / 58%);
+  --lg-fill-strong: rgb(255 255 255 / 72%);
+  --lg-filter: blur(24px) saturate(190%);
+  --lg-rim: rgb(255 255 255 / 60%);
+  --lg-edge: inset 0 1px 0 rgb(255 255 255 / 95%), inset 0 -1px 0 rgb(255 255 255 / 35%), inset 0 0 0 0.5px rgb(255 255 255 / 50%);
+  --lg-shadow: 0 12px 32px rgb(13 18 28 / 9%), 0 2px 8px rgb(13 18 28 / 5%);
+  --lg-sheen: linear-gradient(180deg, rgb(255 255 255 / 55%) 0%, rgb(255 255 255 / 0%) 48%);
+  --lg-select: rgb(118 118 128 / 12%); /* iOS selection fill */
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
   /* Type — Font-family/Main is Montserrat; page titles use Merriweather */
   --font-main: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-title: "Merriweather", Georgia, serif;

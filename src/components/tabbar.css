@@ -1,18 +1,59 @@
-/* Bottom navigation: expanded tab bar ⇄ collapsed Figma Bottom-bar. */
-.tabbar {
+/* Bottom navigation in the iOS 26/27 Liquid Glass style: floating capsules, a sliding selection
+   lens that springs between tabs and swells while held, collapsing to a compact bar on scroll. */
+
+/* ── Glass material ─────────────────────────────────────── */
+.lg {
   position: relative;
-  height: 156px;
-  transition: height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  isolation: isolate;
+  border: 0.5px solid var(--lg-rim);
+  background: var(--lg-fill);
+  box-shadow: var(--lg-edge), var(--lg-shadow);
+  -webkit-backdrop-filter: var(--lg-filter);
+  backdrop-filter: var(--lg-filter);
 }
-.tabbar.is-collapsed {
-  height: 92px;
-}
-.tabbar::before {
-  /* soft fade so content scrolls under the bar */
+.lg::before {
+  /* specular sheen across the top half */
   content: "";
   position: absolute;
-  inset: -32px 0 0;
-  background: linear-gradient(180deg, rgb(249 250 251 / 0%) 0%, rgb(249 250 251 / 94%) 30%, var(--bg-2) 100%);
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--lg-sheen);
+  pointer-events: none;
+}
+.lg-round {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  border-radius: var(--rounded);
+  color: var(--grey-700);
+  transition: transform 0.35s var(--spring), background-color 0.2s;
+}
+.lg-round:active {
+  transform: scale(0.92);
+}
+.lg-round:hover {
+  background: var(--lg-fill-strong);
+}
+
+/* ── Layout ─────────────────────────────────────────────── */
+.tabbar {
+  position: relative;
+  height: 158px;
+  transition: height 0.4s var(--spring);
+}
+.tabbar.is-collapsed {
+  height: 94px;
+}
+.tabbar::before {
+  /* content fades out under the bar */
+  content: "";
+  position: absolute;
+  inset: -36px 0 0;
+  background: linear-gradient(180deg, rgb(249 250 251 / 0%) 0%, rgb(249 250 251 / 80%) 40%, rgb(249 250 251 / 96%) 100%);
   pointer-events: none;
 }
 .tabbar__full,
@@ -21,91 +62,121 @@
   right: 0;
   bottom: 0;
   left: 0;
-  transition: opacity 0.22s ease, transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+  padding: 0 var(--sp-16) var(--sp-24);
+  transition: opacity 0.25s ease, transform 0.45s var(--spring), filter 0.25s ease;
 }
 .tabbar__full {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-8);
-  padding: 0 var(--sp-20) var(--sp-24);
+  gap: var(--sp-10, 10px);
 }
 .tabbar.is-collapsed .tabbar__full {
   opacity: 0;
-  transform: translateY(24px) scale(0.97);
+  transform: translateY(28px) scale(0.94);
+  filter: blur(4px);
   pointer-events: none;
 }
 .tabbar__mini {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
   opacity: 0;
-  transform: translateY(16px);
+  transform: translateY(18px) scale(1.04);
+  filter: blur(4px);
   pointer-events: none;
-  background: none;
-  backdrop-filter: none;
 }
 .tabbar.is-collapsed .tabbar__mini {
   opacity: 1;
   transform: none;
+  filter: none;
   pointer-events: auto;
 }
 
-/* Quick-note field (expanded) */
+/* ── Quick-note field ───────────────────────────────────── */
 .tabbar__row {
   display: flex;
   align-items: center;
-  gap: var(--sp-8);
+  gap: var(--sp-10, 10px);
 }
 .tabbar__note {
-  flex: 1;
-  min-width: 0;
   display: flex;
+  flex: 1;
   align-items: center;
   gap: var(--sp-12);
-  height: 48px;
-  padding: var(--sp-4) var(--sp-16) var(--sp-4) var(--sp-4);
-  border: 1px solid var(--bd-1);
+  min-width: 0;
+  height: 50px;
+  padding: 4px var(--sp-16) 4px 4px;
   border-radius: var(--rounded);
-  background: rgb(249 250 251 / 92%);
-  box-shadow: var(--shadow-light-2);
-  backdrop-filter: blur(12px);
   text-align: left;
+  transition: transform 0.35s var(--spring), background-color 0.2s;
+}
+.tabbar__note:active {
+  transform: scale(0.985);
 }
 .tabbar__note:hover {
-  border-color: var(--brand-300);
+  background: var(--lg-fill-strong);
 }
 .tabbar__note-logo {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: var(--rounded);
-  background: var(--brand-500);
+  background: linear-gradient(160deg, #6bb83a 0%, var(--brand-500) 55%, #4f9126 100%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 35%), 0 2px 6px rgb(95 168 47 / 30%);
 }
 .tabbar__note-logo img {
   filter: brightness(0) invert(1);
 }
 .tabbar__note-text {
   overflow: hidden;
-  color: var(--grey-300);
+  color: var(--grey-400);
   font-size: 15px;
   line-height: 20px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.tabbar__action {
+  color: var(--grey-700);
+}
 
-/* The four tabs */
+/* ── Tabs + sliding lens ────────────────────────────────── */
 .tabbar__tabs {
+  --pad: 4px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--sp-4);
-  height: 64px;
-  padding: var(--sp-4);
-  border: 1px solid rgb(255 255 255 / 90%);
+  height: 66px;
+  padding: var(--pad);
   border-radius: var(--rounded);
-  background: rgb(255 255 255 / 88%);
-  box-shadow: 0 8px 24px var(--dark-4), var(--shadow-light-2);
-  backdrop-filter: blur(16px);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tabbar__lens {
+  position: absolute;
+  top: var(--pad);
+  bottom: var(--pad);
+  left: var(--pad);
+  z-index: 0;
+  width: calc((100% - 2 * var(--pad)) / 4);
+  border-radius: var(--rounded);
+  background: var(--lg-select);
+  transform: translateX(calc(var(--i) * 100%));
+  transition: transform 0.5s var(--spring), background-color 0.25s ease, box-shadow 0.25s ease, scale 0.35s var(--spring);
+}
+/* Held: the lens swells into a clear droplet that magnifies what's under it. */
+.tabbar__tabs.is-pressing .tabbar__lens {
+  scale: 1.12 1.18;
+  background: rgb(255 255 255 / 55%);
+  box-shadow: var(--lg-edge), 0 8px 22px rgb(13 18 28 / 14%);
+  -webkit-backdrop-filter: blur(2px) saturate(160%);
+  backdrop-filter: blur(2px) saturate(160%);
+  transition: transform 0.28s var(--spring), background-color 0.2s ease, box-shadow 0.2s ease, scale 0.3s var(--spring);
 }
 .tabbar__tab {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -115,38 +186,56 @@
   border: 0;
   border-radius: var(--rounded);
   background: none;
-  color: var(--grey-400);
+  color: var(--grey-500);
   font-size: 12px;
   font-weight: var(--weight-m);
   line-height: 16px;
-  transition: background-color 0.2s, color 0.2s;
+  transition: color 0.25s ease, transform 0.35s var(--spring);
+}
+.tabbar__tab > :first-child {
+  transition: transform 0.35s var(--spring);
 }
 .tabbar__tab span {
-  color: var(--grey-500);
+  color: var(--grey-700);
+  transition: color 0.25s ease;
 }
-.tabbar__tab:hover:not(.is-active) {
-  background: var(--bg-2);
-}
-.tabbar__tab.is-active {
-  background: var(--bg-3);
+.tabbar__tab.is-lit {
   color: var(--brand-500);
 }
-.tabbar__tab.is-active span {
+.tabbar__tab.is-lit span {
   color: var(--brand-500);
   font-weight: var(--weight-s);
 }
-.tabbar__tab:active {
-  transform: scale(0.97);
+.tabbar__tabs.is-pressing .tabbar__tab.is-lit > :first-child {
+  transform: scale(1.12);
+}
+.tabbar__tab:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: -2px;
 }
 
+/* ── Collapsed bar ──────────────────────────────────────── */
 .tabbar__mini-tab {
   color: var(--brand-500);
+}
+.tabbar__mini-note {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--sp-8);
+  min-width: 0;
+  height: 50px;
+  padding: 4px;
+  border-radius: var(--rounded);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .tabbar,
   .tabbar__full,
-  .tabbar__mini {
+  .tabbar__mini,
+  .tabbar__lens,
+  .tabbar__tab,
+  .lg-round {
     transition: none;
   }
 }
