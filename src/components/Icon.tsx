@@ -1,61 +1,74 @@
 import type { CSSProperties } from "react"
-import alignLeft from "../assets/icons/align-left.svg"
-import arrowDown from "../assets/icons/arrow-down.svg"
-import arrowUp from "../assets/icons/arrow-up.svg"
-import calendar from "../assets/icons/calendar.svg"
-import caretDown from "../assets/icons/caret-down.svg"
-import checkCircle from "../assets/icons/check-circle.svg"
-import close from "../assets/icons/close.svg"
-import edit from "../assets/icons/edit.svg"
-import eyeSlash from "../assets/icons/eye-slash.svg"
-import fileEdit from "../assets/icons/file-edit.svg"
-import history from "../assets/icons/history.svg"
-import logoMark from "../assets/icons/logo-mark.svg"
-import plus from "../assets/icons/plus.svg"
-import sendUp from "../assets/icons/send-up.svg"
-import squaresFour from "../assets/icons/squares-four.svg"
-import user from "../assets/icons/user.svg"
-import wallet from "../assets/icons/wallet.svg"
-import waveform from "../assets/icons/waveform.svg"
-import chartPie from "../assets/icons/chart-pie.svg"
 
-/* Shapes are the exact SVGs exported from Figma; colour comes from `currentColor` via a CSS mask,
-   because the exported files carry instance colours that don't match what the design shows. */
-const ICONS = {
-  "align-left": alignLeft,
-  calendar,
-  "caret-down": caretDown,
-  "check-circle": checkCircle,
-  close,
-  edit,
-  "eye-slash": eyeSlash,
-  "file-edit": fileEdit,
-  history,
-  "logo-mark": logoMark,
-  plus,
-  "send-up": sendUp,
-  "squares-four": squaresFour,
-  user,
-  wallet,
-  waveform,
-  "chart-pie": chartPie,
-} as const
+/* Every SVG in assets/icons was exported from the Figma file. Most are drawn as a CSS mask so the
+   colour follows `currentColor` (the exported files carry instance colours that don't match the
+   design). Two-tone icons keep their own colours and are drawn as images instead. */
+const FILES = import.meta.glob<string>("../assets/icons/*.svg", { eager: true, query: "?url", import: "default" })
+const url = (name: string) => FILES[`../assets/icons/${name}.svg`]
 
-export type IconName = keyof typeof ICONS
+export type IconName =
+  | "align-left"
+  | "arrow-left"
+  | "bell"
+  | "calendar"
+  | "calendar-dots"
+  | "caret-down"
+  | "caret-left"
+  | "caret-right"
+  | "caret-right-sm"
+  | "chart-pie"
+  | "check-circle"
+  | "check-circle-done"
+  | "check-circle-fill"
+  | "circle"
+  | "circle-dashed"
+  | "clock"
+  | "close"
+  | "dots-three"
+  | "drop"
+  | "edit"
+  | "eye-slash"
+  | "file-edit"
+  | "gas-pump"
+  | "history"
+  | "house"
+  | "lightning"
+  | "logo-mark"
+  | "monitor"
+  | "note"
+  | "phone"
+  | "plus"
+  | "plus-18"
+  | "scan"
+  | "send-up"
+  | "sparkle-ai"
+  | "squares-four"
+  | "student"
+  | "trash"
+  | "user"
+  | "wallet"
+  | "waveform"
+
+/** Keep their own colours (white check on a dark disc, gradient sparkle). */
+const RAW = new Set<IconName>(["check-circle-fill", "check-circle-done", "sparkle-ai"])
 
 /* Hugeicons glyphs sit inside their 24px frame with padding; these are the Figma insets
-   (outer inset minus the stroke overhang), so each glyph lands where the design puts it. */
-/* Fractions of the icon size: [top, right, bottom, left]. Converted to px because CSS padding
-   percentages are measured against the parent's width, not the icon's own. */
+   (outer inset minus the stroke overhang), as fractions of the icon size [top, right, bottom, left].
+   Converted to px because CSS padding percentages are measured against the parent's width. */
 const INSET: Partial<Record<IconName, [number, number, number, number]>> = {
   calendar: [0.0417, 0.0625, 0.0417, 0.0625],
   edit: [0.0476, 0.0476, 0.0476, 0.0476],
   wallet: [0.0937, 0.0521, 0.0938, 0.0521],
   "file-edit": [0.0521, 0.0937, 0.0521, 0.0937],
   "chart-pie": [0.0902, 0.0902, 0.0833, 0.0833],
+  note: [0.0533, 0.0533, 0.0533, 0.0533],
+  bell: [0.0521, 0.0833, 0.0521, 0.0833],
+  scan: [0.0667, 0.0667, 0.0667, 0.0667],
 }
 
 export function Icon({ name, size = 20, style }: { name: IconName; size?: number; style?: CSSProperties }) {
+  if (RAW.has(name))
+    return <img src={url(name)} alt="" aria-hidden="true" width={size} height={size} style={{ flexShrink: 0, ...style }} />
   const inset = INSET[name]
   return (
     <span
@@ -65,7 +78,7 @@ export function Icon({ name, size = 20, style }: { name: IconName; size?: number
         width: size,
         height: size,
         padding: inset?.map((f) => `${(f * size).toFixed(2)}px`).join(" "),
-        ["--icon" as string]: `url("${ICONS[name]}")`,
+        ["--icon" as string]: `url("${url(name)}")`,
         ...style,
       }}
     />
@@ -78,7 +91,10 @@ export function FlowArrow({ dir, size = 18 }: { dir: "out" | "in"; size?: number
   return (
     <span aria-hidden="true" className="fn-flow-arrow" style={{ width: size, height: size }}>
       <span className="fn-flow-arrow__box">
-        <span className="fn-icon fn-flow-arrow__glyph" style={{ ["--icon" as string]: `url("${dir === "out" ? arrowUp : arrowDown}")` }} />
+        <span
+          className="fn-icon fn-flow-arrow__glyph"
+          style={{ ["--icon" as string]: `url("${url(dir === "out" ? "arrow-up" : "arrow-down")}")` }}
+        />
       </span>
     </span>
   )

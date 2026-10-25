@@ -374,16 +374,22 @@ export function BottomBar({
   onQuickNote,
   onVoice,
   onNotes,
+  notesLabel = "Notes",
+  notesExpanded,
 }: {
   placeholder?: string
   onWallet?: () => void
   onQuickNote?: () => void
   onVoice?: () => void
+  /** Omit to hide the note button (the Due screen has none). */
   onNotes?: () => void
+  notesLabel?: string
+  /** Set when the button opens a menu, so screen readers hear whether it's open. */
+  notesExpanded?: boolean
 }) {
   return (
     <nav className="fn-bottom-bar" aria-label="Main">
-      <IconButton icon="wallet" label="Wallet" variant="glass-80" size={48} onClick={onWallet} />
+      <IconButton icon="wallet" label="Transactions" variant="glass-80" size={48} onClick={onWallet} />
       <div className="fn-quick-note">
         <button type="button" className="fn-quick-note__open" onClick={onQuickNote}>
           <span className="fn-quick-note__logo">
@@ -393,7 +399,29 @@ export function BottomBar({
         </button>
         <IconButton icon="waveform" label="Voice note" variant="plain" size={40} iconSize={24} onClick={onVoice} />
       </div>
-      <IconButton icon="file-edit" label="Notes" variant="white" size={48} onClick={onNotes} />
+      {onNotes && (
+        <IconButton
+          icon="file-edit"
+          label={notesLabel}
+          variant="white"
+          size={48}
+          onClick={onNotes}
+          aria-expanded={notesExpanded}
+          aria-haspopup={notesExpanded === undefined ? undefined : "menu"}
+        />
+      )}
     </nav>
+  )
+}
+
+/** Switchable page title: "Transaction  Note" — tapping the quieter word opens that page. */
+export function PageSwitch({ title, other, onOther }: { title: string; other: string; onOther: () => void }) {
+  return (
+    <div className="fn-page-title">
+      <h1 className="t-title">{title}</h1>
+      <button type="button" className="t-title-sub fn-page-title__switch" onClick={onOther}>
+        {other}
+      </button>
+    </div>
   )
 }

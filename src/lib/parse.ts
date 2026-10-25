@@ -49,15 +49,19 @@ const RULES: [CategoryName, RegExp][] = [
   ["Shopping", /mua|shopee|lazada|tiki|quần|áo|giày|dép|shirt|shoes|clothes|shopping/i],
   [
     "Food",
-    /cà phê|ca phe|cafe|\bcf\b|coffee|cơm|com tam|phở|pho|bún|bun|bánh|banh|ăn|an sang|trà sữa|tra sua|milk tea|lunch|breakfast|dinner|sandwich|thịt|đậu|đậu hũ|rau|chợ|tofu|snack|nước|drink|tea|bia|beer|food|pizza|mì|noodle/i,
+    /cà phê|ca phe|cafe|\bcf\b|coffee|cơm|com tam|phở|pho|bún|bun|bánh|banh|ăn|an sang|trà sữa|tra sua|milk tea|lunch|breakfast|dinner|rice|sandwich|thịt|đậu|đậu hũ|rau|chợ|tofu|snack|nước|drink|tea|bia|beer|food|pizza|mì|noodle/i,
   ],
 ]
 
 const DAY_WORDS = /\b(hôm nay|hom nay|today|hôm qua|hom qua|yesterday)\b/giu
 
+/** How it was paid, written at the end: "· cash", "· transfer", "tiền mặt", "chuyển khoản". */
+const PAID_WITH = /\s*[·\-–]?\s*(cash|transfer|card|tiền mặt|tien mat|chuyển khoản|chuyen khoan|\bck\b|thẻ)\s*$/iu
+
 function tidyTitle(s: string) {
   const t = s
     .replace(DAY_WORDS, " ")
+    .replace(PAID_WITH, "")
     .replace(/\s*[-–—:·]\s*$/u, "")
     .replace(/^\s*[-–—:·]\s*/u, "")
     .replace(/\s{2,}/g, " ")
@@ -65,29 +69,53 @@ function tidyTitle(s: string) {
   return t ? t[0].toLocaleUpperCase("vi") + t.slice(1) : ""
 }
 
+const isDayWord = (s: string) => /^(hôm nay|hom nay|today|hôm qua|hom qua|yesterday)$/iu.test(s)
+const hasAmount = (s: string) => {
+  AMOUNT.lastIndex = 0
+  return AMOUNT.test(s)
+}
+
 export function parseNote(text: string, day: string): Draft[] {
   const base = /hôm qua|hom qua|yesterday/i.test(text) ? addDays(day, -1) : day
-  return text
-    // Split on new lines, ";", "và/and/+", and commas that aren't inside a number ("35,000", "1,5tr").
-    .split(/[\n;]+|(?<!\d),|,(?!\d)|\s+(?:và|va|and|\+)\s+/iu)
-    .map((s) => s.trim())
-    .filter((s) => s && !/^(hôm nay|hom nay|today|hôm qua|hom qua|yesterday)$/iu.test(s))
-    .map((segment, i) => {
-      AMOUNT.lastIndex = 0
-      const match = AMOUNT.exec(segment)
-      const read = match ? readAmount(match[1], match[2], match[3]) : null
-      const rest = match ? segment.replace(match[0], " ") : segment
-      const flow: Flow = INCOME.test(segment) ? "in" : "out"
-      const category: CategoryName =
-        flow === "in" ? "Received" : (RULES.find(([, re]) => re.test(segment))?.[0] ?? "Other")
-      return {
-        key: `${Date.now()}-${i}`,
-        title: tidyTitle(rest) || category,
-        amount: read && read.value > 0 ? read.value : null,
-        flow,
-        category,
-        date: base,
-        assumedThousands: read?.assumed || undefined,
+  // Each line (or ";") is read on its own; inside a line, split on "và/and/+" and on commas that
+  // aren't inside a number ("35,000", "1,5tr").
+  const segments = text
+    .split(/[\n;]+/)
+    .flatMap((line) => {
+      const parts = line
+        .split(/(?<!\d),|,(?!\d)|\s+(?:và|va|and|\+)\s+/iu)
+        .map((s) => s.trim())
+        .filter((s) => s && !isDayWord(s))
+      // "Lunch, broken rice 40k" is one thing: a part with no amount joins the next part that has one.
+      const merged: string[] = []
+      let carry = ""
+      for (const p of parts) {
+        if (!hasAmount(p)) {
+          carry = carry ? `${carry}, ${p}` : p
+          continue
+        }
+        merged.push(carry ? `${carry}, ${p}` : p)
+        carry = ""
       }
+      if (carry) merged.push(carry)
+      return merged
     })
+
+  return segments.map((segment, i) => {
+    AMOUNT.lastIndex = 0
+    const match = AMOUNT.exec(segment)
+    const read = match ? readAmount(match[1], match[2], match[3]) : null
+    const rest = match ? segment.replace(match[0], " ") : segment
+    const flow: Flow = INCOME.test(segment) ? "in" : "out"
+    const category: CategoryName = flow === "in" ? "Received" : (RULES.find(([, re]) => re.test(segment))?.[0] ?? "Other")
+    return {
+      key: `${Date.now()}-${i}`,
+      title: tidyTitle(rest) || category,
+      amount: read && read.value > 0 ? read.value : null,
+      flow,
+      category,
+      date: base,
+      assumedThousands: read?.assumed || undefined,
+    }
+  })
 }

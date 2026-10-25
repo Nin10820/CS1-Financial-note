@@ -6,10 +6,19 @@ import { parseNote, type Draft } from "../lib/parse"
 import { CATEGORIES, categoryTone, uid, type CategoryName, type Entry } from "../lib/store"
 import ModalSheet, { ModalHeader } from "./ModalSheet"
 
-export type AssistantOpen = { notice?: string }
+export type AssistantOpen = { notice?: string; note?: { date: string; lines: string[] } }
 
 type Turn =
-  | { id: string; kind: "note"; text: string; drafts: Draft[]; status: "review" | "saved" | "discarded"; noteId?: string }
+  | {
+      id: string
+      kind: "note"
+      text: string
+      drafts: Draft[]
+      status: "review" | "saved" | "discarded"
+      noteId?: string
+      /** Set when the note came from the Note editor: shown as an attached card. */
+      attached?: { date: string; count: number }
+    }
   | { id: string; kind: "notice"; text: string }
 
 const DEFAULT_CHIPS = ["thịt xay 50k", "đậu hũ 15k"]
@@ -36,9 +45,22 @@ export default function Assistant({
 }) {
   const [day, setDay] = useState(defaultDay)
   const [text, setText] = useState("")
-  const [turns, setTurns] = useState<Turn[]>(() =>
-    opts?.notice ? [{ id: uid(), kind: "notice", text: opts.notice }] : [],
-  )
+  const [turns, setTurns] = useState<Turn[]>(() => {
+    if (opts?.note) {
+      const text = opts.note.lines.join("\n")
+      return [
+        {
+          id: uid(),
+          kind: "note",
+          text,
+          drafts: parseNote(text, opts.note.date),
+          status: "review",
+          attached: { date: opts.note.date, count: opts.note.lines.length },
+        },
+      ]
+    }
+    return opts?.notice ? [{ id: uid(), kind: "notice", text: opts.notice }] : []
+  })
   const [editing, setEditing] = useState<string | null>(null)
   const [history, setHistory] = useState(false)
   const input = useRef<HTMLTextAreaElement>(null)
@@ -261,7 +283,22 @@ export default function Assistant({
               </p>
             ) : (
               <div key={turn.id} className="chat__turn">
-                <ChatBubble>{turn.text}</ChatBubble>
+                {turn.attached ? (
+                  <div className="attached">
+                    <div className="attached__card">
+                      <span className="attached__title">Note · {longDate(turn.attached.date)}</span>
+                      <span className="attached__lines" aria-hidden="true">
+                        <i />
+                        <i />
+                        <i />
+                      </span>
+                      <span className="attached__tag">{turn.attached.count} {turn.attached.count === 1 ? "line" : "lines"}</span>
+                    </div>
+                    <span className="attached__caption">{turn.attached.date === today() ? "My note today" : `My note for ${shortDate(turn.attached.date)}`}</span>
+                  </div>
+                ) : (
+                  <ChatBubble>{turn.text}</ChatBubble>
+                )}
                 <Reply
                   turn={turn}
                   editing={editing}

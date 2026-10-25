@@ -1,9 +1,10 @@
-import { useMemo, useRef, useState } from "react"
-import { BottomBar, DatePill, FilterChips, IconButton, LogoMark, PageTitle, Sheet, SpendCard, TransItem } from "../components/ui"
+import { useMemo, useState } from "react"
+import { BottomBar, FilterChips, LogoMark, PageSwitch, Sheet, SpendCard, TransItem } from "../components/ui"
 import { Icon } from "../components/Icon"
-import { clock, greeting, longDate, money, shortDate, today } from "../lib/format"
+import { clock, greeting, money, shortDate, today } from "../lib/format"
 import { categoryTone, type Entry } from "../lib/store"
 import type { AssistantOpen } from "./Assistant"
+import DayHeader from "./DayHeader"
 
 type Filter = "all" | "expense" | "receive"
 
@@ -18,6 +19,8 @@ export default function Home({
   onOpenAssistant,
   onOpenEntry,
   onSummary,
+  onNote,
+  onDue,
 }: {
   day: string
   onDayChange: (day: string) => void
@@ -28,9 +31,10 @@ export default function Home({
   onOpenAssistant: (opts?: AssistantOpen) => void
   onOpenEntry: (id: string) => void
   onSummary: () => void
+  onNote: () => void
+  onDue: () => void
 }) {
   const [filter, setFilter] = useState<Filter>("all")
-  const picker = useRef<HTMLInputElement>(null)
 
   const list = useMemo(() => entries.filter((e) => e.date === day).sort((a, b) => b.createdAt - a.createdAt), [entries, day])
   const out = list.filter((e) => e.flow === "out").reduce((s, e) => s + e.amount, 0)
@@ -39,33 +43,12 @@ export default function Home({
   const updated = list.length ? Math.max(...list.map((e) => e.createdAt)) : 0
   const shown = list.filter((e) => filter === "all" || (filter === "expense" ? e.flow === "out" : e.flow === "in"))
 
-  const openPicker = () => {
-    const el = picker.current
-    if (!el) return
-    if (typeof el.showPicker === "function") el.showPicker()
-    else el.click()
-  }
-
   return (
     <div className="screen">
       <span className="screen__glow" aria-hidden="true" />
-      <header className="screen__header">
-        <IconButton icon="calendar" label="Pick a day" variant="glass" onClick={openPicker} />
-        <DatePill label={longDate(day)} onClick={openPicker} aria-label={`Day: ${longDate(day)}. Change day`} />
-        <IconButton icon="user" label="Profile" variant="glass" iconSize={24} style={{ color: "var(--brand-500)" }} />
-        <input
-          ref={picker}
-          className="visually-hidden"
-          type="date"
-          value={day}
-          max={today()}
-          tabIndex={-1}
-          aria-hidden="true"
-          onChange={(e) => e.target.value && onDayChange(e.target.value)}
-        />
-      </header>
+      <DayHeader day={day} onDayChange={onDayChange} />
 
-      <PageTitle title="Transaction" sub="Note" />
+      <PageSwitch title="Transaction" other="Note" onOther={onNote} />
 
       {list.length === 0 ? (
         <section className="home-empty" aria-label="Nothing recorded yet">
@@ -77,12 +60,12 @@ export default function Home({
             {(
               [
                 ["Write what you spent", {}],
-                ["Ask about a bill", { notice: "Bills aren't in this version yet. For now I can record what you spend and receive." }],
+                ["Ask about a bill", "due"],
                 ["Add an asset", { notice: "Assets aren't in this version yet. For now I can record what you spend and receive." }],
               ] as const
             ).map(([label, opts]) => (
               <li key={label}>
-                <button type="button" onClick={() => onOpenAssistant(opts)}>
+                <button type="button" onClick={() => (opts === "due" ? onDue() : onOpenAssistant(opts))}>
                   <Icon name="logo-mark" size={14} />
                   <span className="t-body-14-r">{label}</span>
                 </button>
@@ -144,7 +127,8 @@ export default function Home({
         <BottomBar
           onQuickNote={() => onOpenAssistant()}
           onVoice={() => onOpenAssistant()}
-          onNotes={() => onOpenAssistant()}
+          onNotes={onNote}
+          notesLabel="Note"
           onWallet={() => onDayChange(today())}
         />
       </div>

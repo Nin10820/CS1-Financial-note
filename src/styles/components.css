@@ -278,6 +278,17 @@
   padding: var(--sp-12) var(--sp-20) var(--sp-8);
 }
 
+.fn-page-title__switch {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.fn-page-title__switch:hover {
+  color: var(--grey-700);
+}
+
 /* ge — list sheet */
 .fn-sheet {
   position: relative;
