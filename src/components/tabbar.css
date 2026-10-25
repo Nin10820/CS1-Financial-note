@@ -1,44 +1,6 @@
 /* Bottom navigation in the iOS 26/27 Liquid Glass style: floating capsules, a sliding selection
    lens that springs between tabs and swells while held, collapsing to a compact bar on scroll. */
 
-/* ── Glass material ─────────────────────────────────────── */
-.lg {
-  position: relative;
-  isolation: isolate;
-  border: 0.5px solid var(--lg-rim);
-  background: var(--lg-fill);
-  box-shadow: var(--lg-edge), var(--lg-shadow);
-  -webkit-backdrop-filter: var(--lg-filter);
-  backdrop-filter: var(--lg-filter);
-}
-.lg::before {
-  /* specular sheen across the top half */
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: var(--lg-sheen);
-  pointer-events: none;
-}
-.lg-round {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 50px;
-  height: 50px;
-  padding: 0;
-  border-radius: var(--rounded);
-  color: var(--grey-700);
-  transition: transform 0.35s var(--spring), background-color 0.2s;
-}
-.lg-round:active {
-  transform: scale(0.92);
-}
-.lg-round:hover {
-  background: var(--lg-fill-strong);
-}
-
 /* ── Layout ─────────────────────────────────────────────── */
 .tabbar {
   position: relative;
@@ -48,14 +10,7 @@
 .tabbar.is-collapsed {
   height: 94px;
 }
-.tabbar::before {
-  /* content fades out under the bar */
-  content: "";
-  position: absolute;
-  inset: -36px 0 0;
-  background: linear-gradient(180deg, rgb(249 250 251 / 0%) 0%, rgb(249 250 251 / 80%) 40%, rgb(249 250 251 / 96%) 100%);
-  pointer-events: none;
-}
+
 .tabbar__full,
 .tabbar__mini {
   position: absolute;

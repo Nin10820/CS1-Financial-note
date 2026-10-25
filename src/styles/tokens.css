@@ -117,12 +117,12 @@
 
   /* Liquid Glass (iOS 26/27-style floating bars). Web approximation: frosted fill, bright top
      edge, soft rim and a specular sheen — real refraction isn't available in Safari. */
-  --lg-fill: rgb(255 255 255 / 58%);
+  --lg-fill: rgb(255 255 255 / 50%);
   --lg-fill-strong: rgb(255 255 255 / 72%);
-  --lg-filter: blur(24px) saturate(190%);
-  --lg-rim: rgb(255 255 255 / 60%);
+  --lg-filter: blur(18px) saturate(200%) brightness(1.04);
+  --lg-rim: rgb(255 255 255 / 75%);
   --lg-edge: inset 0 1px 0 rgb(255 255 255 / 95%), inset 0 -1px 0 rgb(255 255 255 / 35%), inset 0 0 0 0.5px rgb(255 255 255 / 50%);
-  --lg-shadow: 0 12px 32px rgb(13 18 28 / 9%), 0 2px 8px rgb(13 18 28 / 5%);
+  --lg-shadow: 0 8px 28px rgb(13 18 28 / 8%), 0 1px 3px rgb(13 18 28 / 6%);
   --lg-sheen: linear-gradient(180deg, rgb(255 255 255 / 55%) 0%, rgb(255 255 255 / 0%) 48%);
   --lg-select: rgb(118 118 128 / 12%); /* iOS selection fill */
   --spring: cubic-bezier(0.34, 1.4, 0.64, 1);

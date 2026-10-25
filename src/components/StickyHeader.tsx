@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import "./sticky-header.css"
+import "./pblur.css"
+import ProgressiveBlur from "./ProgressiveBlur"
 
 /** True once the page has scrolled past `threshold` px (rAF-throttled). */
 export function useScrolled(threshold = 56) {
@@ -41,6 +43,7 @@ export default function StickyHeader({
   const scrolled = useScrolled()
   return (
     <header className={`nav-bar${scrolled ? " is-scrolled" : ""}`}>
+      <ProgressiveBlur edge="top" visible={scrolled} />
       <div className="nav-bar__side">{left}</div>
       <div className="nav-bar__center">
         {center && (
@@ -50,7 +53,7 @@ export default function StickyHeader({
         )}
         <button
           type="button"
-          className="nav-bar__swap nav-bar__title"
+          className="nav-bar__swap nav-bar__title lg"
           aria-hidden={!scrolled}
           tabIndex={scrolled ? 0 : -1}
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

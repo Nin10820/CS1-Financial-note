@@ -1,0 +1,72 @@
+/* Progressive edge blur. Layers blur more and cover less as they approach the edge. */
+.pblur {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.pblur.is-on {
+  opacity: 1;
+}
+.pblur--top {
+  top: 0;
+  height: calc(100% + 48px);
+}
+.pblur--bottom {
+  bottom: 0;
+  height: calc(100% + 56px);
+}
+.pblur i,
+.pblur b {
+  position: absolute;
+  inset: 0;
+}
+.pblur i:nth-child(1) {
+  -webkit-backdrop-filter: blur(0.6px);
+  backdrop-filter: blur(0.6px);
+  --m: 0%, #000 25%;
+}
+.pblur i:nth-child(2) {
+  -webkit-backdrop-filter: blur(1.6px);
+  backdrop-filter: blur(1.6px);
+  --m: 15%, #000 42%;
+}
+.pblur i:nth-child(3) {
+  -webkit-backdrop-filter: blur(3.5px);
+  backdrop-filter: blur(3.5px);
+  --m: 32%, #000 58%;
+}
+.pblur i:nth-child(4) {
+  -webkit-backdrop-filter: blur(7px);
+  backdrop-filter: blur(7px);
+  --m: 48%, #000 74%;
+}
+.pblur i:nth-child(5) {
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  --m: 64%, #000 90%;
+}
+/* Mask runs from the inner side (transparent) to the screen edge (opaque). */
+.pblur--top i {
+  -webkit-mask-image: linear-gradient(to top, transparent var(--m));
+  mask-image: linear-gradient(to top, transparent var(--m));
+}
+.pblur--bottom i {
+  -webkit-mask-image: linear-gradient(to bottom, transparent var(--m));
+  mask-image: linear-gradient(to bottom, transparent var(--m));
+}
+/* A light wash so text under the edge doesn't fight the controls. */
+.pblur--top b {
+  background: linear-gradient(to bottom, rgb(249 250 251 / 78%) 0%, rgb(249 250 251 / 40%) 55%, rgb(249 250 251 / 0%) 100%);
+}
+.pblur--bottom b {
+  background: linear-gradient(to top, rgb(249 250 251 / 82%) 0%, rgb(249 250 251 / 45%) 55%, rgb(249 250 251 / 0%) 100%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pblur {
+    transition: none;
+  }
+}

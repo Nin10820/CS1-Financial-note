@@ -1,26 +1,17 @@
-/* Sticky navigation bar: clear at the top, frosted glass + hairline shadow once scrolled. */
+/* Top bar, iOS 26/27 style (as in the Claude app): no bar of its own — floating glass controls,
+   and the content scrolling under them blurs progressively toward the top edge. */
 .nav-bar {
   position: sticky;
   top: 0;
   z-index: 20;
+  isolation: isolate;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: var(--sp-8);
   min-height: 52px;
   margin-top: var(--sp-8);
-  padding: calc(var(--sp-6) + env(safe-area-inset-top)) var(--sp-20) var(--sp-6);
-  background: rgb(243 244 246 / 0%);
-  border-bottom: 0.5px solid transparent;
-  transition: background-color 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease,
-    backdrop-filter 0.25s ease;
-}
-.nav-bar.is-scrolled {
-  background: rgb(249 250 251 / 72%);
-  border-bottom-color: var(--dark-8);
-  box-shadow: 0 6px 16px var(--dark-4);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
+  padding: calc(var(--sp-6) + env(safe-area-inset-top)) var(--sp-16) var(--sp-6);
 }
 .nav-bar__side {
   display: flex;
@@ -38,48 +29,43 @@
 }
 .nav-bar__swap {
   grid-area: 1 / 1;
-  transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.nav-bar__swap--top {
-  opacity: 1;
-  transform: none;
+  transition: opacity 0.22s ease, transform 0.4s var(--spring), filter 0.22s ease;
 }
 .nav-bar.is-scrolled .nav-bar__swap--top {
   opacity: 0;
-  transform: translateY(-6px) scale(0.96);
+  transform: scale(0.9);
+  filter: blur(3px);
   pointer-events: none;
 }
+/* Small title in its own glass pill, like the chat title in the Claude app. */
 .nav-bar__title {
-  max-width: 200px;
+  max-width: 210px;
+  height: 44px;
   overflow: hidden;
-  padding: var(--sp-4) var(--sp-8);
-  border: 0;
-  border-radius: var(--corner-8);
-  background: none;
+  padding: 0 var(--sp-16);
+  border-radius: var(--rounded);
   color: var(--text-900);
   font-size: 16px;
-  font-weight: var(--weight-s);
+  font-weight: var(--weight-m);
   line-height: 22px;
   text-overflow: ellipsis;
   white-space: nowrap;
   opacity: 0;
-  transform: translateY(8px);
+  transform: scale(0.9);
+  filter: blur(3px);
   pointer-events: none;
 }
 .nav-bar.is-scrolled .nav-bar__title {
   opacity: 1;
   transform: none;
+  filter: none;
   pointer-events: auto;
 }
-/* Buttons sitting on frosted glass don't need their own glass shadow. */
-.nav-bar.is-scrolled .fn-icon-btn--glass,
-.nav-bar.is-scrolled .pill-group {
-  box-shadow: none;
-  background: rgb(255 255 255 / 70%);
+.nav-bar__title:active {
+  transform: scale(0.96);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nav-bar,
   .nav-bar__swap {
     transition: none;
   }

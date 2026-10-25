@@ -1,5 +1,44 @@
 /* Component styles. Every value is a token from tokens.css; sizes are the Figma pixel values. */
 
+/* ── Glass material ─────────────────────────────────────── */
+.lg {
+  position: relative;
+  isolation: isolate;
+  border: 0.5px solid var(--lg-rim);
+  background: var(--lg-fill);
+  box-shadow: var(--lg-edge), var(--lg-shadow);
+  -webkit-backdrop-filter: var(--lg-filter);
+  backdrop-filter: var(--lg-filter);
+}
+.lg::before {
+  /* specular sheen across the top half */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--lg-sheen);
+  pointer-events: none;
+}
+.lg-round {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  border-radius: var(--rounded);
+  color: var(--grey-700);
+  transition: transform 0.35s var(--spring), background-color 0.2s;
+}
+.lg-round:active {
+  transform: scale(0.92);
+}
+.lg-round:hover {
+  background: var(--lg-fill-strong);
+}
+
+
 /* Icon: Figma SVG used as a mask so its colour follows currentColor. */
 .fn-icon {
   display: inline-block;
@@ -90,9 +129,11 @@
   transform: scale(0.96);
 }
 .fn-icon-btn--glass {
-  background: var(--white-64);
-  box-shadow: var(--shadow-light-2);
-  backdrop-filter: blur(var(--glass-blur));
+  border: 0.5px solid var(--lg-rim);
+  background: var(--lg-fill);
+  box-shadow: var(--lg-edge), var(--lg-shadow);
+  -webkit-backdrop-filter: var(--lg-filter);
+  backdrop-filter: var(--lg-filter);
 }
 .fn-icon-btn--glass-80 {
   background: var(--white-80);
@@ -206,10 +247,11 @@
   padding: var(--sp-6) var(--sp-16);
   border: 1px solid var(--brand-400);
   border-radius: var(--rounded);
-  background: var(--white-80);
-  box-shadow: var(--shadow-light-2);
+  background: var(--lg-fill);
+  box-shadow: var(--lg-edge), var(--lg-shadow);
   color: var(--text-900);
-  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: var(--lg-filter);
+  backdrop-filter: var(--lg-filter);
 }
 .fn-date-pill .t-body-14-m {
   line-height: 1.4;

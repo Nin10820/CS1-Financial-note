@@ -3,6 +3,8 @@ import "./tabbar.css"
 import { ChartPieSlice, Receipt, User } from "@phosphor-icons/react"
 import { Icon } from "./Icon"
 import { IconButton, LogoMark } from "./ui"
+import ProgressiveBlur from "./ProgressiveBlur"
+import "./pblur.css"
 
 export type Tab = "expense" | "due" | "finance" | "profile"
 
@@ -167,6 +169,7 @@ export default function TabBar({
 
   return (
     <div className={`tabbar${collapsed ? " is-collapsed" : ""}`}>
+      <ProgressiveBlur edge="bottom" />
       {/* Expanded */}
       <div className="tabbar__full" aria-hidden={collapsed} inert={collapsed}>
         <div className="tabbar__row">

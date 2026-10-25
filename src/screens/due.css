@@ -23,10 +23,12 @@
   display: flex;
   align-items: center;
   height: 40px;
+  border: 0.5px solid var(--lg-rim);
   border-radius: var(--rounded);
-  background: var(--white-64);
-  box-shadow: var(--shadow-light-2);
-  backdrop-filter: blur(var(--glass-blur));
+  background: var(--lg-fill);
+  box-shadow: var(--lg-edge), var(--lg-shadow);
+  -webkit-backdrop-filter: var(--lg-filter);
+  backdrop-filter: var(--lg-filter);
 }
 .pill-group .fn-icon-btn--plain {
   width: 40px;
