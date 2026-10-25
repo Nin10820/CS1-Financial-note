@@ -11,7 +11,7 @@
   padding: var(--sp-12) var(--sp-20);
 }
 .note-block--grow {
-  padding-bottom: calc(140px + env(safe-area-inset-bottom));
+  padding-bottom: calc(180px + env(safe-area-inset-bottom));
 }
 .note-block__label {
   color: var(--grey-400);
@@ -346,4 +346,33 @@
   color: var(--grey-500);
   font-size: 13px;
   font-weight: var(--weight-m);
+}
+
+/* Placeholder tabs (Finance, Profile) */
+.soon__top {
+  height: 58px;
+}
+.soon {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-12);
+  padding: var(--sp-24) var(--sp-32) calc(200px + env(safe-area-inset-bottom));
+  text-align: center;
+}
+.soon__badge {
+  padding: 2px 10px;
+  border-radius: var(--rounded);
+  background: var(--brand-100);
+  color: var(--brand-800);
+  font-size: 12px;
+  font-weight: var(--weight-s);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.soon__body {
+  max-width: 300px;
+  color: var(--grey-500);
 }

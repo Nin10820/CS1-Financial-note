@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
-import { BottomBar, PageSwitch } from "../components/ui"
+import { PageSwitch } from "../components/ui"
+import TabBar, { type Tab } from "../components/TabBar"
 import { Icon } from "../components/Icon"
 import { money, shortDate, today } from "../lib/format"
 import { addMonths, monthSummary, ym, type Bill } from "../lib/bills"
@@ -17,6 +18,7 @@ export default function NoteScreen({
   onDue,
   onNewNote,
   onOpenAssistant,
+  onTab,
 }: {
   day: string
   onDayChange: (day: string) => void
@@ -27,6 +29,7 @@ export default function NoteScreen({
   onDue: () => void
   onNewNote: () => void
   onOpenAssistant: () => void
+  onTab: (t: Tab) => void
 }) {
   const [menu, setMenu] = useState(false)
   const barRef = useRef<HTMLDivElement>(null)
@@ -130,13 +133,11 @@ export default function NoteScreen({
             </div>
           )}
         </div>
-        <BottomBar
-          onWallet={onTransactions}
+        <TabBar
+          active="expense"
+          onTab={onTab}
           onQuickNote={onOpenAssistant}
-          onVoice={onOpenAssistant}
-          onNotes={() => setMenu((m) => !m)}
-          notesLabel="New"
-          notesExpanded={menu}
+          action={{ label: "New", onClick: () => setMenu((m) => !m), expanded: menu }}
         />
       </div>
     </div>

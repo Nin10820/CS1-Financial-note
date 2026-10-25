@@ -7,6 +7,8 @@ import BillSheet from "./screens/BillSheet"
 import AddBill from "./screens/AddBill"
 import { ComingUp, Installments, PaidHistory } from "./screens/DueSheets"
 import Assistant, { type AssistantOpen } from "./screens/Assistant"
+import SoonScreen from "./screens/SoonScreen"
+import type { Tab } from "./components/TabBar"
 import EntrySheet, { SummarySheet } from "./screens/EntrySheet"
 import { today } from "./lib/format"
 import { dueIn, ym } from "./lib/bills"
@@ -15,7 +17,7 @@ import "./screens/screens.css"
 import "./screens/note.css"
 import "./screens/due.css"
 
-type Screen = "transaction" | "note" | "due" | "installments"
+type Screen = "transaction" | "note" | "due" | "installments" | "finance" | "profile"
 type Overlay =
   | { kind: "assistant"; opts: AssistantOpen }
   | { kind: "entry"; id: string }
@@ -42,6 +44,9 @@ export default function App() {
     window.scrollTo(0, 0)
   }
   const assistant = (opts: AssistantOpen = {}) => setOverlay({ kind: "assistant", opts })
+  // Expense opens on Transaction (Note sits beside it); Due on the bill list.
+  const onTab = (t: Tab) =>
+    go(t === "expense" ? (screen === "note" ? "note" : "transaction") : t === "due" ? "due" : t)
 
   // The spending is recorded on the day the bill is ticked off — the day the money actually left.
   const toggleBill = (id: string, paid: boolean, amount?: number, m = month) => {
@@ -64,6 +69,7 @@ export default function App() {
           onSummary={() => setOverlay({ kind: "summary" })}
           onNote={() => go("note")}
           onDue={() => go("due")}
+          onTab={onTab}
         />
       )}
       {screen === "note" && (
@@ -77,6 +83,7 @@ export default function App() {
           onDue={() => go("due")}
           onNewNote={() => setOverlay({ kind: "editor" })}
           onOpenAssistant={() => assistant()}
+          onTab={onTab}
         />
       )}
       {screen === "due" && (
@@ -93,8 +100,8 @@ export default function App() {
           onComingUp={() => setOverlay({ kind: "coming-up" })}
           onHistory={() => setOverlay({ kind: "paid-history" })}
           onInstallments={() => go("installments")}
-          onTransactions={() => go("transaction")}
           onOpenAssistant={() => assistant()}
+          onTab={onTab}
         />
       )}
       {screen === "installments" && (
@@ -107,9 +114,12 @@ export default function App() {
           onComingUp={() => setOverlay({ kind: "coming-up" })}
           onHistory={() => setOverlay({ kind: "paid-history" })}
           onAdd={() => setOverlay({ kind: "add-bill" })}
-          onTransactions={() => go("transaction")}
           onOpenAssistant={() => assistant()}
+          onTab={onTab}
         />
+      )}
+      {(screen === "finance" || screen === "profile") && (
+        <SoonScreen tab={screen} onTab={onTab} onOpenAssistant={() => assistant()} />
       )}
 
       {overlay?.kind === "assistant" && (

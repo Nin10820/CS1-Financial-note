@@ -274,7 +274,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-8);
-  padding: 0 var(--sp-20) calc(130px + env(safe-area-inset-bottom));
+  padding: 0 var(--sp-20) calc(180px + env(safe-area-inset-bottom));
 }
 .statement__title {
   padding: 0 var(--sp-12) 2px;

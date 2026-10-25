@@ -1,0 +1,152 @@
+/* Bottom navigation: expanded tab bar ⇄ collapsed Figma Bottom-bar. */
+.tabbar {
+  position: relative;
+  height: 156px;
+  transition: height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.tabbar.is-collapsed {
+  height: 92px;
+}
+.tabbar::before {
+  /* soft fade so content scrolls under the bar */
+  content: "";
+  position: absolute;
+  inset: -32px 0 0;
+  background: linear-gradient(180deg, rgb(249 250 251 / 0%) 0%, rgb(249 250 251 / 94%) 30%, var(--bg-2) 100%);
+  pointer-events: none;
+}
+.tabbar__full,
+.tabbar__mini {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transition: opacity 0.22s ease, transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.tabbar__full {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  padding: 0 var(--sp-20) var(--sp-24);
+}
+.tabbar.is-collapsed .tabbar__full {
+  opacity: 0;
+  transform: translateY(24px) scale(0.97);
+  pointer-events: none;
+}
+.tabbar__mini {
+  opacity: 0;
+  transform: translateY(16px);
+  pointer-events: none;
+  background: none;
+  backdrop-filter: none;
+}
+.tabbar.is-collapsed .tabbar__mini {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+/* Quick-note field (expanded) */
+.tabbar__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+}
+.tabbar__note {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  height: 48px;
+  padding: var(--sp-4) var(--sp-16) var(--sp-4) var(--sp-4);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--rounded);
+  background: rgb(249 250 251 / 92%);
+  box-shadow: var(--shadow-light-2);
+  backdrop-filter: blur(12px);
+  text-align: left;
+}
+.tabbar__note:hover {
+  border-color: var(--brand-300);
+}
+.tabbar__note-logo {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--rounded);
+  background: var(--brand-500);
+}
+.tabbar__note-logo img {
+  filter: brightness(0) invert(1);
+}
+.tabbar__note-text {
+  overflow: hidden;
+  color: var(--grey-300);
+  font-size: 15px;
+  line-height: 20px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The four tabs */
+.tabbar__tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-4);
+  height: 64px;
+  padding: var(--sp-4);
+  border: 1px solid rgb(255 255 255 / 90%);
+  border-radius: var(--rounded);
+  background: rgb(255 255 255 / 88%);
+  box-shadow: 0 8px 24px var(--dark-4), var(--shadow-light-2);
+  backdrop-filter: blur(16px);
+}
+.tabbar__tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded);
+  background: none;
+  color: var(--grey-400);
+  font-size: 12px;
+  font-weight: var(--weight-m);
+  line-height: 16px;
+  transition: background-color 0.2s, color 0.2s;
+}
+.tabbar__tab span {
+  color: var(--grey-500);
+}
+.tabbar__tab:hover:not(.is-active) {
+  background: var(--bg-2);
+}
+.tabbar__tab.is-active {
+  background: var(--bg-3);
+  color: var(--brand-500);
+}
+.tabbar__tab.is-active span {
+  color: var(--brand-500);
+  font-weight: var(--weight-s);
+}
+.tabbar__tab:active {
+  transform: scale(0.97);
+}
+
+.tabbar__mini-tab {
+  color: var(--brand-500);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabbar,
+  .tabbar__full,
+  .tabbar__mini {
+    transition: none;
+  }
+}

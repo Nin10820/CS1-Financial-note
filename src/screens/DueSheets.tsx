@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { Amount, BottomBar, Button, IconButton, MonthCard, SegmentedTabs } from "../components/ui"
+import { Amount, Button, IconButton, MonthCard, SegmentedTabs } from "../components/ui"
+import TabBar, { type Tab } from "../components/TabBar"
 import { Icon } from "../components/Icon"
 import { money, today } from "../lib/format"
 import { addMonths, dueIn, installmentStep, lastDue, monthSummary, ym, type Bill } from "../lib/bills"
@@ -153,8 +154,8 @@ export function Installments({
   onComingUp,
   onHistory,
   onAdd,
-  onTransactions,
   onOpenAssistant,
+  onTab,
 }: {
   bills: Bill[]
   month: string
@@ -164,8 +165,8 @@ export function Installments({
   onComingUp: () => void
   onHistory: () => void
   onAdd: () => void
-  onTransactions: () => void
   onOpenAssistant: () => void
+  onTab: (t: Tab) => void
 }) {
   const list = bills.filter((b) => b.kind === "installment")
   const thisMonth = list.filter((b) => dueIn(b, month))
@@ -241,7 +242,7 @@ export function Installments({
         })}
       </section>
       <div className="screen__bottom">
-        <BottomBar onWallet={onTransactions} onQuickNote={onOpenAssistant} onVoice={onOpenAssistant} />
+        <TabBar active="due" onTab={onTab} onQuickNote={onOpenAssistant} />
       </div>
     </div>
   )

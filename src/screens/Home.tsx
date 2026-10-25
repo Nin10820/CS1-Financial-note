@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react"
-import { BottomBar, FilterChips, LogoMark, PageSwitch, Sheet, SpendCard, TransItem } from "../components/ui"
+import { FilterChips, LogoMark, PageSwitch, Sheet, SpendCard, TransItem } from "../components/ui"
 import { Icon } from "../components/Icon"
 import { clock, greeting, money, shortDate, today } from "../lib/format"
 import { categoryTone, type Entry } from "../lib/store"
 import type { AssistantOpen } from "./Assistant"
 import DayHeader from "./DayHeader"
+import TabBar, { type Tab } from "../components/TabBar"
 
 type Filter = "all" | "expense" | "receive"
 
@@ -21,6 +22,7 @@ export default function Home({
   onSummary,
   onNote,
   onDue,
+  onTab,
 }: {
   day: string
   onDayChange: (day: string) => void
@@ -33,6 +35,7 @@ export default function Home({
   onSummary: () => void
   onNote: () => void
   onDue: () => void
+  onTab: (t: Tab) => void
 }) {
   const [filter, setFilter] = useState<Filter>("all")
 
@@ -124,13 +127,7 @@ export default function Home({
       )}
 
       <div className="screen__bottom">
-        <BottomBar
-          onQuickNote={() => onOpenAssistant()}
-          onVoice={() => onOpenAssistant()}
-          onNotes={onNote}
-          notesLabel="Note"
-          onWallet={() => onDayChange(today())}
-        />
+        <TabBar active="expense" onTab={onTab} onQuickNote={() => onOpenAssistant()} action={{ label: "Note", onClick: onNote }} />
       </div>
     </div>
   )

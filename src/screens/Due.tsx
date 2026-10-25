@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
-import { Amount, BottomBar, Button, IconButton, Sheet } from "../components/ui"
+import { Amount, Button, IconButton, Sheet } from "../components/ui"
+import TabBar, { type Tab } from "../components/TabBar"
 import { Icon } from "../components/Icon"
 import { money, today } from "../lib/format"
 import { TILE, addMonths, monthSummary, ym, type Bill } from "../lib/bills"
@@ -29,8 +30,8 @@ export default function Due({
   onComingUp,
   onHistory,
   onInstallments,
-  onTransactions,
   onOpenAssistant,
+  onTab,
 }: {
   month: string
   onMonthChange: (m: string) => void
@@ -44,8 +45,8 @@ export default function Due({
   onComingUp: () => void
   onHistory: () => void
   onInstallments: () => void
-  onTransactions: () => void
   onOpenAssistant: () => void
+  onTab: (t: Tab) => void
 }) {
   const s = monthSummary(bills, month)
   const [open, setOpen] = useState({ still: true, done: true })
@@ -168,7 +169,7 @@ export default function Due({
       </Sheet>
 
       <div className="screen__bottom">
-        <BottomBar onWallet={onTransactions} onQuickNote={onOpenAssistant} onVoice={onOpenAssistant} />
+        <TabBar active="due" onTab={onTab} onQuickNote={onOpenAssistant} />
       </div>
     </div>
   )
