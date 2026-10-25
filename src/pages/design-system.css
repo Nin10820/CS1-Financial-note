@@ -1,0 +1,220 @@
+/* Layout of the design-system reference page only — not part of the app's components. */
+.ds {
+  min-height: 100dvh;
+  padding: var(--sp-24) var(--sp-16) 64px;
+  background: var(--bg-3);
+}
+.ds-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  max-width: 1280px;
+  margin: 0 auto var(--sp-24);
+}
+.ds-head h1 {
+  color: var(--text-900);
+}
+.ds-muted {
+  color: var(--grey-400);
+}
+.ds-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-32);
+  max-width: 1280px;
+  margin: 0 auto;
+}
+@media (min-width: 1080px) {
+  .ds-layout {
+    grid-template-columns: minmax(0, 1fr) 420px;
+    align-items: start;
+  }
+  .ds-phone-wrap {
+    position: sticky;
+    top: var(--sp-24);
+  }
+}
+.ds-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+  min-width: 0;
+}
+.ds-section {
+  padding: var(--sp-20);
+  border: 1px solid var(--bd-0);
+  border-radius: var(--corner-16);
+  background: var(--bg-white);
+}
+.ds-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-4) var(--sp-12);
+  margin-bottom: var(--sp-16);
+}
+.ds-section__head h2 {
+  color: var(--text-900);
+}
+.ds-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+}
+.ds-swatch-group h3 {
+  margin-bottom: var(--sp-8);
+}
+.ds-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--sp-12);
+}
+.ds-swatch {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ds-swatch__chip {
+  height: 44px;
+  margin-bottom: var(--sp-4);
+  border: 1px solid var(--dark-8);
+  border-radius: var(--corner-8);
+}
+.ds-type {
+  display: flex;
+  flex-direction: column;
+}
+.ds-type__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4) var(--sp-16);
+  padding: var(--sp-12) 0;
+  border-bottom: 1px solid var(--bd-0);
+}
+.ds-type__row:last-child {
+  border-bottom: 0;
+}
+.ds-scale {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-16);
+}
+.ds-scale__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+.ds-scale__bar {
+  height: 16px;
+  border-radius: 2px;
+  background: var(--brand-400);
+}
+.ds-corners {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-12);
+}
+.ds-corner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 64px;
+  height: 48px;
+  padding-bottom: 4px;
+  border: 1.5px solid var(--grey-300);
+  background: var(--bg-2);
+}
+.ds-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-12);
+}
+.ds-row--tinted,
+.ds-tinted-box {
+  padding: var(--sp-16);
+  border-radius: var(--corner-12);
+  background: linear-gradient(180deg, var(--brand-100), var(--bg-3));
+}
+.ds-on-dark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-8);
+  padding: var(--sp-8);
+  border-radius: var(--corner-12);
+  background: var(--gradient-card);
+}
+.ds-narrow {
+  max-width: 402px;
+}
+.ds-card {
+  padding: 0 var(--sp-12);
+  border-radius: var(--corner-16);
+  background: var(--bg-2);
+}
+.ds-confirm {
+  border: 1px solid var(--secondary-300);
+  background: var(--bg-white);
+}
+.ds-phone-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  align-items: center;
+}
+
+/* Phone frame for the rebuilt screen: 402 × 874 like the Figma frame. */
+.phone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 402px;
+  max-width: 100%;
+  height: 874px;
+  overflow: hidden;
+  border-radius: 28px;
+  background: var(--bg-3);
+  box-shadow: 0 24px 60px var(--dark-12), 0 0 0 1px var(--dark-6);
+  isolation: isolate;
+}
+.phone__glow {
+  position: absolute;
+  top: -183px;
+  left: 0;
+  z-index: -1;
+  width: 403px;
+  height: 478px;
+  background: var(--gradient-page-glow);
+  filter: blur(60px);
+  opacity: 0.6;
+}
+.phone__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  margin-top: 50px; /* the Figma frame's status bar */
+  padding: var(--sp-6) 20px;
+}
+.phone__card {
+  padding: var(--sp-4) var(--sp-24) var(--sp-24);
+}
+.phone__sheet {
+  flex: 1 0 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.phone__list-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+.phone__bottom {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+}

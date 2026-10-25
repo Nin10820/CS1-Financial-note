@@ -1,0 +1,140 @@
+/*
+ * Financial Note — design tokens.
+ * Every value comes from the variables in the Figma file "Finance App"
+ * (file Vip7fMipsI26amegfFRktQ, page "Final"). Names follow Figma: "Base/--grey/500-Main" → --grey-500.
+ * Change a value in Figma first, then here. Components never hard-code colours or sizes.
+ */
+:root {
+  /* Base / grey */
+  --grey-200: #e3e8ef; /* Base/--grey/200-Effect */
+  --grey-300: #9aa4b2; /* Base/--grey/300-Stroke */
+  --grey-400: #697586; /* Base/--grey/400 */
+  --grey-500: #364152; /* Base/--grey/500-Main */
+  --grey-700: #202939; /* Base/--grey/700 */
+  --grey-800: #121926; /* Base/--grey/800 */
+  --grey-900: #0d121c; /* Base/--grey/900 */
+
+  /* Base / backgrounds */
+  --bg-1: #fcfcfd; /* Base/_background/bg-1 — modals, sheets */
+  --bg-2: #f9fafb; /* Base/_background/bg-2 — list sheet */
+  --bg-3: #f3f4f6; /* Base/_background/bg-3 — app canvas */
+  --bg-4: #eaecf0; /* Base/_background/bg-4 — idle chips */
+  --bg-white: #ffffff;
+  --bg-dark: #0d121c;
+
+  /* Base / borders */
+  --bd-0: #eef2f6; /* Base/_border/bd-0 — row dividers */
+  --bd-1: #e3e8ef; /* Base/_border/bd-1 */
+  --bd-3: #cdd5df; /* Base/_border/bd-3 — outlined buttons */
+
+  /* Base / text */
+  --text-900: #0d121c; /* Base/_text/dark-900 — headings, amounts */
+  --text-700: #364152; /* Base/_text/dark-700 (main) — body */
+  --text-white: #ffffff;
+  --text-error: #f04438; /* Base/_text/text-error */
+
+  /* Brand (green) */
+  --brand-25: #fdfefb;
+  --brand-50: #f2faeb;
+  --brand-100: #e2f4d3;
+  --brand-200: #c8e9ad; /* Brand/200-Effect — user chat bubble */
+  --brand-300: #a4da7c;
+  --brand-400: #83c853; /* date pill border */
+  --brand-500: #5fa82f; /* Brand/500-Main — confirm button, logo */
+  --brand-700: #3b6922; /* incoming amounts */
+  --brand-800: #2c481f; /* text on green cards */
+
+  /* Category labels on transaction rows (Final page): Food, Transport, Received.
+     Figma names the purple one "Brand/700" too — kept separate from the green --brand-700 on purpose. */
+  --category-food: #c85a34; /* Secondary/500-Main */
+  --category-transport: #1570ef; /* Base/_text/text-notice */
+  --category-received: #4a1fb8;
+
+  /* Secondary (peach) */
+  --secondary-25: #fcf6f0;
+  --secondary-100: #f8eadc; /* outgoing icon tile */
+  --secondary-300: #e5b28c; /* confirm card border */
+  --secondary-500: #c85a34; /* outgoing arrow */
+
+  /* Accents used by Due */
+  --blue-100: #dff2ff;
+  --blue-700: #0085ca;
+  --teal-200: #ccfbef;
+  --teal-500: #15b79e;
+  --lime-500: #669f2a;
+
+  /* Opacity helpers */
+  --white-8: rgb(255 255 255 / 8%);
+  --white-10: rgb(255 255 255 / 10%); /* buttons on the green card */
+  --white-12: rgb(255 255 255 / 12%);
+  --white-32: rgb(255 255 255 / 32%);
+  --white-16: rgb(255 255 255 / 16%);
+  --white-48: rgb(255 255 255 / 48%);
+  --white-64: rgb(255 255 255 / 64%);
+  --white-80: rgb(255 255 255 / 80%);
+  --white-90: rgb(255 255 255 / 90%);
+  --dark-2: rgb(13 18 28 / 2%);
+  --dark-4: rgb(13 18 28 / 4%);
+  --dark-6: rgb(13 18 28 / 6%);
+  --dark-8: rgb(13 18 28 / 8%);
+  --dark-12: rgb(13 18 28 / 12%);
+  --dark-16: rgb(13 18 28 / 16%);
+  --dark-24: rgb(13 18 28 / 24%); /* segmented tabs track */
+  --dark-48: rgb(13 18 28 / 48%); /* modal scrim */
+  --dark-64: rgb(13 18 28 / 64%);
+  --text-disabled: #9aa4b2;
+
+  /* Spacing (sp-*) */
+  --sp-0: 0px;
+  --sp-2: 2px;
+  --sp-4: 4px;
+  --sp-6: 6px;
+  --sp-8: 8px;
+  --sp-12: 12px;
+  --sp-16: 16px;
+  --sp-20: 20px;
+  --sp-24: 24px;
+  --sp-32: 32px;
+
+  /* Corners (Corner-*) */
+  --corner-2: 2px;
+  --corner-4: 4px;
+  --corner-6: 6px;
+  --corner-8: 8px;
+  --corner-12: 12px;
+  --corner-14: 14px; /* card-ttSpend, inner-month cards */
+  --corner-16: 16px;
+  --corner-20: 20px;
+  --rounded: 99999px;
+
+  /* Effects */
+  --shadow-light-1: 0 1px 2px var(--dark-4), inset 0 0 0 0.5px var(--dark-4); /* light-1 */
+  --shadow-light-2: 0 2px 8px var(--dark-4); /* Light 2 (+ glass blur 5) */
+  --shadow-button-light-1: 0 1px 8px var(--dark-4), inset 0 0 0 0.5px var(--dark-6); /* Button/Light 1 */
+  --shadow-sheet: 0 -1px 3px var(--dark-4);
+  --shadow-composer: 0 -1px 4px 1px var(--dark-2), 0 -6px 10px var(--dark-4);
+  --glass-blur: 5px;
+
+  /* Type — Font-family/Main is Montserrat; page titles use Merriweather */
+  --font-main: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-title: "Merriweather", Georgia, serif;
+  --weight-r: 400;
+  --weight-m: 500;
+  --weight-s: 600;
+  --weight-b: 700;
+
+  /* Gradients */
+  /* __card-transaction and the active __inner-month card */
+  --gradient-card: linear-gradient(180deg, var(--white-8) 0%, rgb(255 255 255 / 0%) 25%, var(--dark-2) 75%, var(--dark-8) 100%),
+    linear-gradient(180deg, var(--brand-700) 0%, var(--brand-800) 122.8%);
+  /* Light green card from the High Fi page (card-ttSpend) — kept for the Due screen header */
+  --gradient-spend: linear-gradient(113.5deg, #b4e390 16.8%, #d6efc1 74.3%, #c8e9ad 99.4%);
+  --gradient-bottom-bar: linear-gradient(180deg, var(--white-12) 0%, var(--white-48) 100%);
+  --gradient-page-glow: radial-gradient(
+    ellipse 100% 100% at 50% 0%,
+    rgb(131 200 83 / 100%) 0%,
+    rgb(164 218 124 / 100%) 24%,
+    rgb(200 233 173 / 100%) 52%,
+    rgb(226 244 211 / 100%) 100%
+  );
+}
