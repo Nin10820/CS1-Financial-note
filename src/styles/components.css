@@ -5,8 +5,8 @@
   display: inline-block;
   flex-shrink: 0;
   background-color: currentColor;
-  -webkit-mask: var(--icon) center / contain no-repeat;
-  mask: var(--icon) center / contain no-repeat;
+  -webkit-mask: var(--icon) center / contain no-repeat content-box;
+  mask: var(--icon) center / contain no-repeat content-box;
 }
 .fn-flow-arrow {
   position: relative;

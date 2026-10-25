@@ -82,6 +82,7 @@ export function Button({
   size = "md",
   icon,
   children,
+  className,
   ...rest
 }: {
   variant?: "primary" | "confirm" | "outline" | "on-dark"
@@ -90,7 +91,7 @@ export function Button({
   children: ReactNode
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button type="button" className={cx("fn-btn", `fn-btn--${variant}`, `fn-btn--${size}`)} {...rest}>
+    <button type="button" className={cx("fn-btn", `fn-btn--${variant}`, `fn-btn--${size}`, className)} {...rest}>
       {icon && <Icon name={icon} size={size === "sm" ? 16 : 20} />}
       {children}
     </button>
@@ -227,7 +228,7 @@ export function TransItem({
         {text}
         <span className="fn-trans__right">
           <Amount value={amount} sign={flow === "out" ? "-" : "+"} />
-          <IconButton icon="edit" label={`Sửa ${title}`} variant="plain" size={32} iconSize={14} onClick={onEdit} />
+          <IconButton icon="edit" label={`Edit ${title}`} variant="plain" size={32} iconSize={14} onClick={onEdit} />
         </span>
       </div>
     )
@@ -239,7 +240,7 @@ export function TransItem({
       </span>
       <span className="fn-trans__body">
         {text}
-        <Amount value={amount} />
+        <Amount value={amount} sign={flow === "out" ? "-" : undefined} />
       </span>
     </Tag>
   )
@@ -276,7 +277,7 @@ export function SpendCard({
         </span>
         <IconButton
           icon="eye-slash"
-          label={hidden ? "Hiện số tiền" : "Ẩn số tiền"}
+          label={hidden ? "Show amounts" : "Hide amounts"}
           variant="on-dark"
           size={32}
           iconSize={16}
@@ -290,7 +291,7 @@ export function SpendCard({
         <LeaderRow dot={dotOutline} line={leaderIn} label="In" value={mask(incoming)} />
       </div>
       <div>
-        <Button variant="on-dark" icon="calendar" onClick={onSummary}>
+        <Button variant="on-dark" icon="chart-pie" onClick={onSummary}>
           Summary
         </Button>
       </div>
@@ -381,8 +382,8 @@ export function BottomBar({
   onNotes?: () => void
 }) {
   return (
-    <nav className="fn-bottom-bar" aria-label="Điều hướng">
-      <IconButton icon="wallet" label="Ví" variant="glass-80" size={48} onClick={onWallet} />
+    <nav className="fn-bottom-bar" aria-label="Main">
+      <IconButton icon="wallet" label="Wallet" variant="glass-80" size={48} onClick={onWallet} />
       <div className="fn-quick-note">
         <button type="button" className="fn-quick-note__open" onClick={onQuickNote}>
           <span className="fn-quick-note__logo">
@@ -390,9 +391,9 @@ export function BottomBar({
           </span>
           <span className="t-body-14-r fn-quick-note__placeholder">{placeholder}</span>
         </button>
-        <IconButton icon="waveform" label="Ghi bằng giọng nói" variant="plain" size={40} iconSize={24} onClick={onVoice} />
+        <IconButton icon="waveform" label="Voice note" variant="plain" size={40} iconSize={24} onClick={onVoice} />
       </div>
-      <IconButton icon="file-edit" label="Ghi chú" variant="white" size={48} onClick={onNotes} />
+      <IconButton icon="file-edit" label="Notes" variant="white" size={48} onClick={onNotes} />
     </nav>
   )
 }

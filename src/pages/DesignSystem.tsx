@@ -169,7 +169,7 @@ export default function DesignSystem() {
                 Done
               </Button>
               <div className="ds-on-dark">
-                <Button variant="on-dark" icon="calendar">
+                <Button variant="on-dark" icon="chart-pie">
                   Summary
                 </Button>
                 <IconButton icon="eye-slash" label="Ẩn số tiền" variant="on-dark" size={32} iconSize={16} />
@@ -196,7 +196,7 @@ export default function DesignSystem() {
           <Section title="Dòng giao dịch" note="__trans-item: ra, vào, và dạng trong thẻ xác nhận">
             <div className="ds-card ds-narrow">
               <TransItem title="grab 42k to work" category="Food" categoryTone="food" amount="42,000" />
-              <TransItem title="Transaction" category="Transport" categoryTone="transport" amount="-45,000" />
+              <TransItem title="Transaction" category="Transport" categoryTone="transport" amount="45,000" />
               <TransItem title="Peter paid me back 45k" category="Received" categoryTone="received" amount="45,000" flow="in" />
             </div>
             <div className="ds-card ds-narrow ds-confirm">

@@ -1,5 +1,7 @@
-<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g id="Huge-icon/menu/outline/menu-home">
-<path id="Vector" d="M4.66667 7H9.33333M4.66667 9.33333H9.33333M12.25 5.92103V10.4807C12.25 11.78 11.2053 12.8333 9.91667 12.8333H4.08333C2.79467 12.8333 1.75 11.78 1.75 10.4807V5.92103C1.75 5.21463 2.06479 4.54562 2.60742 4.09881L5.52408 1.69712C6.38301 0.98985 7.61699 0.989849 8.47591 1.69712L11.3926 4.09881C11.9352 4.54562 12.25 5.21463 12.25 5.92103Z" stroke-linecap="round" stroke-linejoin="round" stroke="white" style="stroke:white;stroke-opacity:1;"/>
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="12.6666" height="12.6672" viewBox="0 0 12.6666 12.6672" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="elements">
+<path id="Rectangle 2167" d="M1.23806 12.1441L1.40139 12.1483C2.60179 12.1797 3.202 12.1954 3.74796 11.9822C4.29393 11.7689 4.73077 11.3482 5.60446 10.5067L11.0899 5.22326C11.551 4.7792 11.7815 4.55718 11.9159 4.32124C12.2404 3.75196 12.2505 3.05099 11.9426 2.47221C11.8149 2.23234 11.5909 2.00349 11.1429 1.54578C10.6948 1.08807 10.4708 0.859217 10.236 0.728855C9.66939 0.414303 8.98319 0.424609 8.42592 0.756041C8.19496 0.893398 7.97761 1.12888 7.54292 1.59985L2.12709 7.46763C1.42126 8.23235 1.06835 8.61472 0.863754 9.08563C0.65916 9.55654 0.618346 10.0804 0.536719 11.1281L0.520971 11.3303C0.491969 11.7025 0.477468 11.8887 0.583684 12.0092C0.689899 12.1297 0.87262 12.1345 1.23806 12.1441Z" stroke-linejoin="round" stroke="#202939" style="stroke:#202939;stroke:color(display-p3 0.1239 0.1610 0.2251);stroke-opacity:1;"/>
+<path id="Vector 4200" d="M6.91659 1.66667L10.9999 5.75" stroke-linejoin="round" stroke="#202939" style="stroke:#202939;stroke:color(display-p3 0.1239 0.1610 0.2251);stroke-opacity:1;"/>
+<path id="Vector 4201" d="M7.49992 12.1667L12.1666 12.1667" stroke-linecap="round" stroke-linejoin="round" stroke="#202939" style="stroke:#202939;stroke:color(display-p3 0.1239 0.1610 0.2251);stroke-opacity:1;"/>
 </g>
 </svg>
