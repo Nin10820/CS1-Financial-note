@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 
 import "./tabbar.css"
 import { ChartPieSlice, Receipt, User } from "@phosphor-icons/react"
 import { Icon } from "./Icon"
-import { IconButton, LogoMark } from "./ui"
+import { LogoMark } from "./ui"
 
 export type Tab = "expense" | "due" | "finance" | "profile"
 
@@ -123,7 +123,7 @@ function Tabs({ active, onTab }: { active: Tab; onTab: (t: Tab) => void }) {
             if (e.detail === 0 && tab !== active) onTab(tab)
           }}
         >
-          <TabIcon tab={tab} size={26} />
+          <TabIcon tab={tab} size={24} />
           <span>{label}</span>
         </button>
       ))}
@@ -134,19 +134,18 @@ function Tabs({ active, onTab }: { active: Tab; onTab: (t: Tab) => void }) {
 /**
  * Bottom navigation, styled after the iOS 26/27 system tab bar (as in the Claude and Music apps).
  * Expanded (default): quick-note field on its own row, the four tabs underneath.
- * Collapsed (after scrolling down): active tab · quick note · screen action (the Figma Bottom-bar).
+ * Collapsed (after scrolling down): active tab · quick note · screen action.
+ * Sizes and glass follow Figma "Navigation Bar" (949:30623), Expand=Yes / Expand=No.
  */
 export default function TabBar({
   active,
   onTab,
   onQuickNote,
-  onVoice,
   action,
 }: {
   active: Tab
   onTab: (t: Tab) => void
   onQuickNote: () => void
-  onVoice?: () => void
   /** Right-hand round button (e.g. the Note screen's "New" menu). */
   action?: { label: string; onClick: () => void; expanded?: boolean }
 }) {
@@ -170,9 +169,9 @@ export default function TabBar({
       {/* Expanded */}
       <div className="tabbar__full" aria-hidden={collapsed} inert={collapsed}>
         <div className="tabbar__row">
-          <button type="button" className="lg tabbar__note" onClick={onQuickNote}>
+          <button type="button" className="lg lg--quiet tabbar__note" onClick={onQuickNote}>
             <span className="tabbar__note-logo">
-              <LogoMark size={26} />
+              <LogoMark size={20} />
             </span>
             <span className="tabbar__note-text">e.g. coffee 24k, breakfast 35k…</span>
           </button>
@@ -191,15 +190,12 @@ export default function TabBar({
         >
           <TabIcon tab={active} size={24} />
         </button>
-        <div className="lg tabbar__mini-note">
-          <button type="button" className="fn-quick-note__open" onClick={onQuickNote}>
-            <span className="fn-quick-note__logo">
-              <LogoMark size={24} />
-            </span>
-            <span className="t-body-14-r fn-quick-note__placeholder">e.g. coffee 24k, breakfast 35k…</span>
-          </button>
-          <IconButton icon="waveform" label="Voice note" variant="plain" size={40} iconSize={24} onClick={onVoice ?? onQuickNote} />
-        </div>
+        <button type="button" className="lg lg--quiet tabbar__note" onClick={onQuickNote}>
+          <span className="tabbar__note-logo">
+            <LogoMark size={20} />
+          </span>
+          <span className="tabbar__note-text">e.g. coffee 24k, breakfast 35k…</span>
+        </button>
         {actionButton}
       </div>
     </div>

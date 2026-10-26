@@ -25,6 +25,7 @@
   /* Base / borders */
   --bd-0: #eef2f6; /* Base/_border/bd-0 — row dividers */
   --bd-1: #e3e8ef; /* Base/_border/bd-1 */
+  --bd-2: #cdd5df; /* Base/_border/bd-2 — glass side hairline */
   --bd-3: #cdd5df; /* Base/_border/bd-3 — outlined buttons */
 
   /* Base / text */
@@ -75,6 +76,8 @@
   --white-90: rgb(255 255 255 / 90%);
   --dark-2: rgb(13 18 28 / 2%);
   --dark-4: rgb(13 18 28 / 4%);
+  --white-4: rgb(255 255 255 / 4%); /* Opacity/_white/4% */
+  --white-24: rgb(255 255 255 / 24%); /* Opacity/_white/24% */
   --dark-6: rgb(13 18 28 / 6%);
   --dark-8: rgb(13 18 28 / 8%);
   --dark-12: rgb(13 18 28 / 12%);

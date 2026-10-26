@@ -1,14 +1,15 @@
-/* Bottom navigation in the iOS 26/27 Liquid Glass style: floating capsules, a sliding selection
-   lens that springs between tabs and swells while held, collapsing to a compact bar on scroll. */
+/* Bottom navigation — Figma "Navigation Bar" (949:30623). Floating glass capsules, a selection
+   lens that springs between tabs and swells while held, collapsing to a compact bar on scroll.
+   Expanded: 12 top · 44 quick-note row · 8 gap · 60 tabs · 24 bottom. Collapsed: 12 · 44 · 24. */
 
 /* ── Layout ─────────────────────────────────────────────── */
 .tabbar {
   position: relative;
-  height: 158px;
+  height: 148px;
   transition: height 0.4s var(--spring);
 }
 .tabbar.is-collapsed {
-  height: 94px;
+  height: 80px;
 }
 
 .tabbar__full,
@@ -17,13 +18,13 @@
   right: 0;
   bottom: 0;
   left: 0;
-  padding: 0 var(--sp-16) var(--sp-24);
+  padding: 0 var(--sp-20) var(--sp-24);
   transition: opacity 0.25s ease, transform 0.45s var(--spring), filter 0.25s ease;
 }
 .tabbar__full {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-10, 10px);
+  gap: var(--sp-8);
 }
 .tabbar.is-collapsed .tabbar__full {
   opacity: 0;
@@ -34,7 +35,7 @@
 .tabbar__mini {
   display: flex;
   align-items: center;
-  gap: var(--sp-8);
+  gap: var(--sp-12);
   opacity: 0;
   transform: translateY(18px) scale(1.04);
   filter: blur(4px);
@@ -47,20 +48,20 @@
   pointer-events: auto;
 }
 
-/* ── Quick-note field ───────────────────────────────────── */
+/* ── Quick-note field (__quick-note) ────────────────────── */
 .tabbar__row {
   display: flex;
   align-items: center;
-  gap: var(--sp-10, 10px);
+  gap: var(--sp-12);
+  padding: 0 var(--sp-12);
 }
 .tabbar__note {
   display: flex;
   flex: 1;
   align-items: center;
-  gap: var(--sp-12);
   min-width: 0;
-  height: 50px;
-  padding: 4px var(--sp-16) 4px 4px;
+  height: 44px;
+  padding: var(--sp-4) var(--sp-16) var(--sp-4) 4.5px;
   border-radius: var(--rounded);
   text-align: left;
   transition: transform 0.35s var(--spring), background-color 0.2s;
@@ -68,29 +69,29 @@
 .tabbar__note:active {
   transform: scale(0.985);
 }
-.tabbar__note:hover {
-  background: rgb(255 255 255 / 48%);
+@media (hover: hover) {
+  .tabbar__note:hover {
+    background: var(--white-24);
+  }
 }
 .tabbar__note-logo {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 42px;
-  height: 42px;
-  border-radius: var(--rounded);
-  background: linear-gradient(160deg, #6bb83a 0%, var(--brand-500) 55%, #4f9126 100%);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 35%), 0 2px 6px rgb(95 168 47 / 30%);
-}
-.tabbar__note-logo img {
-  filter: brightness(0) invert(1);
+  width: 36px;
+  height: 36px;
 }
 .tabbar__note-text {
   overflow: hidden;
-  color: var(--grey-400);
-  font-size: 15px;
-  line-height: 20px;
+  color: var(--text-disabled);
+  font-size: 12px;
+  line-height: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.tabbar .lg-round {
+  width: 44px;
+  height: 44px;
 }
 .tabbar__action {
   color: var(--grey-700);
@@ -101,7 +102,7 @@
   --pad: 4px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  height: 66px;
+  height: 60px;
   padding: var(--pad);
   border-radius: var(--rounded);
   touch-action: none;
@@ -116,7 +117,7 @@
   z-index: 0;
   width: calc((100% - 2 * var(--pad)) / 4);
   border-radius: var(--rounded);
-  background: var(--lg-select);
+  background: var(--bg-4);
   transform: translateX(calc(var(--i) * 100%));
   transition: transform 0.5s var(--spring), background-color 0.25s ease, box-shadow 0.25s ease, scale 0.35s var(--spring);
 }
@@ -141,17 +142,17 @@
   border: 0;
   border-radius: var(--rounded);
   background: none;
-  color: var(--grey-500);
-  font-size: 12px;
+  color: var(--grey-400);
+  font-size: 11px;
   font-weight: var(--weight-m);
-  line-height: 16px;
+  line-height: 14px;
   transition: color 0.25s ease, transform 0.35s var(--spring);
 }
 .tabbar__tab > :first-child {
   transition: transform 0.35s var(--spring);
 }
 .tabbar__tab span {
-  color: var(--grey-700);
+  color: var(--grey-400);
   transition: color 0.25s ease;
 }
 .tabbar__tab.is-lit {
@@ -159,7 +160,6 @@
 }
 .tabbar__tab.is-lit span {
   color: var(--brand-500);
-  font-weight: var(--weight-s);
 }
 .tabbar__tabs.is-pressing .tabbar__tab.is-lit > :first-child {
   transform: scale(1.12);
@@ -172,16 +172,6 @@
 /* ── Collapsed bar ──────────────────────────────────────── */
 .tabbar__mini-tab {
   color: var(--brand-500);
-}
-.tabbar__mini-note {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: var(--sp-8);
-  min-width: 0;
-  height: 50px;
-  padding: 4px;
-  border-radius: var(--rounded);
 }
 
 @media (prefers-reduced-motion: reduce) {

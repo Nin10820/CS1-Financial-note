@@ -6,16 +6,17 @@
    .lg--clear     clearer glass for busy or coloured backgrounds (the green card)
    .lg--tint      tinted glass for the one primary action on screen
    .lg--thick     denser glass for menus and popovers that hold text
+   .lg--quiet     near-clear field (quick note)
    .lg-press      grows and brightens while touched, like system glass buttons
    .lg-group      several icon buttons sharing one capsule (a toolbar group)
 
-   The web has no real refraction in Safari, so the lens is drawn with:
-   a backdrop blur + saturation, a gradient rim (bright top-left and bottom-right),
-   a soft inner glow at the edges, a top sheen, and a hairline for definition on white. */
+   Values follow the Figma Glass effect on the Navigation Bar (949:30623): frost 5, white 24% fill
+   (4% on the quick note), 0.5px bd-2 hairline on the sides, drop shadow 0 2 8 dark-4. Safari has no
+   real refraction, so the light edge is drawn with soft inner highlights. */
 
 :root {
-  --lg-r-fill: rgb(255 255 255 / 14%);
-  --lg-r-filter: blur(8px) saturate(160%);
+  --lg-r-fill: var(--white-24);
+  --lg-r-filter: blur(5px) saturate(160%);
   --lg-c-fill: rgb(255 255 255 / 10%);
   --lg-c-filter: blur(6px) saturate(170%) brightness(1.1);
   --lg-t-fill: rgb(95 168 47 / 82%);
@@ -30,16 +31,17 @@
     rgb(255 255 255 / 30%) 78%,
     rgb(255 255 255 / 85%) 100%
   );
-  --lg-glow: inset 0 0 0 1px rgb(255 255 255 / 50%), inset 0 0 8px 0 rgb(255 255 255 / 40%);
-  --lg-hairline: 0 0 0 0.5px rgb(13 18 28 / 11%);
-  --lg-drop: 0 3px 12px rgb(13 18 28 / 6%);
-  --lg-gloss: radial-gradient(120% 80% at 20% 0%, rgb(255 255 255 / 22%) 0%, rgb(255 255 255 / 0%) 55%);
+  --lg-glow: inset 0 1px 1px rgb(255 255 255 / 65%), inset 0 -1px 1px rgb(255 255 255 / 35%), inset 0 0 6px rgb(255 255 255 / 25%);
+  --lg-hairline: 0 0 0 0 transparent;
+  --lg-drop: 0 2px 8px var(--dark-4);
+  --lg-gloss: linear-gradient(180deg, rgb(255 255 255 / 18%) 0%, rgb(255 255 255 / 0%) 50%);
 }
 
 .lg {
   position: relative;
   isolation: isolate;
   border: 0;
+  border-inline: 0.5px solid var(--bd-2);
   background: var(--lg-r-fill);
   box-shadow: var(--lg-glow), var(--lg-hairline), var(--lg-drop);
   -webkit-backdrop-filter: var(--lg-r-filter);
@@ -56,7 +58,6 @@
   pointer-events: none;
 }
 /* lens rim: a 1px gradient ring, cut out of the middle with a mask */
-.lg::after,
 .lg-rim::after {
   content: "";
   position: absolute;
@@ -68,6 +69,11 @@
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
   pointer-events: none;
+}
+
+/* Quiet: the quick-note field — almost no fill, the glass edge does the work (Figma white 4%). */
+.lg--quiet {
+  background: var(--white-4);
 }
 
 .lg--clear {
@@ -89,6 +95,11 @@
 }
 .lg--tint::before {
   opacity: 0.6;
+}
+
+.lg--clear,
+.lg--tint {
+  border-inline-color: rgb(255 255 255 / 22%);
 }
 
 .lg--thick {
@@ -179,9 +190,6 @@
 @media (prefers-contrast: more) {
   .lg {
     box-shadow: 0 0 0 1px var(--grey-500), var(--lg-drop);
-  }
-  .lg::after {
-    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
