@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Amount, Button, IconButton, MonthCard, SegmentedTabs } from "../components/ui"
+import { Amount, Button, IconButton, MonthCard, SegmentedTabs, GlassGroup } from "../components/ui"
 import TabBar, { type Tab } from "../components/TabBar"
 import StickyHeader from "../components/StickyHeader"
 import { Icon } from "../components/Icon"
@@ -188,14 +188,14 @@ export function Installments({
           </>
         }
         right={
-          <div className="pill-group">
-          <IconButton icon="plus-18" label="Add an installment" variant="plain" iconSize={18} onClick={onAdd} />
-        </div>
+          <GlassGroup aria-label="Installment actions" className="pill-group__glass">
+            <IconButton icon="plus-18" label="Add an installment" variant="plain" iconSize={18} onClick={onAdd} />
+          </GlassGroup>
         }
       />
       <div className="screen__card due-card-wrap">
         <section className="fn-spend-card due-card" aria-label="Installments this month">
-          <p className="t-body-16-m due-card__kicker">Statement · {monthLabel(month).replace(",", "")}</p>
+          <p className="fn-spend-card__label">Statement · {monthLabel(month).replace(",", "")}</p>
           <span className="fn-spend-card__amount tnum">
             <span className="due-card__big">{mask(statement)}</span>
             <span className="fn-spend-card__cur">đ</span>
@@ -205,7 +205,7 @@ export function Installments({
             <Leader dot={dotFilled} line={leaderOut} label="Coming up" value={mask(comingUp)} />
             <Leader dot={dotOutline} line={leaderIn} label="Remaining" value={mask(remaining)} />
           </div>
-          <div className="due-card__actions">
+          <div className="fn-spend-card__foot">
             <Button variant="on-dark" icon="clock" onClick={onHistory}>
               History
             </Button>

@@ -54,34 +54,15 @@
 .due-card {
   border-radius: var(--corner-20);
 }
-.due-card__label {
-  color: var(--brand-200);
-  font-size: 14px;
-  font-weight: var(--weight-m);
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-}
-.due-card__kicker {
-  color: var(--brand-200);
-  text-transform: uppercase;
-}
 .due-card__big {
   font-size: 36px;
   font-weight: var(--weight-s);
   line-height: 1.4;
 }
 .due-card__sub {
-  color: var(--white-64);
+  color: var(--white-80);
 }
-.due-card .fn-spend-card__rows {
-  padding-bottom: var(--sp-12);
-  border-bottom: 1px solid var(--white-8);
-}
-.due-card__actions {
-  display: flex;
-  gap: var(--sp-8);
-  padding-top: var(--sp-12);
-}
+
 
 .due-sheet {
   gap: var(--sp-16);

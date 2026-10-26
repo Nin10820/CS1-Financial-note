@@ -142,8 +142,9 @@
 
   /* Gradients */
   /* __card-transaction and the active __inner-month card */
-  --gradient-card: linear-gradient(180deg, var(--white-8) 0%, rgb(255 255 255 / 0%) 25%, var(--dark-2) 75%, var(--dark-8) 100%),
-    linear-gradient(180deg, var(--brand-700) 0%, var(--brand-800) 122.8%);
+  /* Dark green hero card (Spent today, Remaining, Taken care of): light from the top-left corner. */
+  --gradient-card: radial-gradient(120% 90% at 0% 0%, #2c4d17 0%, #142a0b 55%, #0d1f07 100%);
+  --shadow-card-dark: 0 6px 18px rgb(13 18 28 / 16%);
   /* Light green card from the High Fi page (card-ttSpend) — kept for the Due screen header */
   --gradient-spend: linear-gradient(113.5deg, #b4e390 16.8%, #d6efc1 74.3%, #c8e9ad 99.4%);
   --gradient-bottom-bar: linear-gradient(180deg, var(--white-12) 0%, var(--white-48) 100%);

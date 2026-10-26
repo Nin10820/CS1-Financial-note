@@ -322,8 +322,8 @@
   overflow: hidden;
   border: 0;
   border-radius: 20px;
-  background: radial-gradient(120% 90% at 0% 0%, #2c4d17 0%, #142a0b 55%, #0d1f07 100%);
-  box-shadow: 0 6px 18px rgb(13 18 28 / 16%);
+  background: var(--gradient-card);
+  box-shadow: var(--shadow-card-dark);
   color: var(--text-white);
   text-align: left;
 }

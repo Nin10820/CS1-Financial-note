@@ -122,7 +122,7 @@ export default function Due({
 
       <div className="screen__card due-card-wrap">
         <section className="fn-spend-card due-card" aria-label="Remaining this month">
-          <p className="due-card__label">Remaining</p>
+          <p className="fn-spend-card__label">Remaining</p>
           <div className="fn-spend-card__total">
             <span className="fn-spend-card__amount tnum">
               <span className="t-amount-32">{mask(s.remaining)}</span>
@@ -142,7 +142,7 @@ export default function Due({
             <Leader dot={dotFilled} line={leaderOut} label="Paid" value={mask(s.paid)} />
             <Leader dot={dotOutline} line={leaderIn} label="Total remaining" value={mask(s.totalRemaining)} />
           </div>
-          <div className="due-card__actions">
+          <div className="fn-spend-card__foot">
             <Button variant="on-dark" icon="clock" onClick={onHistory}>
               History
             </Button>

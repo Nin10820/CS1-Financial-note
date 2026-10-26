@@ -376,7 +376,7 @@ export function SpendCard({
         <LeaderRow dot={dotFilled} line={leaderOut} label="Out" value={mask(out)} />
         <LeaderRow dot={dotOutline} line={leaderIn} label="In" value={mask(incoming)} />
       </div>
-      <div>
+      <div className="fn-spend-card__foot">
         <Button variant="on-dark" icon="chart-pie" onClick={onSummary}>
           Summary
         </Button>
