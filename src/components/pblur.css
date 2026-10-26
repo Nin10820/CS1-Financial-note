@@ -13,11 +13,11 @@
 }
 .pblur--top {
   top: 0;
-  height: calc(100% + 48px);
+  height: calc(100% + 72px);
 }
 .pblur--bottom {
   bottom: 0;
-  height: calc(100% + 56px);
+  height: calc(100% + 64px);
 }
 .pblur i,
 .pblur b {
@@ -25,29 +25,29 @@
   inset: 0;
 }
 .pblur i:nth-child(1) {
-  -webkit-backdrop-filter: blur(0.6px);
-  backdrop-filter: blur(0.6px);
-  --m: 0%, #000 25%;
+  -webkit-backdrop-filter: blur(1px);
+  backdrop-filter: blur(1px);
+  --m: 0%, #000 18%;
 }
 .pblur i:nth-child(2) {
-  -webkit-backdrop-filter: blur(1.6px);
-  backdrop-filter: blur(1.6px);
-  --m: 15%, #000 42%;
+  -webkit-backdrop-filter: blur(2.5px);
+  backdrop-filter: blur(2.5px);
+  --m: 10%, #000 32%;
 }
 .pblur i:nth-child(3) {
-  -webkit-backdrop-filter: blur(3.5px);
-  backdrop-filter: blur(3.5px);
-  --m: 32%, #000 58%;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  --m: 22%, #000 46%;
 }
 .pblur i:nth-child(4) {
-  -webkit-backdrop-filter: blur(7px);
-  backdrop-filter: blur(7px);
-  --m: 48%, #000 74%;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  --m: 36%, #000 62%;
 }
 .pblur i:nth-child(5) {
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  --m: 64%, #000 90%;
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  --m: 52%, #000 82%;
 }
 /* Mask runs from the inner side (transparent) to the screen edge (opaque). */
 .pblur--top i {
@@ -60,10 +60,10 @@
 }
 /* A light wash so text under the edge doesn't fight the controls. */
 .pblur--top b {
-  background: linear-gradient(to bottom, rgb(249 250 251 / 78%) 0%, rgb(249 250 251 / 40%) 55%, rgb(249 250 251 / 0%) 100%);
+  background: linear-gradient(to bottom, rgb(249 250 251 / 55%) 0%, rgb(249 250 251 / 22%) 55%, rgb(249 250 251 / 0%) 100%);
 }
 .pblur--bottom b {
-  background: linear-gradient(to top, rgb(249 250 251 / 82%) 0%, rgb(249 250 251 / 45%) 55%, rgb(249 250 251 / 0%) 100%);
+  background: linear-gradient(to top, rgb(249 250 251 / 60%) 0%, rgb(249 250 251 / 25%) 55%, rgb(249 250 251 / 0%) 100%);
 }
 @media (prefers-reduced-motion: reduce) {
   .pblur {
