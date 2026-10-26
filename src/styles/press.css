@@ -1,0 +1,75 @@
+/* One press language for the whole app (loaded last so it wins over screen styles).
+   - Glass controls (.lg-press) swell, like iOS glass — defined in liquid-glass.css.
+   - Solid buttons and chips sink a little.
+   - Full-width rows don't scale (it looks like the page jumps); their background darkens instead.
+   - Disabled controls fade and don't react.
+   Hover styles elsewhere are wrapped in @media (hover: hover) so taps don't leave them stuck on. */
+
+:where(
+    .fn-btn,
+    .fn-chip,
+    .fn-icon-btn:not(.lg),
+    .composer__chip,
+    .quick-card__chip,
+    .quick-card__send,
+    .quick-result__ok,
+    .quick-result__fix,
+    .fin-tabs__tab,
+    .fin-add__kind,
+    .lg-seg__item,
+    .day-picker__day,
+    .day-picker__month,
+    .fn-month,
+    .home-empty__ideas button,
+    .note-save
+  ) {
+  transition:
+    transform 0.32s var(--spring),
+    background-color 0.15s ease,
+    color 0.15s ease,
+    opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+:where(
+    .fn-btn,
+    .fn-chip,
+    .fn-icon-btn:not(.lg),
+    .composer__chip,
+    .quick-card__chip,
+    .quick-card__send,
+    .quick-result__ok,
+    .quick-result__fix,
+    .fin-tabs__tab,
+    .fin-add__kind,
+    .day-picker__month,
+    .fn-month,
+    .home-empty__ideas button,
+    .note-save
+  ):active:not(:disabled):not([aria-disabled="true"]) {
+  transform: scale(0.96);
+  transition-duration: 0.1s;
+}
+
+/* Rows: tint, don't scale. */
+:where(button.fn-trans, button.prof-row, .quick-result__row, .note-card--row, .note-menu__item, .bill-row, .fin-care, .prof-me) {
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease;
+}
+:where(button.fn-trans, button.prof-row, .quick-result__row, .note-card--row, .note-menu__item, .prof-me):active:not(:disabled) {
+  background-color: var(--bg-3);
+}
+.fin-care:active {
+  filter: brightness(1.15);
+}
+
+/* Disabled: one look everywhere. */
+:where(.fn-btn, .fn-icon-btn, .fn-chip, .composer__chip, .quick-card__chip):disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.fn-btn, .fn-chip, .fn-icon-btn, .composer__chip, .quick-card__chip, .fin-tabs__tab, .day-picker__month, .fn-month):active:not(:disabled) {
+    transform: none;
+  }
+}

@@ -1,0 +1,312 @@
+/* Profile — Figma Draft › Account (707:7360). Grouped rows on bg-3, white cards, small caps labels. */
+.prof {
+  background: var(--bg-3);
+}
+.prof-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-20);
+  padding: var(--sp-12) var(--sp-20) calc(190px + env(safe-area-inset-bottom));
+}
+.prof-head {
+  color: var(--text-900);
+  font-size: 16px;
+  font-weight: var(--weight-s);
+}
+
+.prof-me {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  padding: var(--sp-12) var(--sp-16);
+  border: 0.5px solid var(--bd-1);
+  border-radius: var(--corner-16);
+  background: var(--bg-white);
+  color: var(--grey-400);
+  text-align: left;
+}
+.prof-me__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+.prof-me__text b {
+  color: var(--text-900);
+  font-size: 16px;
+  font-weight: var(--weight-s);
+}
+.prof-me__text small {
+  color: var(--grey-400);
+  font-size: 12px;
+}
+.prof-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--brand-300, #a4da7c);
+  border-radius: var(--rounded);
+  background: #ec6531;
+  color: var(--text-white);
+  font-size: 16px;
+  font-weight: var(--weight-s);
+}
+.prof-avatar--lg {
+  width: 80px;
+  height: 80px;
+  font-size: 26px;
+}
+
+.prof-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+.prof-group__label {
+  margin: 0;
+  padding: 0 var(--sp-4);
+  color: var(--grey-400);
+  font-size: 11px;
+  font-weight: var(--weight-s);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.prof-group__card {
+  overflow: hidden;
+  border: 0.5px solid var(--bd-1);
+  border-radius: var(--corner-16);
+  background: var(--bg-white);
+}
+.prof-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--sp-10, 10px) var(--sp-16);
+  border: 0;
+  border-bottom: 1px solid var(--bd-0);
+  background: none;
+  color: var(--grey-400);
+  text-align: left;
+}
+.prof-row:last-child {
+  border-bottom: 0;
+}
+@media (hover: hover) {
+  button.prof-row:hover {
+    background: var(--bg-2);
+  }
+}
+.prof-row__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.prof-row__label {
+  color: var(--text-900);
+  font-size: 15px;
+  font-weight: var(--weight-m);
+  line-height: 20px;
+}
+.prof-row__label.is-danger {
+  color: var(--text-error);
+}
+.prof-row__sub {
+  color: var(--grey-400);
+  font-size: 12px;
+  line-height: 16px;
+}
+.prof-row__value {
+  color: var(--grey-400);
+  font-size: 14px;
+  white-space: nowrap;
+}
+.prof-pill {
+  padding: 2px 8px;
+  border-radius: var(--rounded);
+  background: var(--brand-100);
+  color: var(--brand-700, #3b6922);
+  font-size: 12px;
+  font-weight: var(--weight-s);
+}
+.prof-pill.is-off {
+  background: var(--bg-4);
+  color: var(--grey-500);
+}
+
+.prof-note {
+  margin: 0;
+  padding: 0 var(--sp-4);
+  color: var(--grey-400);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.prof-note--box {
+  padding: var(--sp-12) var(--sp-16);
+  border-radius: var(--corner-12);
+  background: var(--brand-50);
+  color: var(--grey-700);
+}
+
+.prof-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-6);
+  padding: var(--sp-8) 0;
+  text-align: center;
+}
+.prof-hero h2 {
+  margin: var(--sp-8) 0 0;
+  color: var(--text-900);
+  font-family: var(--font-title);
+  font-size: 22px;
+  font-weight: var(--weight-b);
+}
+.prof-hero p {
+  margin: 0;
+  color: var(--grey-400);
+  font-size: 13px;
+}
+.prof-intro h2 {
+  margin: 0 0 var(--sp-4);
+  color: var(--text-900);
+  font-family: var(--font-title);
+  font-size: 22px;
+  font-weight: var(--weight-b);
+}
+.prof-intro p {
+  margin: 0;
+  color: var(--grey-400);
+  font-size: 14px;
+}
+
+.prof-edit,
+.prof-delete,
+.prof-report {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+}
+.prof-edit > .prof-avatar {
+  align-self: center;
+}
+.prof-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  color: var(--grey-400);
+  font-size: 11px;
+  font-weight: var(--weight-s);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.prof-field .field {
+  min-height: 48px;
+  border-radius: var(--corner-12);
+  font-size: 16px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.prof-field--danger:focus {
+  border-color: var(--text-error);
+  outline-color: #fee4e2;
+}
+.prof-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-8);
+}
+.prof-actions--stack {
+  grid-template-columns: 1fr;
+}
+.prof-actions .fn-btn {
+  border-radius: var(--rounded);
+}
+.prof-actions .fn-btn:disabled {
+  opacity: 0.4;
+}
+.prof-warn {
+  padding: var(--sp-16);
+  border: 1px solid #fedf89;
+  border-radius: var(--corner-12);
+  background: #fffaeb;
+}
+.prof-warn b {
+  color: #b54708;
+  font-size: 16px;
+}
+.prof-warn p {
+  margin: var(--sp-4) 0 0;
+  color: #b54708;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.prof-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  padding: var(--sp-12) var(--sp-16);
+  border: 0.5px solid var(--bd-1);
+  border-radius: var(--corner-12);
+  background: var(--bg-white);
+}
+.prof-copy div {
+  display: flex;
+  flex-direction: column;
+}
+.prof-copy b {
+  color: var(--text-900);
+  font-size: 14px;
+  font-weight: var(--weight-m);
+}
+.prof-copy small {
+  color: var(--grey-400);
+  font-size: 12px;
+}
+.prof-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+}
+.prof-report__text {
+  min-height: 140px;
+  border-radius: var(--corner-12);
+  font-size: 15px;
+  resize: vertical;
+}
+.prof-send {
+  border-radius: var(--rounded);
+  text-decoration: none;
+}
+.prof-send.is-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.prof-principle {
+  padding: var(--sp-20) var(--sp-16);
+  border-radius: var(--corner-16);
+  background: var(--bg-dark);
+  color: var(--text-white);
+}
+.prof-principle small {
+  color: var(--white-64);
+  font-size: 12px;
+}
+.prof-principle p {
+  margin: var(--sp-6) 0 0;
+  font-family: var(--font-title);
+  font-size: 20px;
+  font-weight: var(--weight-b);
+  line-height: 1.4;
+}
+.prof-credit {
+  margin: 0;
+  color: var(--grey-300);
+  font-size: 12px;
+  text-align: center;
+}

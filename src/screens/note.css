@@ -40,8 +40,10 @@
   cursor: pointer;
   transition: border-color 0.15s;
 }
-.note-card--row:hover {
-  border-color: var(--brand-300);
+@media (hover: hover) {
+  .note-card--row:hover {
+    border-color: var(--brand-300);
+  }
 }
 .note-card__bell {
   display: grid;
@@ -85,8 +87,10 @@
   font-weight: var(--weight-m);
   line-height: 1.4;
 }
-.note-card__more:hover {
-  color: var(--grey-900);
+@media (hover: hover) {
+  .note-card__more:hover {
+    color: var(--grey-900);
+  }
 }
 .note-card__empty {
   padding: var(--sp-12) 0;
@@ -170,10 +174,12 @@
   font-weight: var(--weight-m);
   text-align: left;
 }
-.note-menu__item:hover:not(:disabled),
-.note-menu__item:active:not(:disabled) {
-  background: rgb(118 118 128 / 12%);
-  color: var(--grey-900);
+@media (hover: hover) {
+  .note-menu__item:hover:not(:disabled),
+  .note-menu__item:active:not(:disabled) {
+    background: rgb(118 118 128 / 12%);
+    color: var(--grey-900);
+  }
 }
 .note-menu__item:disabled {
   cursor: default;
@@ -202,8 +208,10 @@
   color: #fff;
   box-shadow: 0 2px 8px rgb(95 168 47 / 30%);
 }
-.note-save:hover:not(:disabled) {
-  background: var(--brand-700);
+@media (hover: hover) {
+  .note-save:hover:not(:disabled) {
+    background: var(--brand-700);
+  }
 }
 .note-save:disabled {
   background: var(--brand-200);
@@ -348,31 +356,3 @@
   font-weight: var(--weight-m);
 }
 
-/* Placeholder tabs (Finance, Profile) */
-.soon__top {
-  height: 58px;
-}
-.soon {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-12);
-  padding: var(--sp-24) var(--sp-32) calc(200px + env(safe-area-inset-bottom));
-  text-align: center;
-}
-.soon__badge {
-  padding: 2px 10px;
-  border-radius: var(--rounded);
-  background: var(--brand-100);
-  color: var(--brand-800);
-  font-size: 12px;
-  font-weight: var(--weight-s);
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-}
-.soon__body {
-  max-width: 300px;
-  color: var(--grey-500);
-}

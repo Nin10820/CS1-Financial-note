@@ -26,6 +26,8 @@ export type Bill = {
   /** Paid months: "YYYY-MM" → what was paid and which Transaction entry recorded it. */
   paid: Record<string, { amount: number; at: number; entryId?: string }>
   createdAt: number
+  /** Part of the sample data (removable in one tap). */
+  sample?: boolean
 }
 
 export type BillIcon = Extract<IconName, "house" | "drop" | "gas-pump" | "lightning" | "phone" | "student" | "monitor" | "bell">

@@ -51,6 +51,7 @@ export type IconName =
   | "tab-profile"
   | "student"
   | "trash"
+  | "trend-up"
   | "user"
   | "wallet"
   | "waveform"

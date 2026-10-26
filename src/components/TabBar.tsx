@@ -90,9 +90,10 @@ function Tabs({ active, onTab }: { active: Tab; onTab: (t: Tab) => void }) {
     const i = indexAt(e.clientX)
     // A plain tap is handled by the button's click; a drag selects where the finger lifts.
     if (e.type === "pointercancel") setShown(activeIndex)
-    else if (d.moved || i !== activeIndex) {
+    else {
       setShown(i)
-      if (TABS[i].tab !== active) onTab(TABS[i].tab)
+      // Tapping the tab you're on goes back to its first screen (Note → Transaction), like iOS.
+      onTab(TABS[i].tab)
     }
   }
 
@@ -115,7 +116,7 @@ function Tabs({ active, onTab }: { active: Tab; onTab: (t: Tab) => void }) {
           aria-current={tab === active ? "page" : undefined}
           onClick={(e) => {
             // Keyboard / assistive-tech activation (pointer taps are handled on release).
-            if (e.detail === 0 && tab !== active) onTab(tab)
+            if (e.detail === 0) onTab(tab)
           }}
         >
           <TabIcon tab={tab} size={24} />

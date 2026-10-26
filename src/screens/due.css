@@ -24,6 +24,7 @@
 }
 .pill-group__glass {
   height: 40px;
+  padding: 0 var(--sp-4); /* Figma Frame 97: 88px wide */
 }
 .pill-group .fn-icon-btn--plain {
   width: 40px;
@@ -39,7 +40,7 @@
   padding: var(--sp-12) var(--sp-20) 0;
 }
 .due-month__label {
-  min-width: 190px;
+  min-width: 154px; /* Figma: the month group is 250px wide */
   font-family: var(--font-title);
   font-size: 24px;
   font-weight: var(--weight-b);
@@ -201,8 +202,10 @@
   background: none;
   color: var(--grey-500);
 }
-.bill-item__check:hover {
-  background: var(--bg-3);
+@media (hover: hover) {
+  .bill-item__check:hover {
+    background: var(--bg-3);
+  }
 }
 .bill-item__bottom {
   display: flex;
@@ -216,8 +219,10 @@
   color: var(--grey-500);
   text-align: left;
 }
-.bill-item__bottom:hover {
-  background: var(--bg-3);
+@media (hover: hover) {
+  .bill-item__bottom:hover {
+    background: var(--bg-3);
+  }
 }
 .bill-item__amount {
   display: inline-flex;
@@ -465,8 +470,10 @@
   display: flex;
   flex-direction: column;
 }
-.add-bill__kind:hover {
-  background: var(--brand-50);
+@media (hover: hover) {
+  .add-bill__kind:hover {
+    background: var(--brand-50);
+  }
 }
 .add-bill__kind-hint {
   color: var(--grey-400);
@@ -594,8 +601,10 @@
   background: none;
   text-align: left;
 }
-.coming__timeline li button:hover {
-  background: var(--bg-2);
+@media (hover: hover) {
+  .coming__timeline li button:hover {
+    background: var(--bg-2);
+  }
 }
 .coming__dot {
   grid-row: 1 / 4;
@@ -634,8 +643,10 @@
   background: none;
   text-align: left;
 }
-.paid-history__row:hover {
-  background: var(--bg-3);
+@media (hover: hover) {
+  .paid-history__row:hover {
+    background: var(--bg-3);
+  }
 }
 .paid-history__text {
   display: flex;

@@ -1,7 +1,6 @@
 /* Header — Figma High Fi 2 › Expense (937:20415). */
 .day-head__title {
   margin: 0;
-  padding-left: var(--sp-4);
   color: var(--text-900);
   font-family: var(--font-heading);
   font-size: 28px;
@@ -31,7 +30,7 @@
   color: var(--grey-500);
 }
 .day-nav .fn-icon-btn:disabled {
-  color: var(--grey-200, #cdd5df);
+  opacity: 0.3;
 }
 /* Pill sits in a faint 2px track (dark 4%). */
 .day-pill {

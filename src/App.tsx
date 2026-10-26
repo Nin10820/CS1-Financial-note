@@ -8,7 +8,8 @@ import AddBill from "./screens/AddBill"
 import { ComingUp, Installments, PaidHistory } from "./screens/DueSheets"
 import Assistant, { type AssistantOpen } from "./screens/Assistant"
 import QuickNote from "./screens/QuickNote"
-import SoonScreen from "./screens/SoonScreen"
+import Finance from "./screens/Finance"
+import Profile from "./screens/Profile"
 import type { Tab } from "./components/TabBar"
 import EntrySheet, { SummarySheet } from "./screens/EntrySheet"
 import { today } from "./lib/format"
@@ -17,6 +18,7 @@ import { useStore } from "./lib/store"
 import "./screens/screens.css"
 import "./screens/note.css"
 import "./screens/due.css"
+import "./styles/press.css"
 
 type Screen = "transaction" | "note" | "due" | "installments" | "finance" | "profile"
 type Overlay =
@@ -36,7 +38,8 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>("transaction")
   const [day, setDay] = useState(today)
   const [month, setMonth] = useState(() => ym(today()))
-  const [hidden, setHidden] = useState(false)
+  const [hidden, setHidden] = useState(() => store.prefs.hideOnOpen)
+  const [assetsHidden, setAssetsHidden] = useState(() => store.prefs.hideAssets || store.prefs.hideOnOpen)
   const [overlay, setOverlay] = useState<Overlay>(null)
 
   const close = useCallback(() => setOverlay(null), [])
@@ -123,9 +126,29 @@ export default function App() {
           onTab={onTab}
         />
       )}
-      {(screen === "finance" || screen === "profile") && (
-        <SoonScreen tab={screen} onTab={onTab} onOpenAssistant={quick} />
+      {screen === "finance" && (
+        <Finance
+          name={store.name}
+          assets={store.assets}
+          moves={store.moves}
+          care={store.care}
+          worth={store.worth}
+          bills={store.bills}
+          entries={store.entries}
+          birthYear={store.prefs.birthYear}
+          hidden={assetsHidden}
+          onToggleHidden={() => setAssetsHidden((h) => !h)}
+          onAddAsset={store.addAsset}
+          onTab={onTab}
+          onQuickNote={quick}
+          onTalk={() =>
+            assistant({
+              notice: "Talking about family money comes later. For now I record what you spend and receive, and keep track of bills.",
+            })
+          }
+        />
       )}
+      {screen === "profile" && <Profile store={store} onTab={onTab} onQuickNote={quick} />}
 
       {overlay?.kind === "quick" && (
         <QuickNote
