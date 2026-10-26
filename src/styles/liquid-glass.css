@@ -14,8 +14,8 @@
    a soft inner glow at the edges, a top sheen, and a hairline for definition on white. */
 
 :root {
-  --lg-r-fill: rgb(255 255 255 / 30%);
-  --lg-r-filter: blur(14px) saturate(185%) brightness(1.07);
+  --lg-r-fill: rgb(255 255 255 / 14%);
+  --lg-r-filter: blur(8px) saturate(160%);
   --lg-c-fill: rgb(255 255 255 / 10%);
   --lg-c-filter: blur(6px) saturate(170%) brightness(1.1);
   --lg-t-fill: rgb(95 168 47 / 82%);
@@ -30,10 +30,10 @@
     rgb(255 255 255 / 30%) 78%,
     rgb(255 255 255 / 85%) 100%
   );
-  --lg-glow: inset 0 0 10px 0 rgb(255 255 255 / 38%), inset 0 1px 1px 0 rgb(255 255 255 / 70%);
-  --lg-hairline: 0 0 0 0.5px rgb(13 18 28 / 9%);
-  --lg-drop: 0 8px 28px rgb(13 18 28 / 10%), 0 1px 3px rgb(13 18 28 / 7%);
-  --lg-gloss: radial-gradient(120% 80% at 20% 0%, rgb(255 255 255 / 45%) 0%, rgb(255 255 255 / 0%) 55%);
+  --lg-glow: inset 0 0 0 1px rgb(255 255 255 / 50%), inset 0 0 8px 0 rgb(255 255 255 / 40%);
+  --lg-hairline: 0 0 0 0.5px rgb(13 18 28 / 11%);
+  --lg-drop: 0 3px 12px rgb(13 18 28 / 6%);
+  --lg-gloss: radial-gradient(120% 80% at 20% 0%, rgb(255 255 255 / 22%) 0%, rgb(255 255 255 / 0%) 55%);
 }
 
 .lg {
@@ -112,7 +112,7 @@
 }
 @media (hover: hover) {
   .lg-press:hover:not(:disabled):not(.lg--tint):not(.lg--clear) {
-    background: rgb(255 255 255 / 48%);
+    background: rgb(255 255 255 / 28%);
   }
 }
 
