@@ -185,6 +185,12 @@
   background: var(--white-10);
   color: var(--text-white);
 }
+.fn-btn--glass {
+  height: 40px;
+  padding: var(--sp-4) var(--sp-12);
+  background: var(--white-32);
+  color: var(--brand-500);
+}
 .fn-btn--on-dark:hover {
   background: var(--white-16);
 }

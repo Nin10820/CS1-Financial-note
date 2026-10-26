@@ -102,23 +102,22 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: var(--sp-16);
-  padding: var(--sp-24) var(--sp-20) calc(190px + env(safe-area-inset-bottom));
+  padding: 60px var(--sp-20) calc(190px + env(safe-area-inset-bottom));
   text-align: center;
 }
 .home-empty__hello {
   font-family: var(--font-title);
   font-size: 24px;
   font-weight: var(--weight-b);
-  line-height: 1.4;
+  line-height: 1.3;
   color: var(--text-900);
 }
 .home-empty__ideas {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sp-4);
+  align-self: stretch;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -126,12 +125,15 @@
 .home-empty__ideas button {
   display: inline-flex;
   align-items: center;
-  gap: var(--sp-8);
+  gap: var(--sp-12);
   padding: var(--sp-4) var(--sp-8);
   border: 0;
   border-radius: var(--corner-8);
   background: none;
   color: var(--grey-400);
+  font-size: 14px;
+  font-weight: var(--weight-m);
+  line-height: 1.4;
 }
 .home-empty__ideas button:hover {
   background: var(--white-64);
@@ -172,17 +174,23 @@
   height: calc(100dvh - 54px);
   border-radius: 28px 28px 0 0;
 }
-/* Liquid Glass half sheet: inset from the screen edges so content peeks around it, with a larger,
-   concentric radius and a glass surface. Full-height sheets (modal--tall) stay opaque. */
+/* Half sheet — Figma Template-Modal (962:32146): inset 12px from the sides and 16px from the
+   bottom, 32px corners, white 64% glass with the side hairline, over a light 16% scrim.
+   Full-height sheets (modal--tall) stay opaque. */
 .modal:not(.modal--tall) {
-  bottom: max(8px, env(safe-area-inset-bottom) / 3);
-  width: calc(var(--app-width, min(100vw, 480px)) - 16px);
-  max-height: calc(100dvh - 70px);
-  border-radius: 34px;
-  background: rgb(249 250 251 / 86%);
-  box-shadow: inset 0 1px 1px rgb(255 255 255 / 80%), 0 0 0 0.5px rgb(13 18 28 / 8%), 0 18px 50px rgb(13 18 28 / 18%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  backdrop-filter: blur(30px) saturate(180%);
+  bottom: calc(var(--sp-16) + env(safe-area-inset-bottom) / 2);
+  width: calc(var(--app-width, min(100vw, 480px)) - 24px);
+  max-height: calc(100dvh - 80px);
+  border: 0;
+  border-inline: 0.5px solid var(--bd-2);
+  border-radius: 32px;
+  background: var(--white-64);
+  box-shadow: 0 2px 8px var(--dark-4), 0 18px 48px rgb(13 18 28 / 10%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+}
+.modal-layer:has(.modal--auto) .modal-scrim {
+  background: var(--dark-16);
 }
 @media (prefers-reduced-transparency: reduce) {
   .modal:not(.modal--tall) {
@@ -204,7 +212,7 @@
   height: 4px;
   margin: var(--sp-8) auto;
   border-radius: var(--corner-2);
-  background: var(--grey-200);
+  background: var(--grey-300);
 }
 .modal__top {
   position: relative;

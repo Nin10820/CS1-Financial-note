@@ -133,6 +133,7 @@
   /* Type — Font-family/Main is Montserrat; page titles use Merriweather */
   --font-main: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --font-title: "Merriweather", Georgia, serif;
+  --font-heading: "Bricolage Grotesque", var(--font-main); /* page names (High Fi 2) */
   --weight-r: 400;
   --weight-m: 500;
   --weight-s: 600;

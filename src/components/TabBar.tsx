@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react"
 import "./tabbar.css"
-import { ChartPieSlice, Receipt, User } from "@phosphor-icons/react"
 import { Icon } from "./Icon"
 import { LogoMark } from "./ui"
 
@@ -18,13 +17,9 @@ const TABS: { tab: Tab; label: string }[] = [
 let lastIndex = 0
 let lastCollapsed = false
 
-/* Expense uses the filled wallet from the Figma file; Due / Finance / Profile use Phosphor,
-   the icon library the Figma file is built with (the tab bar itself isn't in the file yet). */
+/* Tab icons from Figma Navigation Bar: calendar-01, bill, chart-rose, user (solid). */
 function TabIcon({ tab, size }: { tab: Tab; size: number }) {
-  if (tab === "expense") return <Icon name="wallet" size={size} />
-  if (tab === "due") return <Receipt size={size} weight="fill" aria-hidden="true" />
-  if (tab === "finance") return <ChartPieSlice size={size} weight="fill" aria-hidden="true" />
-  return <User size={size} weight="fill" aria-hidden="true" />
+  return <Icon name={`tab-${tab}`} size={size} />
 }
 
 /** Collapses on scroll down and comes back on scroll up or near the top, like iOS 26 tab bars. */
@@ -154,7 +149,7 @@ export default function TabBar({
   const actionButton = action && (
     <button
       type="button"
-      className="lg lg-round lg-press tabbar__action"
+      className="lg lg--tint lg-round lg-press tabbar__action"
       aria-label={action.label}
       aria-expanded={action.expanded}
       aria-haspopup={action.expanded === undefined ? undefined : "menu"}

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react"
-import { PageSwitch } from "../components/ui"
 import TabBar, { type Tab } from "../components/TabBar"
 import { Icon } from "../components/Icon"
 import { money, shortDate, today } from "../lib/format"
@@ -64,8 +63,7 @@ export default function NoteScreen({
   return (
     <div className="screen">
       <span className="screen__glow screen__glow--soft" aria-hidden="true" />
-      <DayHeader day={day} onDayChange={onDayChange} title="Note" onProfile={() => onTab("profile")} />
-      <PageSwitch title="Note" other="Transaction" onOther={onTransactions} />
+      <DayHeader day={day} onDayChange={onDayChange} title="Note" marked={new Set(entries.map((e) => e.date))} onProfile={() => onTab("profile")} />
 
       <section className="note-block" aria-labelledby="coming-up">
         <h2 id="coming-up" className="note-block__label">

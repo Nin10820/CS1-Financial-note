@@ -46,7 +46,7 @@ export default function App() {
   const assistant = (opts: AssistantOpen = {}) => setOverlay({ kind: "assistant", opts })
   // Expense opens on Transaction (Note sits beside it); Due on the bill list.
   const onTab = (t: Tab) =>
-    go(t === "expense" ? (screen === "note" ? "note" : "transaction") : t === "due" ? "due" : t)
+    go(t === "expense" ? "transaction" : t === "due" ? "due" : t)
 
   // The spending is recorded on the day the bill is ticked off — the day the money actually left.
   const toggleBill = (id: string, paid: boolean, amount?: number, m = month) => {

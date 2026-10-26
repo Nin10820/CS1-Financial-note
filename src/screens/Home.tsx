@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { FilterChips, LogoMark, PageSwitch, Sheet, SpendCard, TransItem } from "../components/ui"
+import { FilterChips, LogoMark, Sheet, SpendCard, TransItem } from "../components/ui"
 import { Icon } from "../components/Icon"
 import { clock, greeting, money, shortDate, today } from "../lib/format"
 import { categoryTone, type Entry } from "../lib/store"
@@ -9,7 +9,8 @@ import TabBar, { type Tab } from "../components/TabBar"
 
 type Filter = "all" | "expense" | "receive"
 
-/** Figma Final › Transaction › Home (765:19641 empty, 765:19666 with entries). */
+/** Transaction. Header and empty day follow Figma High Fi 2 › Expense (937:20415);
+    the day with entries follows Final 765:19666. */
 export default function Home({
   day,
   onDayChange,
@@ -38,6 +39,7 @@ export default function Home({
   onTab: (t: Tab) => void
 }) {
   const [filter, setFilter] = useState<Filter>("all")
+  const marked = useMemo(() => new Set(entries.map((e) => e.date)), [entries])
 
   const list = useMemo(() => entries.filter((e) => e.date === day).sort((a, b) => b.createdAt - a.createdAt), [entries, day])
   const out = list.filter((e) => e.flow === "out").reduce((s, e) => s + e.amount, 0)
@@ -49,9 +51,7 @@ export default function Home({
   return (
     <div className="screen">
       <span className="screen__glow" aria-hidden="true" />
-      <DayHeader day={day} onDayChange={onDayChange} title="Transaction" onProfile={() => onTab("profile")} />
-
-      <PageSwitch title="Transaction" other="Note" onOther={onNote} />
+      <DayHeader day={day} onDayChange={onDayChange} title="Transaction" marked={marked} onProfile={() => onTab("profile")} />
 
       {list.length === 0 ? (
         <section className="home-empty" aria-label="Nothing recorded yet">
@@ -62,15 +62,15 @@ export default function Home({
           <ul className="home-empty__ideas">
             {(
               [
-                ["Write what you spent", {}],
-                ["Ask about a bill", "due"],
-                ["Add an asset", { notice: "Assets aren't in this version yet. For now I can record what you spend and receive." }],
+                ["What can I help you think through today?", {}],
+                ["What's worth talking about today?", "due"],
+                ["Any decisions on your mind today?", { notice: "Talking decisions through comes later. For now I record what you spend and receive, and keep track of bills." }],
               ] as const
             ).map(([label, opts]) => (
               <li key={label}>
                 <button type="button" onClick={() => (opts === "due" ? onDue() : onOpenAssistant(opts))}>
-                  <Icon name="logo-mark" size={14} />
-                  <span className="t-body-14-r">{label}</span>
+                  <Icon name="logo-mark" size={16} />
+                  <span>{label}</span>
                 </button>
               </li>
             ))}

@@ -81,7 +81,8 @@ export function IconButton({
 }
 
 /** Button — "primary" is the dark full-width action, "confirm" the green one in the AI card,
-    "outline" the Discard style, "on-dark" the Summary pill on the green card. */
+    "outline" the Discard style, "on-dark" the Summary pill on the green card,
+    "glass" the Today / Done pills in sheet headers (white 32% glass, green label). */
 export function Button({
   variant = "primary",
   size = "md",
@@ -90,13 +91,17 @@ export function Button({
   className,
   ...rest
 }: {
-  variant?: "primary" | "confirm" | "outline" | "on-dark"
+  variant?: "primary" | "confirm" | "outline" | "on-dark" | "glass"
   size?: "sm" | "md" | "lg"
   icon?: IconName
   children: ReactNode
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button type="button" className={cx("fn-btn", `fn-btn--${variant}`, `fn-btn--${size}`, className)} {...rest}>
+    <button
+      type="button"
+      className={cx("fn-btn", `fn-btn--${variant}`, `fn-btn--${size}`, variant === "glass" && "lg lg-press", className)}
+      {...rest}
+    >
       {icon && <Icon name={icon} size={size === "sm" ? 16 : 20} />}
       {children}
     </button>
