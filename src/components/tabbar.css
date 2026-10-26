@@ -69,7 +69,7 @@
   transform: scale(0.985);
 }
 .tabbar__note:hover {
-  background: var(--lg-fill-strong);
+  background: rgb(255 255 255 / 48%);
 }
 .tabbar__note-logo {
   display: grid;
@@ -124,7 +124,7 @@
 .tabbar__tabs.is-pressing .tabbar__lens {
   scale: 1.12 1.18;
   background: rgb(255 255 255 / 55%);
-  box-shadow: var(--lg-edge), 0 8px 22px rgb(13 18 28 / 14%);
+  box-shadow: var(--lg-glow), 0 8px 22px rgb(13 18 28 / 14%);
   -webkit-backdrop-filter: blur(2px) saturate(160%);
   backdrop-filter: blur(2px) saturate(160%);
   transition: transform 0.28s var(--spring), background-color 0.2s ease, box-shadow 0.2s ease, scale 0.3s var(--spring);
@@ -193,4 +193,13 @@
   .lg-round {
     transition: none;
   }
+}
+
+/* The lens rim only shows while it is held and turns into glass. */
+.tabbar__lens::after {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.tabbar__tabs.is-pressing .tabbar__lens::after {
+  opacity: 1;
 }

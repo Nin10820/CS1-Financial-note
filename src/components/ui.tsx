@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react"
+import { useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type HTMLAttributes, type PointerEvent as RPointerEvent, type ReactNode } from "react"
 import logoMark from "../assets/icons/logo-mark.svg"
 import dotFilled from "../assets/icons/dot-filled.svg"
 import dotOutline from "../assets/icons/dot-outline.svg"
@@ -44,8 +44,8 @@ export function Amount({
 
 type IconButtonVariant = "glass" | "glass-80" | "white" | "glass-strong" | "soft" | "dark" | "on-dark" | "plain"
 
-/** Button--Icon. glass = white 64% (header, bottom bar), glass-80 = white 80% (wallet nav),
-    glass-strong = white 80% + hairline (modal header),
+/** Button--Icon. glass / glass-80 / glass-strong = Liquid Glass round button (header, bottom bar,
+    sheet close), glass-strong uses the denser glass that holds up on top of sheets,
     soft = bg-3 (composer +), dark = send, on-dark = white 10% on the green card, plain = no fill. */
 export function IconButton({
   icon,
@@ -66,7 +66,12 @@ export function IconButton({
     <button
       type="button"
       aria-label={label}
-      className={cx("fn-icon-btn", `fn-icon-btn--${variant}`)}
+      className={cx(
+        "fn-icon-btn",
+        `fn-icon-btn--${variant}`,
+        variant.startsWith("glass") && "lg lg-press",
+        variant === "glass-strong" && "lg--thick",
+      )}
       style={{ width: size, height: size, ...style }}
       {...rest}
     >
@@ -98,10 +103,10 @@ export function Button({
   )
 }
 
-/** Header date pill: white 80%, brand-400 outline, caret. */
+/** Header date pill: a Liquid Glass capsule with a caret. */
 export function DatePill({ label, ...rest }: { label: string } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button type="button" className="fn-date-pill" {...rest}>
+    <button type="button" className="fn-date-pill lg lg-press" {...rest}>
       <span className="t-body-14-m">{label}</span>
       <Icon name="caret-down" size={16} />
     </button>
@@ -139,7 +144,8 @@ export function FilterChips<T extends string>({
   )
 }
 
-/** tabs: dark translucent track, the active segment is a white 90% pill. */
+/** Segmented control. The white thumb slides between options; while a finger is down it turns
+    into a clear glass lens and follows the finger, then settles on the option it was released over. */
 export function SegmentedTabs<T extends string>({
   options,
   value,
@@ -151,21 +157,97 @@ export function SegmentedTabs<T extends string>({
   onChange: (v: T) => void
   label: string
 }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [drag, setDrag] = useState<number | null>(null)
+  const current = Math.max(0, options.findIndex((o) => o.value === value))
+  const indexAt = (x: number) => {
+    const r = ref.current!.getBoundingClientRect()
+    return Math.min(options.length - 1, Math.max(0, Math.floor(((x - r.left) / r.width) * options.length)))
+  }
+  const down = (e: RPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return
+    ref.current!.setPointerCapture(e.pointerId)
+    setDrag(indexAt(e.clientX))
+  }
+  const move = (e: RPointerEvent<HTMLDivElement>) => drag !== null && setDrag(indexAt(e.clientX))
+  const up = () => {
+    if (drag !== null && options[drag].value !== value) onChange(options[drag].value)
+    setDrag(null)
+  }
+  const shown = drag ?? current
   return (
-    <div className="fn-tabs" role="tablist" aria-label={label}>
-      {options.map((o) => (
+    <div
+      ref={ref}
+      className={cx("lg-seg", drag !== null && "is-pressing")}
+      role="tablist"
+      aria-label={label}
+      style={{ "--n": options.length, "--i": shown } as CSSProperties}
+      onPointerDown={down}
+      onPointerMove={move}
+      onPointerUp={up}
+      onPointerCancel={() => setDrag(null)}
+    >
+      <span className="lg-seg__thumb" aria-hidden="true" />
+      {options.map((o, i) => (
         <button
           key={o.value}
           type="button"
           role="tab"
           aria-selected={o.value === value}
-          className={cx("fn-tabs__item", o.value === value && "is-active")}
-          onClick={() => onChange(o.value)}
+          className={cx("lg-seg__item", i === shown && "is-active")}
+          onClick={(e) => e.detail === 0 && onChange(o.value)}
         >
           {o.icon && <Icon name={o.icon} size={18} />}
           <span className="t-body-14-m">{o.label}</span>
         </button>
       ))}
+    </div>
+  )
+}
+
+/** On/off switch. Tap to flip; while held or dragged the knob becomes a glass lens. */
+export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  const [pressing, setPressing] = useState(false)
+  const start = useRef<{ x: number; moved: boolean } | null>(null)
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      className={cx("lg-switch", pressing && "is-pressing")}
+      onPointerDown={(e) => {
+        e.currentTarget.setPointerCapture(e.pointerId)
+        start.current = { x: e.clientX, moved: false }
+        setPressing(true)
+      }}
+      onPointerMove={(e) => {
+        const s0 = start.current
+        if (!s0) return
+        const dx = e.clientX - s0.x
+        if (Math.abs(dx) > 10) {
+          s0.moved = true
+          if ((dx > 0) !== checked) onChange(dx > 0)
+        }
+      }}
+      onPointerUp={() => {
+        if (start.current && !start.current.moved) onChange(!checked)
+        start.current = null
+        setPressing(false)
+      }}
+      onPointerCancel={() => ((start.current = null), setPressing(false))}
+      onClick={(e) => e.detail === 0 && onChange(!checked)}
+    >
+      <span className="lg-switch__knob" aria-hidden="true" />
+    </button>
+  )
+}
+
+/** Toolbar group: related icon actions sharing one glass capsule (Apple: group similar actions). */
+export function GlassGroup({ children, className, ...rest }: { children: ReactNode; className?: string } & HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cx("lg lg-group", className)} role="group" {...rest}>
+      {children}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
-import { Amount, Button, IconButton, Sheet } from "../components/ui"
+import { Amount, Button, IconButton, Sheet, GlassGroup } from "../components/ui"
 import TabBar, { type Tab } from "../components/TabBar"
 import StickyHeader from "../components/StickyHeader"
 import { Icon } from "../components/Icon"
@@ -86,10 +86,12 @@ export default function Due({
         }
         right={
           <div className="pill-group" ref={menuRef}>
-          <IconButton icon="dots-three" label="More" variant="plain" iconSize={24} aria-expanded={menu} aria-haspopup="menu" onClick={() => setMenu(!menu)} />
-          <IconButton icon="plus-18" label="Add a bill" variant="plain" iconSize={18} onClick={onAdd} />
+          <GlassGroup aria-label="Bill actions" className="pill-group__glass">
+            <IconButton icon="dots-three" label="More" variant="plain" iconSize={24} aria-expanded={menu} aria-haspopup="menu" onClick={() => setMenu(!menu)} />
+            <IconButton icon="plus-18" label="Add a bill" variant="plain" iconSize={18} onClick={onAdd} />
+          </GlassGroup>
           {menu && (
-            <div className="note-menu note-menu--top" role="menu">
+            <div className="note-menu note-menu--top lg lg--thick lg-morph" role="menu">
               <button type="button" role="menuitem" className="note-menu__item" onClick={() => (setMenu(false), onComingUp())}>
                 <Icon name="calendar-dots" size={20} />
                 Coming up

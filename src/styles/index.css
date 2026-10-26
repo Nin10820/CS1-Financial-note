@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./tokens.css";
 @import "./components.css";
+@import "./liquid-glass.css";
 
 /* Expose the Figma tokens to Tailwind utilities (bg-bg-3, text-grey-700, rounded-corner-16 …). */
 @theme inline {

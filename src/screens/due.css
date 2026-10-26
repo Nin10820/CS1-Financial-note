@@ -20,15 +20,10 @@
 }
 .pill-group {
   position: relative;
-  display: flex;
-  align-items: center;
   height: 40px;
-  border: 0.5px solid var(--lg-rim);
-  border-radius: var(--rounded);
-  background: var(--lg-fill);
-  box-shadow: var(--lg-edge), var(--lg-shadow);
-  -webkit-backdrop-filter: var(--lg-filter);
-  backdrop-filter: var(--lg-filter);
+}
+.pill-group__glass {
+  height: 40px;
 }
 .pill-group .fn-icon-btn--plain {
   width: 40px;

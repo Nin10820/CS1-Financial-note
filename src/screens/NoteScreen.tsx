@@ -113,7 +113,7 @@ export default function NoteScreen({
       <div className="screen__bottom" ref={barRef}>
         <div className="note-menu-anchor">
           {menu && (
-            <div className="note-menu" role="menu" aria-label="New">
+            <div className="note-menu lg lg--thick lg-morph" role="menu" aria-label="New">
               <button
                 type="button"
                 role="menuitem"

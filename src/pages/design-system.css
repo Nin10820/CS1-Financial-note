@@ -218,3 +218,113 @@
   bottom: 0;
   left: 0;
 }
+
+/* Liquid Glass showcase: glass needs something behind it to read as glass. */
+.ds-lg {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  padding: var(--sp-20);
+  overflow: hidden;
+  border-radius: 28px;
+  background: var(--bg-2);
+  isolation: isolate;
+}
+.ds-lg__stage {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.ds-lg__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(2px);
+}
+.ds-lg__blob--a {
+  top: -40px;
+  left: 30px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle at 40% 40%, #a6d97f, #5fa82f 60%, #3f7d1f);
+}
+.ds-lg__blob--b {
+  right: 40px;
+  bottom: -60px;
+  width: 260px;
+  height: 200px;
+  background: radial-gradient(circle at 50% 50%, #ffd2a8, #ef6820 70%);
+  opacity: 0.85;
+}
+.ds-lg__lines {
+  position: absolute;
+  inset: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.ds-lg__lines i {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--grey-300);
+}
+.ds-lg__lines i:nth-child(odd) {
+  width: 70%;
+}
+.ds-lg__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--sp-12);
+}
+.ds-lg__cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+.ds-lg__cell .ds-muted {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 80%);
+  align-self: flex-start;
+}
+.ds-lg__swatch {
+  display: grid;
+  place-items: center;
+  height: 64px;
+  border-radius: 22px;
+  color: var(--grey-900);
+  font-weight: var(--weight-s);
+}
+.ds-lg__swatch.lg--clear,
+.ds-lg__swatch.lg--tint {
+  color: #fff;
+}
+.ds-lg__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-12);
+}
+.ds-lg > p.ds-muted {
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 80%);
+  align-self: flex-start;
+}
+.ds-lg__group {
+  height: 40px;
+}
+.ds-lg__menu {
+  position: static;
+  width: 180px;
+}
+.ds-lg__green {
+  display: block;
+  padding: 10px;
+  border-radius: 30px;
+  background: repeating-linear-gradient(135deg, #4f9126 0 14px, #6bb83a 14px 28px);
+}
+.ds-lg__green .ds-lg__swatch {
+  height: 44px;
+  border-radius: 20px;
+}

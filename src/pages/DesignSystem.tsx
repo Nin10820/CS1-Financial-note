@@ -6,6 +6,7 @@ import {
   ChatBubble,
   DatePill,
   FilterChips,
+  GlassGroup,
   IconButton,
   LogoMark,
   MonthCard,
@@ -13,8 +14,10 @@ import {
   SegmentedTabs,
   Sheet,
   SpendCard,
+  Switch,
   TransItem,
 } from "../components/ui"
+import { Icon } from "../components/Icon"
 import "./design-system.css"
 
 /* Living reference for the Financial Note design system.
@@ -157,6 +160,13 @@ export default function DesignSystem() {
             </div>
           </Section>
 
+          <Section
+            title="Liquid Glass"
+            note="Chỉ dùng cho lớp điều hướng nổi trên nội dung: thanh tab, nút header, nhóm toolbar, menu, sheet. Nội dung (thẻ, danh sách, chip lọc) giữ nền đặc."
+          >
+            <LiquidGlassDemo />
+          </Section>
+
           <Section title="Nút" note="Button và Button--Icon">
             <div className="ds-row">
               <Button variant="confirm" size="sm">
@@ -247,6 +257,90 @@ function Section({ title, note, children }: { title: string; note?: string; chil
       </div>
       <div className="ds-section__body">{children}</div>
     </section>
+  )
+}
+
+function LiquidGlassDemo() {
+  const [seg, setSeg] = useState<"card" | "month">("card")
+  const [on, setOn] = useState(true)
+  const [off, setOff] = useState(false)
+  return (
+    <div className="ds-lg">
+      <div className="ds-lg__stage" aria-hidden="true">
+        <span className="ds-lg__blob ds-lg__blob--a" />
+        <span className="ds-lg__blob ds-lg__blob--b" />
+        <span className="ds-lg__lines">
+          {Array.from({ length: 7 }, (_, i) => (
+            <i key={i} />
+          ))}
+        </span>
+      </div>
+
+      <div className="ds-lg__grid">
+        <div className="ds-lg__cell">
+          <span className="ds-lg__swatch lg">Regular</span>
+          <span className="t-capture-12-r ds-muted">.lg · nút, thanh tab</span>
+        </div>
+        <div className="ds-lg__cell">
+          <span className="ds-lg__green">
+            <span className="ds-lg__swatch lg lg--clear">Clear</span>
+          </span>
+          <span className="t-capture-12-r ds-muted">.lg--clear · trên nền màu</span>
+        </div>
+        <div className="ds-lg__cell">
+          <span className="ds-lg__swatch lg lg--tint">Tint</span>
+          <span className="t-capture-12-r ds-muted">.lg--tint · một hành động chính</span>
+        </div>
+        <div className="ds-lg__cell">
+          <span className="ds-lg__swatch lg lg--thick">Thick</span>
+          <span className="t-capture-12-r ds-muted">.lg--thick · menu, popover</span>
+        </div>
+      </div>
+
+      <div className="ds-lg__row">
+        <IconButton icon="calendar" label="Lịch" variant="glass" />
+        <DatePill label="October 26, 2026" />
+        <GlassGroup aria-label="Thao tác" className="ds-lg__group">
+          <IconButton icon="dots-three" label="Thêm" variant="plain" iconSize={24} />
+          <IconButton icon="plus-18" label="Thêm hoá đơn" variant="plain" iconSize={18} />
+        </GlassGroup>
+        <button type="button" className="lg lg--tint lg-press lg-round" aria-label="Ghi chú mới">
+          <Icon name="file-edit" size={22} />
+        </button>
+      </div>
+      <p className="t-capture-12-r ds-muted">Bấm giữ: kính phồng lên và sáng hơn. Nhóm các nút cùng việc vào một viên kính.</p>
+
+      <div className="ds-lg__row">
+        <div style={{ width: 240 }}>
+          <SegmentedTabs
+            label="Kiểu xem"
+            value={seg}
+            onChange={setSeg}
+            options={[
+              { value: "card", label: "Card", icon: "align-left" },
+              { value: "month", label: "Month", icon: "squares-four" },
+            ]}
+          />
+        </div>
+        <Switch label="Bật" checked={on} onChange={setOn} />
+        <Switch label="Tắt" checked={off} onChange={setOff} />
+      </div>
+      <p className="t-capture-12-r ds-muted">Segmented và công tắc: kéo hoặc giữ, núm hoá thành thấu kính kính rồi trượt về chỗ.</p>
+
+      <div className="ds-lg__row">
+        <div className="note-menu lg lg--thick ds-lg__menu" role="menu" aria-label="Ví dụ menu">
+          <button type="button" role="menuitem" className="note-menu__item">
+            <Icon name="note" size={20} />
+            New note
+          </button>
+          <button type="button" role="menuitem" className="note-menu__item" disabled>
+            <Icon name="scan" size={20} />
+            Scan <span className="note-menu__soon">soon</span>
+          </button>
+        </div>
+      </div>
+      <p className="t-capture-12-r ds-muted">Menu mở ra từ chính nút bấm (co từ viên tròn rồi bung ra). Mỗi mục có icon.</p>
+    </div>
   )
 }
 

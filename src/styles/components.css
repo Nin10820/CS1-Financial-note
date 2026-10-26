@@ -1,43 +1,6 @@
 /* Component styles. Every value is a token from tokens.css; sizes are the Figma pixel values. */
 
-/* ── Glass material ─────────────────────────────────────── */
-.lg {
-  position: relative;
-  isolation: isolate;
-  border: 0.5px solid var(--lg-rim);
-  background: var(--lg-fill);
-  box-shadow: var(--lg-edge), var(--lg-shadow);
-  -webkit-backdrop-filter: var(--lg-filter);
-  backdrop-filter: var(--lg-filter);
-}
-.lg::before {
-  /* specular sheen across the top half */
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: var(--lg-sheen);
-  pointer-events: none;
-}
-.lg-round {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 50px;
-  height: 50px;
-  padding: 0;
-  border-radius: var(--rounded);
-  color: var(--grey-700);
-  transition: transform 0.35s var(--spring), background-color 0.2s;
-}
-.lg-round:active {
-  transform: scale(0.92);
-}
-.lg-round:hover {
-  background: var(--lg-fill-strong);
-}
-
+/* Glass material lives in liquid-glass.css. */
 
 /* Icon: Figma SVG used as a mask so its colour follows currentColor. */
 .fn-icon {
@@ -129,16 +92,10 @@
   transform: scale(0.96);
 }
 .fn-icon-btn--glass {
-  border: 0.5px solid var(--lg-rim);
-  background: var(--lg-fill);
-  box-shadow: var(--lg-edge), var(--lg-shadow);
-  -webkit-backdrop-filter: var(--lg-filter);
-  backdrop-filter: var(--lg-filter);
+  color: var(--grey-800);
 }
 .fn-icon-btn--glass-80 {
-  background: var(--white-80);
-  box-shadow: var(--shadow-light-2);
-  backdrop-filter: blur(var(--glass-blur));
+  color: var(--grey-800);
 }
 .fn-icon-btn--white {
   background: var(--bg-white);
@@ -146,8 +103,7 @@
   color: var(--grey-500);
 }
 .fn-icon-btn--glass-strong {
-  background: var(--white-80);
-  box-shadow: var(--shadow-button-light-1);
+  color: var(--grey-800);
 }
 .fn-icon-btn--soft {
   background: var(--bg-3);
@@ -165,11 +121,6 @@
   background: transparent;
   border-radius: var(--corner-8);
   color: var(--grey-900);
-}
-.fn-icon-btn--glass:hover,
-.fn-icon-btn--glass-80:hover,
-.fn-icon-btn--glass-strong:hover {
-  background: var(--bg-white);
 }
 .fn-icon-btn--plain:hover,
 .fn-icon-btn--soft:hover {
@@ -245,13 +196,8 @@
   gap: var(--sp-6);
   min-height: 40px;
   padding: var(--sp-6) var(--sp-16);
-  border: 1px solid var(--brand-400);
   border-radius: var(--rounded);
-  background: var(--lg-fill);
-  box-shadow: var(--lg-edge), var(--lg-shadow);
   color: var(--text-900);
-  -webkit-backdrop-filter: var(--lg-filter);
-  backdrop-filter: var(--lg-filter);
 }
 .fn-date-pill .t-body-14-m {
   line-height: 1.4;

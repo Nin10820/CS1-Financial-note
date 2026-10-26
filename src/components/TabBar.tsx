@@ -113,7 +113,7 @@ function Tabs({ active, onTab }: { active: Tab; onTab: (t: Tab) => void }) {
       onPointerUp={onUp}
       onPointerCancel={onUp}
     >
-      <span className="tabbar__lens" aria-hidden="true" style={{ ["--i" as string]: shown }} />
+      <span className="tabbar__lens lg-rim" aria-hidden="true" style={{ ["--i" as string]: shown }} />
       {TABS.map(({ tab, label }, i) => (
         <button
           key={tab}
@@ -157,7 +157,7 @@ export default function TabBar({
   const actionButton = action && (
     <button
       type="button"
-      className="lg lg-round tabbar__action"
+      className="lg lg-round lg-press tabbar__action"
       aria-label={action.label}
       aria-expanded={action.expanded}
       aria-haspopup={action.expanded === undefined ? undefined : "menu"}
@@ -188,7 +188,7 @@ export default function TabBar({
       <div className="tabbar__mini" aria-hidden={!collapsed} inert={!collapsed}>
         <button
           type="button"
-          className="lg lg-round tabbar__mini-tab"
+          className="lg lg-round lg-press tabbar__mini-tab"
           aria-label={`${activeLabel} — show all tabs`}
           onClick={() => setCollapsed(false)}
         >

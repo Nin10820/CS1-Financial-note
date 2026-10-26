@@ -53,7 +53,7 @@ export default function StickyHeader({
         )}
         <button
           type="button"
-          className="nav-bar__swap nav-bar__title lg"
+          className="nav-bar__swap nav-bar__title lg lg-press"
           aria-hidden={!scrolled}
           tabIndex={scrolled ? 0 : -1}
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
