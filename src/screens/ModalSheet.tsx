@@ -3,7 +3,7 @@ import { useEffect, useRef, type PointerEvent, type ReactNode } from "react"
 const CLOSE_DISTANCE = 120 // px dragged before letting go closes the sheet
 const FLICK_SPEED = 0.5 // px/ms — a quick flick closes it even when short
 
-/** Figma "Modal": bg-1 sheet with 20px top corners and a grab handle, over a 48% dark scrim.
+/** Figma "Modal": full-height bg-1 sheet (size "tall") or inset glass half sheet (size "auto").
     Escape, a tap on the scrim, or dragging the handle down closes it; focus moves into the sheet
     and back when it closes. */
 export default function ModalSheet({
@@ -29,7 +29,12 @@ export default function ModalSheet({
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null
     ref.current?.focus()
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
+    // Only the topmost sheet answers Escape (a day picker can sit on top of the assistant).
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return
+      const sheets = document.querySelectorAll(".modal")
+      if (sheets[sheets.length - 1] === ref.current) onClose()
+    }
     document.addEventListener("keydown", onKey)
     const overflow = document.body.style.overflow
     document.body.style.overflow = "hidden"

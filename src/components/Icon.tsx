@@ -18,6 +18,7 @@ export type IconName =
   | "caret-right"
   | "caret-right-sm"
   | "chart-pie"
+  | "check"
   | "check-circle"
   | "check-circle-done"
   | "check-circle-fill"

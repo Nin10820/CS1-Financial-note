@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState, type PointerEvent } from "react"
-import { Button, IconButton } from "../components/ui"
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react"
+import { Button } from "../components/ui"
 import { Icon } from "../components/Icon"
 import { pad, today } from "../lib/format"
 import ModalSheet, { ModalHeader } from "./ModalSheet"
@@ -23,7 +23,8 @@ function monthGrid(y: number, m: number) {
 
 /**
  * Day picker — Figma High Fi 2 › Template-Modal (962:32146).
- * Inset glass sheet: Today · Day · Done, a month label that opens a month list, and the month grid.
+ * Inset glass sheet: Today · Day · Done, a month label that opens a month / year wheel (964:33538),
+ * and the month grid.
  * Selected day is dark, today is solid green, days with notes get a light green disc.
  * Later days can't hold spending yet, so they are shown but can't be picked.
  */
@@ -108,45 +109,25 @@ export default function DayPicker({
           >
             {monthName(view.y, view.m)} {view.y}
             <span className={`day-picker__caret${months ? " is-open" : ""}`}>
-              <Icon name="caret-right-sm" size={14} />
+              <Icon name="caret-down" size={14} />
             </span>
           </button>
         </div>
 
         {months ? (
-          <div className="day-picker__months">
-            <div className="day-picker__year">
-              <IconButton icon="caret-left" label="Previous year" variant="plain" size={32} iconSize={16} onClick={() => setView((v) => ({ ...v, y: v.y - 1 }))} />
-              <span>{view.y}</span>
-              <IconButton
-                icon="caret-right"
-                label="Next year"
-                variant="plain"
-                size={32}
-                iconSize={16}
-                disabled={view.y >= nowY}
-                onClick={() => setView((v) => ({ y: v.y + 1, m: v.y + 1 === nowY ? Math.min(v.m, nowM) : v.m }))}
-              />
-            </div>
-            <div className="day-picker__month-grid">
-              {Array.from({ length: 12 }, (_, m) => {
-                const future = view.y > nowY || (view.y === nowY && m > nowM)
-                return (
-                  <button
-                    key={m}
-                    type="button"
-                    className={`day-picker__month-cell${m === view.m ? " is-picked" : ""}`}
-                    disabled={future}
-                    onClick={() => {
-                      setView((v) => ({ ...v, m }))
-                      setMonths(false)
-                    }}
-                  >
-                    {monthName(view.y, m).slice(0, 3)}
-                  </button>
-                )
-              })}
-            </div>
+          <div className="day-picker__wheels">
+            <Wheel
+              label="Month"
+              items={Array.from({ length: 12 }, (_, m) => ({ value: m, text: monthName(2000, m), disabled: view.y === nowY && m > nowM }))}
+              value={view.m}
+              onChange={(m) => setView((v) => ({ ...v, m }))}
+            />
+            <Wheel
+              label="Year"
+              items={Array.from({ length: nowY - 2019 }, (_, i) => ({ value: 2020 + i, text: String(2020 + i) }))}
+              value={view.y}
+              onChange={(y) => setView((v) => ({ y, m: y === nowY ? Math.min(v.m, nowM) : v.m }))}
+            />
           </div>
         ) : (
           <div className="day-picker__grid" role="grid" aria-label={`${monthName(view.y, view.m)} ${view.y}`} onPointerDown={onDown} onPointerUp={onUp}>
@@ -182,5 +163,79 @@ export default function DayPicker({
         )}
       </div>
     </ModalSheet>
+  )
+}
+
+const ROW = 34 // px per wheel row; five rows show
+
+/** iOS-style picker wheel: scroll-snapped column, the row in the middle is the value. */
+function Wheel<T extends number>({
+  label,
+  items,
+  value,
+  onChange,
+}: {
+  label: string
+  items: { value: T; text: string; disabled?: boolean }[]
+  value: T
+  onChange: (v: T) => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const index = Math.max(0, items.findIndex((i) => i.value === value))
+  const [shown, setShown] = useState(index)
+  const settle = useRef(0)
+
+  // Jump to the value on open and whenever it changes from outside (e.g. the year clamps the month).
+  useEffect(() => {
+    const el = ref.current
+    if (el && Math.round(el.scrollTop / ROW) !== index) el.scrollTo({ top: index * ROW })
+    setShown(index)
+  }, [index])
+
+  const onScroll = () => {
+    const el = ref.current
+    if (!el) return
+    const i = Math.min(items.length - 1, Math.max(0, Math.round(el.scrollTop / ROW)))
+    setShown(i)
+    window.clearTimeout(settle.current)
+    settle.current = window.setTimeout(() => {
+      // A disabled row (a future month) springs back to the nearest allowed one.
+      let j = i
+      while (j > 0 && items[j].disabled) j--
+      if (j !== i) el.scrollTo({ top: j * ROW, behavior: "smooth" })
+      if (items[j].value !== value) onChange(items[j].value)
+    }, 120)
+  }
+
+  return (
+    <div
+      ref={ref}
+      className="wheel"
+      role="listbox"
+      aria-label={label}
+      tabIndex={0}
+      onScroll={onScroll}
+      onKeyDown={(e) => {
+        const step = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0
+        if (!step) return
+        e.preventDefault()
+        const j = Math.min(items.length - 1, Math.max(0, index + step))
+        if (!items[j].disabled) onChange(items[j].value)
+      }}
+    >
+      {items.map((it, i) => (
+        <div
+          key={it.value}
+          role="option"
+          aria-selected={i === index}
+          aria-disabled={it.disabled}
+          className={`wheel__row${i === shown ? " is-center" : ""}${it.disabled ? " is-disabled" : ""}`}
+          style={{ ["--d" as string]: Math.min(2, Math.abs(i - shown)) }}
+          onClick={() => !it.disabled && ref.current?.scrollTo({ top: i * ROW, behavior: "smooth" })}
+        >
+          {it.text}
+        </div>
+      ))}
+    </div>
   )
 }

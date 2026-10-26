@@ -233,6 +233,8 @@
   color: var(--text-900);
   white-space: nowrap;
   transform: translateX(-50%);
+  font-size: 16px;
+  line-height: 24px;
 }
 .modal__body {
   display: flex;
@@ -469,8 +471,12 @@
   outline: none;
   field-sizing: content;
 }
+/* Placeholder is Montserrat 14 medium (High Fi 2 951:31533); what you type stays in Merriweather. */
 .composer__input::placeholder {
   color: var(--grey-400);
+  font-family: var(--font-main);
+  font-size: 14px;
+  font-weight: var(--weight-m);
 }
 .composer__actions {
   display: flex;

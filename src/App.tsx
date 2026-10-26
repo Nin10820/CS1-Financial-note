@@ -7,6 +7,7 @@ import BillSheet from "./screens/BillSheet"
 import AddBill from "./screens/AddBill"
 import { ComingUp, Installments, PaidHistory } from "./screens/DueSheets"
 import Assistant, { type AssistantOpen } from "./screens/Assistant"
+import QuickNote from "./screens/QuickNote"
 import SoonScreen from "./screens/SoonScreen"
 import type { Tab } from "./components/TabBar"
 import EntrySheet, { SummarySheet } from "./screens/EntrySheet"
@@ -20,6 +21,7 @@ import "./screens/due.css"
 type Screen = "transaction" | "note" | "due" | "installments" | "finance" | "profile"
 type Overlay =
   | { kind: "assistant"; opts: AssistantOpen }
+  | { kind: "quick" }
   | { kind: "entry"; id: string }
   | { kind: "summary" }
   | { kind: "editor" }
@@ -44,6 +46,8 @@ export default function App() {
     window.scrollTo(0, 0)
   }
   const assistant = (opts: AssistantOpen = {}) => setOverlay({ kind: "assistant", opts })
+  // The tab bar's quick-note field opens the floating quick-note card.
+  const quick = () => setOverlay({ kind: "quick" })
   // Expense opens on Transaction (Note sits beside it); Due on the bill list.
   const onTab = (t: Tab) =>
     go(t === "expense" ? "transaction" : t === "due" ? "due" : t)
@@ -65,6 +69,7 @@ export default function App() {
           hidden={hidden}
           onToggleHidden={() => setHidden((h) => !h)}
           onOpenAssistant={assistant}
+          onQuickNote={quick}
           onOpenEntry={(id) => setOverlay({ kind: "entry", id })}
           onSummary={() => setOverlay({ kind: "summary" })}
           onNote={() => go("note")}
@@ -82,7 +87,7 @@ export default function App() {
           onTransactions={() => go("transaction")}
           onDue={() => go("due")}
           onNewNote={() => setOverlay({ kind: "editor" })}
-          onOpenAssistant={() => assistant()}
+          onOpenAssistant={quick}
           onTab={onTab}
         />
       )}
@@ -100,7 +105,7 @@ export default function App() {
           onComingUp={() => setOverlay({ kind: "coming-up" })}
           onHistory={() => setOverlay({ kind: "paid-history" })}
           onInstallments={() => go("installments")}
-          onOpenAssistant={() => assistant()}
+          onOpenAssistant={quick}
           onTab={onTab}
         />
       )}
@@ -114,14 +119,27 @@ export default function App() {
           onComingUp={() => setOverlay({ kind: "coming-up" })}
           onHistory={() => setOverlay({ kind: "paid-history" })}
           onAdd={() => setOverlay({ kind: "add-bill" })}
-          onOpenAssistant={() => assistant()}
+          onOpenAssistant={quick}
           onTab={onTab}
         />
       )}
       {(screen === "finance" || screen === "profile") && (
-        <SoonScreen tab={screen} onTab={onTab} onOpenAssistant={() => assistant()} />
+        <SoonScreen tab={screen} onTab={onTab} onOpenAssistant={quick} />
       )}
 
+      {overlay?.kind === "quick" && (
+        <QuickNote
+          day={day}
+          entries={store.entries}
+          onClose={close}
+          onSave={(list, date) => {
+            store.addEntries(list)
+            setDay(date)
+            go("transaction")
+          }}
+          onFix={(text, date) => setOverlay({ kind: "assistant", opts: { note: { date, lines: text ? [text] : [] } } })}
+        />
+      )}
       {overlay?.kind === "assistant" && (
         <Assistant
           name={store.name}

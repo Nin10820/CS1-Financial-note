@@ -45,7 +45,7 @@ const INCOME = /paid me back|trả lại|tra lai|trả mình|nhận|nhan duoc|re
 
 const RULES: [CategoryName, RegExp][] = [
   ["Transport", /xăng|xang|petrol|gas\b|grab|\bbe\b|taxi|xe ôm|gửi xe|gui xe|parking|bus|uber|vé xe|tàu|train/i],
-  ["Bills", /điện|tiền nước|internet|wifi|bill|hoá đơn|hóa đơn|phí|fee|rent|tiền nhà|trả góp|installment/i],
+  ["Bills", /điện|tiền nước|internet|wifi|\bbills?\b|hoá đơn|hóa đơn|phí|\bfees?\b|\brent\b|tiền nhà|trả góp|installment/i],
   ["Shopping", /mua|shopee|lazada|tiki|quần|áo|giày|dép|shirt|shoes|clothes|shopping/i],
   [
     "Food",

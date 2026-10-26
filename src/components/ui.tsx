@@ -45,7 +45,7 @@ export function Amount({
 type IconButtonVariant = "glass" | "glass-80" | "white" | "glass-strong" | "soft" | "dark" | "on-dark" | "plain"
 
 /** Button--Icon. glass / glass-80 / glass-strong = Liquid Glass round button (header, bottom bar,
-    sheet close), glass-strong uses the denser glass that holds up on top of sheets,
+    sheet header — Figma __modal-top uses the same white 24% glass),
     soft = bg-3 (composer +), dark = send, on-dark = white 10% on the green card, plain = no fill. */
 export function IconButton({
   icon,
@@ -70,7 +70,6 @@ export function IconButton({
         "fn-icon-btn",
         `fn-icon-btn--${variant}`,
         variant.startsWith("glass") && "lg lg-press",
-        variant === "glass-strong" && "lg--thick",
       )}
       style={{ width: size, height: size, ...style }}
       {...rest}

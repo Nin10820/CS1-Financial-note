@@ -159,16 +159,12 @@
 .lg-morph {
   animation: lg-morph 0.42s var(--spring) both;
 }
+/* Scale only: an opacity or blur start would leave the menu see-through if the browser
+   pauses the animation (it does for background tabs). */
 @keyframes lg-morph {
   from {
-    opacity: 0;
     transform: scale(0.35);
-    filter: blur(8px);
     border-radius: 999px;
-  }
-  45% {
-    opacity: 1;
-    filter: blur(0);
   }
 }
 

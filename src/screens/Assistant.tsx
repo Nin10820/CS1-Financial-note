@@ -5,6 +5,7 @@ import { greeting, longDate, money, shortDate, today } from "../lib/format"
 import { parseNote, type Draft } from "../lib/parse"
 import { CATEGORIES, categoryTone, uid, type CategoryName, type Entry } from "../lib/store"
 import ModalSheet, { ModalHeader } from "./ModalSheet"
+import DayPicker from "./DayPicker"
 
 export type AssistantOpen = { notice?: string; note?: { date: string; lines: string[] } }
 
@@ -64,7 +65,7 @@ export default function Assistant({
   const [editing, setEditing] = useState<string | null>(null)
   const [history, setHistory] = useState(false)
   const input = useRef<HTMLTextAreaElement>(null)
-  const picker = useRef<HTMLInputElement>(null)
+  const [picking, setPicking] = useState(false)
   const log = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -145,11 +146,6 @@ export default function Assistant({
     setStatus(turn.id, "saved", noteId)
   }
 
-  const openPicker = () => {
-    const el = picker.current
-    if (el && typeof el.showPicker === "function") el.showPicker()
-    else el?.click()
-  }
 
   const notes = useMemo(() => {
     const map = new Map<string, Entry[]>()
@@ -188,20 +184,21 @@ export default function Assistant({
             }}
           >
             <div className="composer__date">
-              <button type="button" className="composer__day" onClick={openPicker} aria-label={`Note for ${longDate(day)}. Change day`}>
+              <button type="button" className="composer__day" onClick={() => setPicking(true)} aria-label={`Note for ${longDate(day)}. Change day`}>
                 <span>{longDate(day)}</span>
                 <Icon name="caret-down" size={16} />
               </button>
-              <input
-                ref={picker}
-                className="visually-hidden"
-                type="date"
-                value={day}
-                max={today()}
-                tabIndex={-1}
-                aria-hidden="true"
-                onChange={(e) => e.target.value && setDay(e.target.value)}
-              />
+              {picking && (
+                <DayPicker
+                  value={day}
+                  marked={new Set(entries.map((e) => e.date))}
+                  onPick={setDay}
+                  onClose={() => {
+                    setPicking(false)
+                    input.current?.focus({ preventScroll: true })
+                  }}
+                />
+              )}
             </div>
             <textarea
               ref={input}

@@ -19,6 +19,7 @@ export default function Home({
   hidden,
   onToggleHidden,
   onOpenAssistant,
+  onQuickNote,
   onOpenEntry,
   onSummary,
   onNote,
@@ -32,6 +33,7 @@ export default function Home({
   hidden: boolean
   onToggleHidden: () => void
   onOpenAssistant: (opts?: AssistantOpen) => void
+  onQuickNote: () => void
   onOpenEntry: (id: string) => void
   onSummary: () => void
   onNote: () => void
@@ -127,7 +129,7 @@ export default function Home({
       )}
 
       <div className="screen__bottom">
-        <TabBar active="expense" onTab={onTab} onQuickNote={() => onOpenAssistant()} action={{ label: "Note", onClick: onNote }} />
+        <TabBar active="expense" onTab={onTab} onQuickNote={onQuickNote} action={{ label: "Note", onClick: onNote }} />
       </div>
     </div>
   )

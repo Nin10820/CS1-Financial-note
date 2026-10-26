@@ -1,0 +1,262 @@
+/* Quick note — Figma High Fi 2 › Frame 85 (944:30328) and Quick-note (943:24983, 943:25079). */
+.quick-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+}
+.quick-scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--dark-48);
+}
+.quick {
+  position: absolute;
+  left: 50%;
+  width: var(--app-width, min(100vw, 480px));
+  padding: 0 var(--sp-12);
+  transform: translateX(-50%);
+  transition: bottom 0.2s ease;
+}
+
+.quick-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--corner-20);
+  background: var(--bg-1);
+  box-shadow: 0 -4px 6px rgb(14 14 14 / 4%), 0 12px 32px rgb(13 18 28 / 12%);
+  animation: quick-up 0.32s var(--spring);
+}
+
+/* ## 1  Submit your note expense  [August 07, 2026] */
+.quick-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: var(--sp-12) var(--sp-12) var(--sp-8);
+}
+.quick-card__num {
+  min-height: 28px;
+  padding: 2px var(--sp-8);
+  color: var(--text-900);
+  font-size: 18px;
+  font-weight: var(--weight-m);
+  line-height: 24px;
+}
+.quick-card__title {
+  color: var(--grey-700);
+  font-size: 18px;
+  font-weight: var(--weight-m);
+  line-height: 24px;
+}
+.quick-card__day {
+  min-height: 32px;
+  padding: 0 var(--sp-8);
+  border: 0;
+  border-radius: var(--corner-6);
+  background: var(--brand-100);
+  color: var(--text-900);
+  font-size: 16px;
+  font-weight: var(--weight-m);
+  line-height: 24px;
+}
+.quick-card__day:hover {
+  background: var(--brand-200);
+}
+.quick-card__input {
+  display: block;
+  width: 100%;
+  min-height: 68px;
+  max-height: 140px;
+  padding: var(--sp-6) var(--sp-12) var(--sp-20) var(--sp-16);
+  border: 0;
+  background: none;
+  color: var(--grey-500);
+  font-size: 14px;
+  font-weight: var(--weight-m);
+  line-height: 20px;
+  resize: none;
+  outline: none;
+  field-sizing: content;
+}
+.quick-card__input::placeholder {
+  color: var(--text-disabled);
+}
+.quick-card__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+  padding: var(--sp-8) var(--sp-12);
+  border-top: 1px solid var(--bd-0);
+}
+.quick-card__chip {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 32px;
+  padding: 0 var(--sp-8);
+  overflow: hidden;
+  border: 1px solid var(--bd-1);
+  border-radius: var(--corner-8);
+  background: none;
+  color: var(--text-700);
+  font-size: 12px;
+  font-weight: var(--weight-m);
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quick-card__chip:hover {
+  border-color: var(--brand-300);
+  background: var(--brand-50);
+}
+.quick-card__send {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--white-16);
+  border-radius: var(--rounded);
+  background: var(--bg-dark);
+  color: var(--text-white);
+  transition: opacity 0.15s, transform 0.3s var(--spring);
+}
+.quick-card__send:disabled {
+  opacity: 0.35;
+}
+.quick-card__send:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+/* Here's what I got */
+.quick-card--result {
+  border-top: 1px solid var(--white-80);
+  border-radius: 16px;
+}
+.quick-result__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-16) var(--sp-16) var(--sp-6);
+}
+.quick-result__count {
+  margin: 0;
+  color: var(--grey-400);
+  font-size: 14px;
+  font-weight: var(--weight-m);
+  line-height: 20px;
+}
+.quick-result__title {
+  margin: 0;
+  color: var(--grey-700);
+  font-size: 20px;
+  font-weight: var(--weight-s);
+  line-height: 26px;
+}
+.quick-result__ok {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded);
+  background: var(--brand-500);
+  box-shadow: inset 0 0 0 0.5px var(--dark-6, rgb(13 18 28 / 6%)), 0 1px 8px var(--dark-4);
+  color: var(--text-white);
+  transition: transform 0.3s var(--spring), opacity 0.15s;
+}
+.quick-result__ok:disabled {
+  opacity: 0.35;
+}
+.quick-result__ok:active:not(:disabled) {
+  transform: scale(0.92);
+}
+.quick-result__rows {
+  margin: 0;
+  padding: 0 var(--sp-12) var(--sp-4);
+  list-style: none;
+}
+.quick-result__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  width: 100%;
+  padding: var(--sp-6) var(--sp-8) var(--sp-8);
+  border: 0;
+  border-bottom: 1px solid var(--bd-0);
+  background: none;
+  text-align: left;
+}
+.quick-result__row:hover {
+  background: var(--bg-2);
+}
+.quick-result__num {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--rounded);
+  background: var(--bg-3);
+  color: var(--text-900);
+  font-size: 14px;
+  font-weight: var(--weight-m);
+}
+.quick-result__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  font-weight: var(--weight-m);
+}
+.quick-result__name {
+  color: var(--grey-500);
+  font-size: 14px;
+  line-height: 20px;
+}
+.quick-result__cat {
+  font-size: 12px;
+  line-height: 16px;
+}
+.quick-result__missing {
+  color: var(--text-error);
+  font-size: 12px;
+  font-weight: var(--weight-m);
+}
+.quick-result__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  padding: var(--sp-8) var(--sp-12) var(--sp-12);
+  color: var(--text-disabled);
+  font-size: 14px;
+  font-weight: var(--weight-m);
+  line-height: 20px;
+}
+.quick-result__fix {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded);
+  background: var(--brand-50);
+  color: var(--brand-500);
+}
+
+/* Slide only — no fade, so the card is fully opaque even if the browser pauses the animation. */
+@keyframes quick-up {
+  from {
+    transform: translateY(24px) scale(0.97);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .quick-card {
+    animation: none;
+  }
+}

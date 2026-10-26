@@ -28,12 +28,14 @@
 .day-picker__month:hover {
   background: var(--white-48, rgb(255 255 255 / 48%));
 }
+/* CaretDown (Figma): points right while closed, down while the wheel is open. */
 .day-picker__caret {
   display: inline-flex;
+  transform: rotate(-90deg);
   transition: transform 0.3s var(--spring);
 }
 .day-picker__caret.is-open {
-  transform: rotate(90deg);
+  transform: none;
 }
 
 /* Week labels + days share one 7-column grid; cells are 44px circles with 4px gaps. */
@@ -100,49 +102,62 @@
   color: var(--brand-500);
 }
 
-/* Month list (opened from the month label). */
-.day-picker__months {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-12);
+/* Month / year wheel (964:33538): five rows, the middle one is the value. */
+.day-picker__wheels {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--sp-8);
+  padding: 0 var(--sp-24);
 }
-.day-picker__year {
+/* the selection band behind the middle row */
+.day-picker__wheels::before {
+  content: "";
+  position: absolute;
+  top: calc(34px * 2);
+  right: var(--sp-8);
+  left: var(--sp-8);
+  height: 34px;
+  border-radius: var(--corner-8);
+  background: rgb(118 118 128 / 10%);
+  pointer-events: none;
+}
+.wheel {
+  position: relative;
+  height: calc(34px * 5);
+  overflow-y: auto;
+  padding: calc(34px * 2) 0;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
+  outline: none;
+}
+.wheel::-webkit-scrollbar {
+  display: none;
+}
+.wheel__row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  color: var(--text-900);
-  font-size: 16px;
-  font-weight: var(--weight-s);
-}
-.day-picker__month-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--sp-8);
-}
-.day-picker__month-cell {
-  height: 44px;
-  border: 0;
-  border-radius: var(--rounded);
-  background: none;
-  color: var(--grey-500);
-  font-size: 15px;
+  height: 34px;
+  padding: 0 var(--sp-8);
+  scroll-snap-align: center;
+  color: var(--grey-300);
+  font-size: calc(18px - var(--d) * 1px);
   font-weight: var(--weight-m);
+  cursor: default;
+  transition: color 0.15s ease, font-size 0.15s ease;
+  user-select: none;
 }
-.day-picker__month-cell:disabled {
-  color: var(--text-disabled);
+.wheel__row.is-center {
+  color: var(--text-900);
+  font-size: 20px;
 }
-.day-picker__month-cell.is-picked {
-  background: var(--grey-900);
-  color: var(--text-white);
+.wheel__row.is-disabled {
+  color: var(--bd-1);
 }
-@media (hover: hover) {
-  .day-picker__month-cell:hover:not(:disabled):not(.is-picked) {
-    background: var(--white-64);
-  }
-}
-
-/* Sheet header title: Figma __modal-top uses 16px semibold. */
-.modal--auto .modal__title {
-  font-size: 16px;
-  line-height: 24px;
+.wheel:focus-visible .wheel__row.is-center {
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
