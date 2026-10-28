@@ -73,7 +73,11 @@ export default function ModalSheet({
     if ((e.target as Element).closest("button, input, select, textarea, a")) return
     if (e.button !== 0) return
     drag.current = { y: e.clientY, t: performance.now(), dy: 0, id: e.pointerId }
-    e.currentTarget.setPointerCapture(e.pointerId)
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId)
+    } catch {
+      /* the pointer is already gone */
+    }
   }
   const onMove = (e: PointerEvent<HTMLDivElement>) => {
     const d = drag.current

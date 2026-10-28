@@ -50,7 +50,11 @@ function Tabs({ active, onTab }: { active: Tab; onTab: (t: Tab) => void }) {
     drag.current = { id: e.pointerId, start: indexAt(e.clientX), moved: false }
     setPressing(true)
     setShown(indexAt(e.clientX))
-    e.currentTarget.setPointerCapture(e.pointerId)
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId)
+    } catch {
+      /* the pointer is already gone */
+    }
   }
   const onMove = (e: PointerEvent<HTMLElement>) => {
     const d = drag.current

@@ -170,7 +170,11 @@ export function SegmentedTabs<T extends string>({
   }
   const down = (e: RPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return
-    ref.current!.setPointerCapture(e.pointerId)
+    try {
+      ref.current!.setPointerCapture(e.pointerId)
+    } catch {
+      /* the pointer is already gone */
+    }
     setDrag(indexAt(e.clientX))
   }
   const move = (e: RPointerEvent<HTMLDivElement>) => drag !== null && setDrag(indexAt(e.clientX))
@@ -221,7 +225,11 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
       aria-label={label}
       className={cx("lg-switch", pressing && "is-pressing")}
       onPointerDown={(e) => {
-        e.currentTarget.setPointerCapture(e.pointerId)
+        try {
+      e.currentTarget.setPointerCapture(e.pointerId)
+    } catch {
+      /* the pointer is already gone */
+    }
         start.current = { x: e.clientX, moved: false }
         setPressing(true)
       }}

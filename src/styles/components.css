@@ -196,7 +196,7 @@
 .fn-btn--glass {
   height: 40px;
   padding: var(--sp-4) var(--sp-12);
-  background: var(--white-32);
+  background: var(--bg-white);
   color: var(--brand-500);
 }
 @media (hover: hover) {
@@ -594,7 +594,6 @@
   gap: var(--sp-8);
   padding: var(--sp-12) var(--sp-20) var(--sp-32);
   background: var(--gradient-bottom-bar);
-  backdrop-filter: blur(1px);
 }
 .fn-quick-note {
   display: flex;
@@ -607,9 +606,8 @@
   padding: 4px;
   overflow: hidden;
   border-radius: var(--rounded);
-  background: var(--white-64);
+  background: var(--bg-white);
   box-shadow: var(--shadow-light-2);
-  backdrop-filter: blur(var(--glass-blur));
 }
 .fn-quick-note__open {
   display: flex;

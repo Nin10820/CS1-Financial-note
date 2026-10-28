@@ -1,5 +1,5 @@
-/* Top bar, iOS 26/27 style (as in the Claude app): no bar of its own — floating glass controls,
-   and the content scrolling under them blurs progressively toward the top edge. */
+/* Top bar: no bar of its own at the top; once the page scrolls it sticks on a solid
+   background with a hairline underneath (no blur). */
 .nav-bar {
   position: sticky;
   top: 0;
@@ -29,6 +29,13 @@
 .nav-bar__swap {
   grid-area: 1 / 1;
   transition: opacity 0.22s ease, transform 0.4s var(--spring), filter 0.22s ease;
+}
+.nav-bar {
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.nav-bar.is-scrolled {
+  background: var(--page-bg, var(--bg-2));
+  box-shadow: 0 1px 0 var(--bd-1);
 }
 .nav-bar.is-scrolled .nav-bar__swap--top {
   opacity: 0;

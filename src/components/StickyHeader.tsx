@@ -1,7 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react"
 import "./sticky-header.css"
-import "./pblur.css"
-import ProgressiveBlur from "./ProgressiveBlur"
 
 /** True once the page has scrolled past `threshold` px (rAF-throttled). */
 export function useScrolled(threshold = 56) {
@@ -24,7 +22,7 @@ export function useScrolled(threshold = 56) {
 
 /**
  * iOS-style navigation bar: at the top it is clear and the page's large title sits below it.
- * Once you scroll, it sticks, turns to frosted glass with a hairline shadow, and the large title
+ * Once you scroll, it sticks on a solid background with a hairline underneath, and the large title
  * collapses into a small centred one. Tapping that small title scrolls back to the top.
  */
 export default function StickyHeader({
@@ -43,7 +41,6 @@ export default function StickyHeader({
   const scrolled = useScrolled()
   return (
     <header className={`nav-bar${scrolled ? " is-scrolled" : ""}`}>
-      <ProgressiveBlur edge="top" visible={scrolled} />
       <div className="nav-bar__side">{left}</div>
       <div className="nav-bar__center">
         {center && (

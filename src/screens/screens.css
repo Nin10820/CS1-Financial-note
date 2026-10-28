@@ -174,30 +174,11 @@
 }
 .modal--tall {
   height: calc(100dvh - 54px);
-  border-radius: 28px 28px 0 0;
 }
-/* Half sheet — Figma Template-Modal (962:32146): inset 12px from the sides and 16px from the
-   bottom, 32px corners, white 64% glass with the side hairline, over a light 16% scrim.
-   Full-height sheets (modal--tall) stay opaque. */
+/* Half sheets use the same basic Figma "Modal" as tall ones: attached to the bottom,
+   20px top corners, solid bg-1 over the 48% scrim. */
 .modal:not(.modal--tall) {
-  bottom: calc(var(--sp-16) + env(safe-area-inset-bottom) / 2);
-  width: calc(var(--app-width, min(100vw, 480px)) - 24px);
-  max-height: calc(100dvh - 80px);
-  border: 0;
-  border-inline: 0.5px solid var(--bd-2);
-  border-radius: 32px;
-  background: var(--white-64);
-  box-shadow: 0 2px 8px var(--dark-4), 0 18px 48px rgb(13 18 28 / 10%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  backdrop-filter: blur(24px) saturate(180%);
-}
-.modal-layer:has(.modal--auto) .modal-scrim {
-  background: var(--dark-16);
-}
-@media (prefers-reduced-transparency: reduce) {
-  .modal:not(.modal--tall) {
-    background: var(--bg-1);
-  }
+  padding-bottom: env(safe-area-inset-bottom);
 }
 .modal__grab {
   flex-shrink: 0;

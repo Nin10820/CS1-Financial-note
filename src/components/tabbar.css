@@ -54,13 +54,10 @@
   background: var(--dark-8);
   transition: left 0.5s var(--spring), background-color 0.25s ease, box-shadow 0.25s ease, scale 0.35s var(--spring);
 }
-/* Held: the lens swells into a clear droplet. */
+/* Held: the lens grows a little and darkens. */
 .tabbar__tabs.is-pressing .tabbar__lens {
-  scale: 1.08 1.12;
-  background: rgb(255 255 255 / 55%);
-  box-shadow: var(--lg-glow), 0 8px 22px rgb(13 18 28 / 14%);
-  -webkit-backdrop-filter: blur(2px) saturate(160%);
-  backdrop-filter: blur(2px) saturate(160%);
+  scale: 1.04 1.06;
+  background: var(--dark-12, rgb(13 18 28 / 12%));
   transition: left 0.28s var(--spring), background-color 0.2s ease, box-shadow 0.2s ease, scale 0.3s var(--spring);
 }
 .tabbar__lens::after {

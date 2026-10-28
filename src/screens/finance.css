@@ -1,5 +1,6 @@
 /* Finance — Figma High Fi 2 › Asset (943:25860, 943:25978, 943:26145). Page sits on bg-3. */
 .fin {
+  --page-bg: var(--bg-3);
   background: var(--bg-3);
 }
 .fin-body {
@@ -29,7 +30,7 @@
 }
 .fin-tabs__tab.is-active {
   padding: 0 var(--sp-16);
-  background: var(--white-80);
+  background: var(--bg-white);
   box-shadow: 0 2px 8px var(--dark-4);
   color: var(--text-900);
   font-weight: var(--weight-s);
@@ -428,7 +429,7 @@
   height: 44px;
   border: 1px solid var(--brand-300, #a4da7c);
   border-radius: var(--rounded);
-  background: var(--white-80);
+  background: var(--bg-white);
   color: var(--grey-700);
   font-size: 15px;
   font-weight: var(--weight-m);

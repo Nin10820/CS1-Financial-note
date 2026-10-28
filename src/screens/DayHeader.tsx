@@ -102,7 +102,7 @@ export default function DayHeader({
             variant="glass"
             size={48}
             iconSize={24}
-            style={{ color: "var(--brand-500)", background: "var(--white-64)" }}
+            style={{ color: "var(--brand-500)" }}
             onClick={onProfile}
           />
         }

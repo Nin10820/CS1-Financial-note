@@ -1,11 +1,10 @@
 /* Header — Figma High Fi 2 › Expense (962:31983) and its Daily menu (1033:19713). */
 
-/* "Today" pill: white 32% glass, 44px. */
+/* "Today" pill: solid white control, 44px. */
 .day-today {
   height: 44px;
   padding: var(--sp-4) var(--sp-16);
   border-radius: var(--rounded);
-  background: var(--white-32);
   color: var(--grey-500);
   font-size: 14px;
   font-weight: var(--weight-s);
@@ -65,7 +64,7 @@
   width: 157px;
   padding: var(--sp-4);
   border-radius: var(--corner-20);
-  background: var(--white-64);
+  background: var(--bg-white);
   transform-origin: calc(100% - 30px) 0;
 }
 .day-range__item {

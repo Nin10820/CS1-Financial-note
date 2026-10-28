@@ -1,133 +1,67 @@
-/* ── Liquid Glass ─────────────────────────────────────────────────────────────
-   One material for the floating navigation layer (Apple, "Adopting Liquid Glass"):
-   tab bar, header controls, toolbar groups, menus, sheets. Content stays solid.
+/* ── Surface ──────────────────────────────────────────────────────────────────
+   Basic material for floating controls: solid white, a hairline edge and a light shadow
+   (Figma "Button/Light 1"). No blur, no see-through glass — that look belongs to a native
+   SwiftUI build, not this web app. Class names stay as they were so every screen picks this up.
 
-   .lg            regular glass: adapts to what's behind, for most controls
-   .lg--clear     clearer glass for busy or coloured backgrounds (the green card)
-   .lg--tint      tinted glass for the one primary action on screen
-   .lg--thick     denser glass for menus and popovers that hold text
-   .lg--quiet     near-clear field (quick note)
-   .lg-press      grows and brightens while touched, like system glass buttons
-   .lg-group      several icon buttons sharing one capsule (a toolbar group)
-
-   Values follow the Figma Glass effect on the Navigation Bar (949:30623): frost 5, white 24% fill
-   (4% on the quick note), 0.5px bd-2 hairline on the sides, drop shadow 0 2 8 dark-4. Safari has no
-   real refraction, so the light edge is drawn with soft inner highlights. */
+   .lg            solid white control (header buttons, tab bar, pills, groups)
+   .lg--quiet     same, used for fields
+   .lg--clear     on the dark green card: white 10%
+   .lg--tint      the one primary action: solid brand green
+   .lg--thick     menus and popovers
+   .lg-press      sinks a little while pressed
+   .lg-group      several icon buttons sharing one capsule */
 
 :root {
-  --lg-r-fill: var(--white-24);
-  --lg-r-filter: blur(5px) saturate(160%);
-  --lg-c-fill: rgb(255 255 255 / 10%);
-  --lg-c-filter: blur(6px) saturate(170%) brightness(1.1);
-  --lg-t-fill: var(--brand-500);
-  --lg-k-fill: rgb(250 250 251 / 78%);
-  --lg-k-filter: blur(30px) saturate(190%);
-
-  --lg-rim-grad: linear-gradient(
-    135deg,
-    rgb(255 255 255 / 100%) 0%,
-    rgb(255 255 255 / 35%) 22%,
-    rgb(255 255 255 / 8%) 50%,
-    rgb(255 255 255 / 30%) 78%,
-    rgb(255 255 255 / 85%) 100%
-  );
-  --lg-glow: inset 0 1px 1px rgb(255 255 255 / 65%), inset 0 -1px 1px rgb(255 255 255 / 35%), inset 0 0 6px rgb(255 255 255 / 25%);
-  --lg-hairline: 0 0 0 0 transparent;
-  --lg-drop: 0 2px 8px var(--dark-4);
-  --lg-gloss: linear-gradient(180deg, rgb(255 255 255 / 18%) 0%, rgb(255 255 255 / 0%) 50%);
+  --surface: var(--bg-white);
+  --surface-edge: 0 0 0 0.5px var(--dark-6, rgb(13 18 28 / 6%));
+  --surface-shadow: 0 1px 8px var(--dark-4);
+  --surface-shadow-lg: 0 8px 24px rgb(13 18 28 / 10%), 0 1px 3px rgb(13 18 28 / 6%);
+  /* kept for older rules that still read them */
+  --lg-glow: inset 0 0 0 0.5px var(--dark-6, rgb(13 18 28 / 6%));
 }
 
 .lg {
   position: relative;
-  isolation: isolate;
   border: 0;
-  border-inline: 0.5px solid var(--bd-2);
-  background: var(--lg-r-fill);
-  box-shadow: var(--lg-glow), var(--lg-hairline), var(--lg-drop);
-  -webkit-backdrop-filter: var(--lg-r-filter);
-  backdrop-filter: var(--lg-r-filter);
+  background: var(--surface);
+  box-shadow: var(--surface-edge), var(--surface-shadow);
 }
-/* top gloss */
-.lg::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: var(--lg-gloss);
-  pointer-events: none;
-}
-/* lens rim: a 1px gradient ring, cut out of the middle with a mask */
-.lg-rim::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: var(--lg-rim-grad);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-  pointer-events: none;
-}
-
-/* Quiet: the quick-note field — almost no fill, the glass edge does the work (Figma white 4%). */
 .lg--quiet {
-  background: var(--white-4);
+  background: var(--surface);
 }
-
 .lg--clear {
-  background: var(--lg-c-fill);
-  box-shadow: var(--lg-glow), 0 0 0 0.5px rgb(255 255 255 / 14%), 0 6px 20px rgb(0 0 0 / 12%);
-  color: var(--text-white);
-  -webkit-backdrop-filter: var(--lg-c-filter);
-  backdrop-filter: var(--lg-c-filter);
-}
-.lg--clear::before {
-  opacity: 0.5;
-}
-
-.lg--tint {
-  background: var(--lg-t-fill);
-  box-shadow: inset 0 0 10px 0 rgb(255 255 255 / 22%), inset 0 1px 1px 0 rgb(255 255 255 / 45%), 0 0 0 0.5px rgb(63 125 31 / 40%),
-    0 8px 22px rgb(95 168 47 / 30%);
+  background: var(--white-10);
+  box-shadow: none;
   color: var(--text-white);
 }
-.lg--tint::before {
-  opacity: 0.6;
-}
-
-.lg--clear,
 .lg--tint {
-  border-inline-color: rgb(255 255 255 / 22%);
+  background: var(--brand-500);
+  box-shadow: inset 0 0 0 0.5px var(--white-16), 0 2px 8px rgb(95 168 47 / 30%);
+  color: var(--text-white);
 }
-
 .lg--thick {
-  background: var(--lg-k-fill);
-  -webkit-backdrop-filter: var(--lg-k-filter);
-  backdrop-filter: var(--lg-k-filter);
+  background: var(--surface);
+  box-shadow: var(--surface-edge), var(--surface-shadow-lg);
+}
+/* Only the tab lens uses this now; nothing to draw. */
+.lg-rim::after {
+  content: none;
 }
 
-/* Touch: system glass swells and lights up under the finger instead of sinking. */
 .lg-press {
-  transition: transform 0.4s var(--spring), background-color 0.2s ease, box-shadow 0.25s ease;
+  transition: transform 0.25s var(--spring), background-color 0.15s ease;
 }
 .lg-press:active:not(:disabled) {
-  transform: scale(1.08);
-  box-shadow: inset 0 0 14px 0 rgb(255 255 255 / 60%), inset 0 1px 1px 0 rgb(255 255 255 / 85%), var(--lg-hairline),
-    0 12px 32px rgb(13 18 28 / 14%);
-  transition: transform 0.18s var(--spring), box-shadow 0.15s ease;
-}
-.lg--tint.lg-press:active:not(:disabled) {
-  box-shadow: inset 0 0 14px 0 rgb(255 255 255 / 40%), 0 0 0 0.5px rgb(63 125 31 / 40%), 0 12px 28px rgb(95 168 47 / 38%);
+  transform: scale(0.96);
+  transition-duration: 0.1s;
 }
 @media (hover: hover) {
   .lg-press:hover:not(:disabled):not(.lg--tint):not(.lg--clear) {
-    background: rgb(255 255 255 / 28%);
+    background: var(--bg-2);
   }
 }
 
-/* Round glass button (header, tab bar). */
+/* Round control (header, tab bar). */
 .lg-round {
   display: grid;
   place-items: center;
@@ -139,7 +73,7 @@
   color: var(--grey-700);
 }
 
-/* Toolbar group: related actions share one capsule; the buttons inside stay clear. */
+/* Group: related actions share one capsule; the buttons inside stay clear. */
 .lg-group {
   display: flex;
   align-items: center;
@@ -148,44 +82,27 @@
 .lg-group > button {
   border-radius: var(--rounded);
   background: transparent;
-  transition: transform 0.35s var(--spring), background-color 0.15s;
+  transition: transform 0.25s var(--spring), background-color 0.15s;
 }
 .lg-group > button:active:not(:disabled) {
-  transform: scale(1.12);
-  background: rgb(255 255 255 / 45%);
+  transform: scale(0.92);
+  background: var(--bg-3);
 }
 
-/* Menus morph out of the button that opened them. */
+/* Menus grow out of the button that opened them (scale only, so a paused animation never
+   leaves the menu see-through). */
 .lg-morph {
-  animation: lg-morph 0.42s var(--spring) both;
+  animation: lg-morph 0.3s var(--spring) both;
 }
-/* Scale only: an opacity or blur start would leave the menu see-through if the browser
-   pauses the animation (it does for background tabs). */
 @keyframes lg-morph {
   from {
-    transform: scale(0.35);
-    border-radius: 999px;
+    transform: scale(0.6);
   }
 }
 
-/* Accessibility: Reduce Transparency → solid frosted surface; Increase Contrast → visible edge. */
-@media (prefers-reduced-transparency: reduce) {
-  .lg,
-  .lg--thick {
-    background: rgb(250 250 251 / 97%);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  .lg--clear {
-    background: rgb(40 60 30 / 85%);
-  }
-  .lg--tint {
-    background: var(--brand-500);
-  }
-}
 @media (prefers-contrast: more) {
   .lg {
-    box-shadow: 0 0 0 1px var(--grey-500), var(--lg-drop);
+    box-shadow: 0 0 0 1px var(--grey-500);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -199,7 +116,7 @@
   }
 }
 
-/* ── Segmented control: the thumb slides, and turns into a glass lens while held ── */
+/* ── Segmented control: the white thumb slides between options ── */
 .lg-seg {
   --n: 2;
   --i: 0;
@@ -211,7 +128,7 @@
   height: 36px;
   padding: var(--pad);
   border-radius: var(--rounded);
-  background: rgb(118 118 128 / 14%);
+  background: var(--bg-4);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -223,18 +140,10 @@
   left: var(--pad);
   width: calc((100% - 2 * var(--pad)) / var(--n));
   border-radius: var(--rounded);
-  background: #fff;
-  box-shadow: 0 2px 8px rgb(13 18 28 / 10%), 0 0 0 0.5px rgb(13 18 28 / 5%);
+  background: var(--bg-white);
+  box-shadow: var(--surface-edge), var(--surface-shadow);
   transform: translateX(calc(var(--i) * 100%));
-  transition: transform 0.5s var(--spring), scale 0.35s var(--spring), background-color 0.2s ease, box-shadow 0.2s ease;
-}
-.lg-seg.is-pressing .lg-seg__thumb {
-  scale: 1.1 1.22;
-  background: rgb(255 255 255 / 35%);
-  box-shadow: var(--lg-glow), 0 8px 20px rgb(13 18 28 / 14%);
-  -webkit-backdrop-filter: blur(1.5px) saturate(170%);
-  backdrop-filter: blur(1.5px) saturate(170%);
-  transition: transform 0.28s var(--spring), scale 0.3s var(--spring), background-color 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.4s var(--spring);
 }
 .lg-seg__item {
   position: relative;
@@ -255,18 +164,18 @@
   color: var(--grey-900);
 }
 
-/* ── Switch: the knob becomes glass while dragged ── */
+/* ── Switch ── */
 .lg-switch {
   position: relative;
   display: inline-block;
   flex-shrink: 0;
-  width: 64px;
-  height: 28px;
+  width: 52px;
+  height: 32px;
   padding: 0;
   border: 0;
   border-radius: var(--rounded);
-  background: rgb(120 120 128 / 16%);
-  transition: background-color 0.25s ease;
+  background: var(--bd-1);
+  transition: background-color 0.2s ease;
   touch-action: none;
 }
 .lg-switch[aria-checked="true"] {
@@ -276,20 +185,20 @@
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 38px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: var(--rounded);
-  background: #fff;
-  box-shadow: 0 2px 6px rgb(13 18 28 / 18%), 0 0 0 0.5px rgb(13 18 28 / 4%);
-  transition: transform 0.45s var(--spring), scale 0.3s var(--spring), background-color 0.15s ease, box-shadow 0.15s ease;
+  background: var(--bg-white);
+  box-shadow: 0 2px 6px rgb(13 18 28 / 18%), var(--surface-edge);
+  transition: transform 0.3s var(--spring), width 0.2s ease;
 }
 .lg-switch[aria-checked="true"] .lg-switch__knob {
-  transform: translateX(22px);
+  transform: translateX(20px);
 }
+/* Held: the knob stretches a little, like a native switch. */
 .lg-switch.is-pressing .lg-switch__knob {
-  scale: 1.35 1.45;
-  background: rgb(255 255 255 / 30%);
-  box-shadow: var(--lg-glow), 0 0 0 0.5px rgb(255 255 255 / 60%), 0 6px 16px rgb(13 18 28 / 16%);
-  -webkit-backdrop-filter: blur(1px) saturate(180%);
-  backdrop-filter: blur(1px) saturate(180%);
+  width: 32px;
+}
+.lg-switch[aria-checked="true"].is-pressing .lg-switch__knob {
+  transform: translateX(16px);
 }

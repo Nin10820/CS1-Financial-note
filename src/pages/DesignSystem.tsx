@@ -161,8 +161,8 @@ export default function DesignSystem() {
           </Section>
 
           <Section
-            title="Liquid Glass"
-            note="Chỉ dùng cho lớp điều hướng nổi trên nội dung: thanh tab, nút header, nhóm toolbar, menu, sheet. Nội dung (thẻ, danh sách, chip lọc) giữ nền đặc."
+            title="Bề mặt & nút"
+            note="Bản web dùng style cơ bản, không blur: nền trắng đặc, viền mảnh 0.5px, bóng nhẹ (Button/Light 1). Kính Liquid Glass để dành cho bản SwiftUI."
           >
             <LiquidGlassDemo />
           </Section>
@@ -308,7 +308,7 @@ function LiquidGlassDemo() {
           <Icon name="file-edit" size={22} />
         </button>
       </div>
-      <p className="t-capture-12-r ds-muted">Bấm giữ: kính phồng lên và sáng hơn. Nhóm các nút cùng việc vào một viên kính.</p>
+      <p className="t-capture-12-r ds-muted">Bấm: nút co lại một chút. Các nút cùng việc nằm chung một viên.</p>
 
       <div className="ds-lg__row">
         <div style={{ width: 240 }}>
@@ -325,7 +325,7 @@ function LiquidGlassDemo() {
         <Switch label="Bật" checked={on} onChange={setOn} />
         <Switch label="Tắt" checked={off} onChange={setOff} />
       </div>
-      <p className="t-capture-12-r ds-muted">Segmented và công tắc: kéo hoặc giữ, núm hoá thành thấu kính kính rồi trượt về chỗ.</p>
+      <p className="t-capture-12-r ds-muted">Segmented và công tắc: núm trắng trượt qua lại.</p>
 
       <div className="ds-lg__row">
         <div className="note-menu lg lg--thick ds-lg__menu" role="menu" aria-label="Ví dụ menu">
@@ -339,7 +339,7 @@ function LiquidGlassDemo() {
           </button>
         </div>
       </div>
-      <p className="t-capture-12-r ds-muted">Menu mở ra từ chính nút bấm (co từ viên tròn rồi bung ra). Mỗi mục có icon.</p>
+      <p className="t-capture-12-r ds-muted">Menu mở ra từ chính nút bấm. Mỗi mục có icon.</p>
     </div>
   )
 }

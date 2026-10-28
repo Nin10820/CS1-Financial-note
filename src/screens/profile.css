@@ -1,5 +1,6 @@
 /* Profile — Figma Draft › Account (707:7360). Grouped rows on bg-3, white cards, small caps labels. */
 .prof {
+  --page-bg: var(--bg-3);
   background: var(--bg-3);
 }
 .prof-body {
