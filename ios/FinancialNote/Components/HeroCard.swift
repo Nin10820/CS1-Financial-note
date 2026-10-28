@@ -16,7 +16,7 @@ struct HeroCard<Buttons: View>: View {
             Text(label.uppercased())
                 .font(AppFont.main(13, .medium, relativeTo: .caption))
                 .tracking(0.4)
-                .foregroundStyle(.white.opacity(0.8))
+                .foregroundStyle(Tokens.onDark)
             HStack(spacing: Space.s12) {
                 HStack(alignment: .firstTextBaseline, spacing: Space.s4) {
                     Text(hidden ? "••••••" : Money.format(amount))
@@ -28,7 +28,7 @@ struct HeroCard<Buttons: View>: View {
                         .lineLimit(1)
                     Text("đ")
                         .font(AppFont.main(24, .semibold, relativeTo: .title))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(Tokens.onDark)
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(hidden ? "\(label), hidden" : "\(label), \(Money.format(amount)) dong")
@@ -38,7 +38,7 @@ struct HeroCard<Buttons: View>: View {
                     } label: {
                         Image(systemName: hidden ? "eye" : "eye.slash")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.8))
+                            .foregroundStyle(Tokens.onDark)
                             .frame(width: 32, height: 32)
                             .background(.white.opacity(0.1), in: .circle)
                     }
@@ -49,9 +49,9 @@ struct HeroCard<Buttons: View>: View {
             if let sub {
                 Text(sub)
                     .font(AppFont.main(14, .medium))
-                    .foregroundStyle(.white.opacity(0.64))
+                    .foregroundStyle(Tokens.onDarkMuted)
             }
-            VStack(spacing: Space.s8) {
+            VStack(alignment: .leading, spacing: Space.s8) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
                     HeroLeader(filled: i == 0, label: row.label, value: row.value, hidden: hidden)
                 }
@@ -95,21 +95,39 @@ struct HeroLeader: View {
     var hidden: Bool
 
     var body: some View {
-        HStack(spacing: Space.s8) {
-            Circle()
-                .fill(filled ? Color(hex: 0x83C853) : .clear)
-                .strokeBorder(Color(hex: 0x83C853), lineWidth: 1.5)
-                .frame(width: 8, height: 8)
-            Text(label).font(AppFont.main(14, .medium)).foregroundStyle(.white)
-                .lineLimit(1)
-                .layoutPriority(1)
-            DottedLine()
-                .stroke(.white.opacity(0.32), style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
-                .frame(height: 1)
-            AmountText(value: value, hidden: hidden, color: .white, currencyColor: .white.opacity(0.5))
+        // One line with a dotted leader; at large text sizes the amount goes under the label.
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: Space.s8) {
+                dot
+                name
+                DottedLine()
+                    .stroke(.white.opacity(0.32), style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
+                    .frame(minWidth: 16, maxHeight: 1)
+                amount
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: Space.s8) { dot; name }
+                amount.padding(.leading, 16)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(hidden ? "\(label), hidden" : "\(label), \(Money.format(value)) dong")
+    }
+
+    private var dot: some View {
+        Circle()
+            .fill(filled ? Color(hex: 0x83C853) : .clear)
+            .strokeBorder(Color(hex: 0x83C853), lineWidth: 1.5)
+            .frame(width: 8, height: 8)
+    }
+
+    private var name: some View {
+        Text(label).font(AppFont.main(14, .medium)).foregroundStyle(.white).lineLimit(1).fixedSize()
+    }
+
+    private var amount: some View {
+        AmountText(value: value, hidden: hidden, color: .white, currencyColor: .white).fixedSize()
     }
 }
 

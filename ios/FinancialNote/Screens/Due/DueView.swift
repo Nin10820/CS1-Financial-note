@@ -148,7 +148,7 @@ struct DueView: View {
             Button {
                 app.dueMonth = Month.add(app.dueMonth, -1)
             } label: {
-                Image(systemName: "chevron.left").frame(width: 32, height: 32)
+                Image(systemName: "chevron.left").frame(width: 44, height: 44).contentShape(.rect)
             }
             .accessibilityLabel("Previous month")
             Text(DueText.monthLabel(app.dueMonth))
@@ -159,7 +159,7 @@ struct DueView: View {
             Button {
                 app.dueMonth = Month.add(app.dueMonth, 1)
             } label: {
-                Image(systemName: "chevron.right").frame(width: 32, height: 32)
+                Image(systemName: "chevron.right").frame(width: 44, height: 44).contentShape(.rect)
             }
             .accessibilityLabel("Next month")
         }
@@ -177,6 +177,7 @@ struct DueView: View {
             Button("Add a bill", systemImage: "plus") { sheet = .add(nil) }
                 .font(AppFont.main(15, .semibold))
                 .buttonStyle(.glassProminent)
+                    .tint(Tokens.action)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, Space.s32)
@@ -199,7 +200,7 @@ private struct GroupHeader: View {
 
     var body: some View {
         Button {
-            withAnimation(.snappy) { open.toggle() }
+            animate { open.toggle() }
         } label: {
             HStack(spacing: Space.s6) {
                 Image(systemName: done ? "checkmark.circle" : "circle.dashed")

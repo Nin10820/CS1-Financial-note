@@ -78,7 +78,7 @@ struct AddBillSheet: View {
                 if draft.kind != nil && startKind == nil {
                     ToolbarItem(placement: .topBarLeading) {
                         Button("Change kind", systemImage: "chevron.left") {
-                            withAnimation(.snappy) { draft.kind = nil }
+                            animate { draft.kind = nil }
                         }
                     }
                 } else {
@@ -122,7 +122,7 @@ struct AddBillSheet: View {
                 Divider().overlay(Tokens.bd0)
                 ForEach(Self.kinds, id: \.0) { kind, label, hint in
                     Button {
-                        withAnimation(.snappy) { draft.kind = kind }
+                        animate { draft.kind = kind }
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {

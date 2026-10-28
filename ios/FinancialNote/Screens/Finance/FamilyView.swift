@@ -22,13 +22,13 @@ struct CareCard<Footer: View>: View {
                     .foregroundStyle(.white)
                     .minimumScaleFactor(0.7)
                     .lineLimit(1)
-                Text("đ").font(AppFont.main(24, .semibold)).foregroundStyle(.white.opacity(0.5))
+                Text("đ").font(AppFont.main(24, .semibold)).foregroundStyle(Tokens.onDark)
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(hidden ? "Taken care of, hidden" : "Taken care of, \(Money.format(total)) dong")
             Text(FinanceText.since(careDates: care.map(\.date), birthYear: birthYear, today: today))
                 .font(AppFont.main(14))
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(Tokens.onDark)
             Divider().overlay(.white.opacity(0.16)).padding(.vertical, Space.s4)
             footer
         }
@@ -75,7 +75,7 @@ struct FamilyView: View {
                                 Spacer()
                                 Text(FinanceText.cadence(who: g.who, firstTitle: g.list.last?.title ?? "", count: g.list.count))
                                     .font(AppFont.main(12))
-                                    .foregroundStyle(.white.opacity(0.7))
+                                    .foregroundStyle(Tokens.onDark)
                             }
                             .accessibilityElement(children: .combine)
                         }
@@ -107,10 +107,10 @@ struct FamilyView: View {
                         MoneyRow(title: c.title, sub: FinanceText.dayLabel(c.date), amount: c.amount, icon: nil, hidden: app.assetsHidden)
                     }
                     if rows.count > 6 {
-                        Button(showAll ? "Show less" : "Show all \(rows.count)") { withAnimation(.snappy) { showAll.toggle() } }
+                        Button(showAll ? "Show less" : "Show all \(rows.count)") { animate { showAll.toggle() } }
                             .font(AppFont.main(14, .medium))
-                            .foregroundStyle(Tokens.brand600)
-                            .padding(.vertical, Space.s12)
+                            .foregroundStyle(Tokens.brand700)
+                            .frame(minHeight: 44)
                     }
                 }
                 .padding(.horizontal, Space.s16)

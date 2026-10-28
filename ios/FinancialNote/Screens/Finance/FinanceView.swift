@@ -79,6 +79,7 @@ struct FinanceView: View {
                 Button("Add an asset", systemImage: "plus") { adding = true }
                     .font(AppFont.main(15, .semibold))
                     .buttonStyle(.glassProminent)
+                    .tint(Tokens.action)
             }
             .frame(maxWidth: .infinity)
             .padding(Space.s24)
@@ -134,6 +135,7 @@ private struct TotalBlock: View {
     var groups: [AssetMath.Group]
     var growth: Int?
     var hidden: Bool
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s12) {
@@ -145,7 +147,7 @@ private struct TotalBlock: View {
                     .foregroundStyle(Tokens.text900)
                     .minimumScaleFactor(0.7)
                     .lineLimit(1)
-                Text("đ").font(AppFont.main(22, .semibold)).foregroundStyle(Tokens.grey300)
+                Text("đ").font(AppFont.main(22, .semibold)).foregroundStyle(Tokens.grey400)
                 if let growth, !hidden { GrowthBadge(pct: growth) }
             }
             .accessibilityElement(children: .combine)
@@ -164,11 +166,12 @@ private struct TotalBlock: View {
             .frame(height: 32)
             .accessibilityHidden(true)
 
-            LazyVGrid(columns: [GridItem(.flexible(), alignment: .leading), GridItem(.flexible(), alignment: .leading)], spacing: Space.s8) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: typeSize.isAccessibilitySize ? 1 : 2),
+                      spacing: Space.s8) {
                 ForEach(groups, id: \.kind) { grp in
                     HStack(spacing: Space.s6) {
                         RoundedRectangle(cornerRadius: 3).fill(Tokens.assetKind(grp.kind)).frame(width: 12, height: 12)
-                        Text("\(grp.kind.label):").foregroundStyle(Tokens.text700)
+                        Text("\(grp.kind.label):").foregroundStyle(Tokens.text700).lineLimit(1).fixedSize()
                         Text("\(grp.pct)%").foregroundStyle(Tokens.text900)
                     }
                     .font(AppFont.main(13, .medium))
@@ -240,6 +243,7 @@ private struct WorthChart: View {
                         }
                         .padding(Space.s8)
                         .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c8))
+                        .overlay(RoundedRectangle(cornerRadius: Corner.c8).strokeBorder(Tokens.bd1))
                         .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
                     }
                 }
@@ -278,7 +282,7 @@ struct AssetTile: View {
     var body: some View {
         Text(icon.mark)
             .font(AppFont.main(13, .bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(icon == .gold ? Color(hex: 0x0D121C) : .white)
             .frame(width: 36, height: 36)
             .background(Tokens.assetTile(icon), in: .rect(cornerRadius: Corner.c8))
             .accessibilityHidden(true)
@@ -320,9 +324,11 @@ private struct MovesCard: View {
                         .accessibilityAddTraits(.isHeader)
                     Spacer()
                     if moves.count > 3 {
-                        Button(all ? "Show less" : "See all") { withAnimation(.snappy) { all.toggle() } }
+                        Button(all ? "Show less" : "See all") { animate { all.toggle() } }
                             .font(AppFont.main(14, .medium))
-                            .foregroundStyle(Tokens.brand600)
+                            .foregroundStyle(Tokens.brand700)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .contentShape(.rect)
                     }
                 }
                 ForEach(Array((all ? moves : Array(moves.prefix(3))).enumerated()), id: \.element.id) { i, m in

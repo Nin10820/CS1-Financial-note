@@ -207,6 +207,7 @@ struct BillDetailSheet: View {
                         Text("Check").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.glassProminent)
+                    .tint(Tokens.action)
                     .disabled(bill.varies && typed <= 0)
                 }
             } else {

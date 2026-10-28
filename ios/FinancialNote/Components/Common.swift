@@ -29,7 +29,7 @@ struct AmountText: View {
                 .foregroundStyle(color)
                 .monospacedDigit()
             Text("đ")
-                .font(AppFont.main(size * 0.78, .medium))
+                .font(AppFont.main(max(12, size * 0.78), .medium))
                 .foregroundStyle(currencyColor)
         }
         .accessibilityElement(children: .ignore)
@@ -66,6 +66,7 @@ struct FlowTile: View {
 struct EntryRow: View {
     var entry: Entry
     var hidden: Bool
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         HStack(spacing: Space.s12) {
@@ -74,12 +75,14 @@ struct EntryRow: View {
                 Text(entry.title)
                     .font(AppFont.main(14, .medium))
                     .foregroundStyle(Tokens.text900)
-                    .lineLimit(2)
+                    .lineLimit(typeSize.isAccessibilitySize ? 4 : 2)
                     .multilineTextAlignment(.leading)
                 CategoryLabel(category: entry.category)
+                // Very large text: the amount goes under the name instead of squeezing it.
+                if typeSize.isAccessibilitySize { AmountText(value: entry.amount, hidden: hidden) }
             }
             Spacer(minLength: Space.s8)
-            AmountText(value: entry.amount, hidden: hidden)
+            if !typeSize.isAccessibilitySize { AmountText(value: entry.amount, hidden: hidden).fixedSize() }
         }
         .padding(.vertical, Space.s12)
         .contentShape(.rect)
@@ -98,6 +101,8 @@ struct FilterChip: View {
         Button(action: action) {
             Text(label)
                 .font(AppFont.main(14, .medium))
+                .lineLimit(1)
+                .fixedSize()
                 .padding(.horizontal, Space.s16)
                 .padding(.vertical, Space.s6)
                 .foregroundStyle(selected ? Tokens.bgWhite : Tokens.text700)
@@ -105,25 +110,5 @@ struct FilterChip: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? .isSelected : [])
-    }
-}
-
-/// Used by tabs that aren't built yet. Says so plainly — never a fake screen.
-struct ComingLaterView: View {
-    var title: String
-    var systemImage: String
-    var text: String
-
-    var body: some View {
-        NavigationStack {
-            ContentUnavailableView {
-                Label("\(title) comes later", systemImage: systemImage)
-                    .font(AppFont.heading(22))
-            } description: {
-                Text(text).font(AppFont.main(15))
-            }
-            .navigationTitle(title)
-            .toolbarTitleDisplayMode(.inline)
-        }
     }
 }

@@ -42,7 +42,7 @@ struct QuickNoteLayer: View {
             .shadow(color: .black.opacity(0.12), radius: 16, y: 4)
             .padding(.horizontal, Space.s12)
             .padding(.bottom, Space.s12)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .transition(.sheetLike)
         }
         .onAppear(perform: load)
         .sheet(isPresented: $picking) { DayPickerSheet(day: $date) }
@@ -152,7 +152,7 @@ struct QuickNoteLayer: View {
                 }
                 .buttonStyle(.glassProminent)
                 .buttonBorderShape(.circle)
-                .tint(Tokens.brand500)
+                .tint(Tokens.action)
                 .disabled(missing || drafts.isEmpty)
                 .accessibilityLabel("Save \(drafts.count) \(drafts.count == 1 ? "item" : "items")")
             }

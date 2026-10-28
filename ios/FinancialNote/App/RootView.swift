@@ -32,7 +32,7 @@ struct RootView: View {
         .tabViewBottomAccessory {
             QuickNoteAccessory()
         }
-        .tint(Tokens.brand500)
+        .tint(Tokens.brand600)
         .overlay {
             if app.quick != nil {
                 QuickNoteLayer()

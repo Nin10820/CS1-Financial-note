@@ -54,6 +54,16 @@ nonisolated enum Day {
         return f.string(from: date(iso))
     }
 
+    /// "Today", "Yesterday" or "Mon 26 Oct" — day headings in Weekly / Monthly lists.
+    static func dayHeading(_ iso: String, today: String) -> String {
+        if iso == today { return "Today" }
+        if iso == addDays(today, -1) { return "Yesterday" }
+        let names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        let weekday = calendar.component(.weekday, from: date(iso))
+        let (_, m, d) = parts(iso)
+        return "\(names[weekday - 1]) \(d) \(monthsShort[m - 1])"
+    }
+
     /// "21:14"
     static func clock(_ at: Date) -> String {
         let f = DateFormatter()

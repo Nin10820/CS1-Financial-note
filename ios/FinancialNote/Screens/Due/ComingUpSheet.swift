@@ -47,13 +47,13 @@ struct ComingUpSheet: View {
     private var grid: some View {
         VStack(spacing: Space.s12) {
             HStack {
-                Button { year -= 1 } label: { Image(systemName: "chevron.left").frame(width: 32, height: 32) }
+                Button { year -= 1 } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44).contentShape(.rect) }
                     .accessibilityLabel("Previous year")
                 Text(String(year))
                     .font(AppFont.heading(20, .semibold))
                     .frame(maxWidth: .infinity)
                     .accessibilityAddTraits(.isHeader)
-                Button { year += 1 } label: { Image(systemName: "chevron.right").frame(width: 32, height: 32) }
+                Button { year += 1 } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44).contentShape(.rect) }
                     .accessibilityLabel("Next year")
             }
             .buttonStyle(.plain)

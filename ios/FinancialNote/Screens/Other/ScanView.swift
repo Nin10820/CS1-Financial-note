@@ -16,6 +16,7 @@ struct ScanView: View {
                 Button("Type it instead") { app.openQuickNote() }
                     .font(AppFont.main(16, .semibold))
                     .buttonStyle(.glassProminent)
+                    .tint(Tokens.action)
             }
             .navigationTitle("Scan")
             .toolbarTitleDisplayMode(.inline)

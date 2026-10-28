@@ -76,6 +76,7 @@ struct TodayView: View {
                 app.day = app.today
             }
             .font(AppFont.main(15, .semibold))
+            .foregroundStyle(Tokens.text900)
             .accessibilityLabel("Go to today")
         }
         ToolbarItem(placement: .topBarTrailing) {
@@ -114,6 +115,9 @@ struct TodayView: View {
                 }
                 .font(AppFont.main(15, .medium))
                 .foregroundStyle(Tokens.text700)
+                .frame(minHeight: 44)
+                .padding(.horizontal, Space.s4)
+                .contentShape(.rect)
             }
             .accessibilityLabel("Show \(app.range.label)")
         }
@@ -148,22 +152,36 @@ struct TodayView: View {
                 .font(AppFont.main(18, .semibold, relativeTo: .headline))
                 .foregroundStyle(Tokens.text900)
                 .accessibilityAddTraits(.isHeader)
-            HStack(spacing: Space.s8) {
-                ForEach(Filter.allCases, id: \.self) { f in
-                    FilterChip(label: f.rawValue, selected: filter == f) { filter = f }
+            ScrollView(.horizontal) {
+                HStack(spacing: Space.s8) {
+                    ForEach(Filter.allCases, id: \.self) { f in
+                        FilterChip(label: f.rawValue, selected: filter == f) { filter = f }
+                    }
                 }
             }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             if shown.isEmpty {
                 Text("Nothing \(filter == .expense ? "spent" : "received") \(rangeWords).")
                     .font(AppFont.main(14))
                     .foregroundStyle(Tokens.grey400)
                     .padding(.vertical, Space.s16)
             } else {
-                LazyVStack(spacing: 0) {
-                    ForEach(shown) { e in
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(shown.enumerated()), id: \.element.id) { i, e in
+                        // Weekly and Monthly cover many days: each day gets a small heading.
+                        if app.range != .day && (i == 0 || shown[i - 1].date != e.date) {
+                            Text(Day.dayHeading(e.date, today: app.today))
+                                .font(AppFont.main(12, .semibold, relativeTo: .caption))
+                                .foregroundStyle(Tokens.grey400)
+                                .padding(.top, i == 0 ? Space.s4 : Space.s16)
+                                .padding(.bottom, Space.s4)
+                                .accessibilityAddTraits(.isHeader)
+                        } else if i > 0 {
+                            Divider().overlay(Tokens.bd0)
+                        }
                         Button { openEntry = e } label: { EntryRow(entry: e, hidden: app.hidden) }
                             .buttonStyle(.plain)
-                        if e.id != shown.last?.id { Divider().overlay(Tokens.bd0) }
                     }
                 }
             }
@@ -218,7 +236,7 @@ struct TodayView: View {
 
     private var scrolledTitle: String {
         switch app.range {
-        case .day: "Today · \(app.day == app.today ? "Today" : Day.short(app.day))"
+        case .day: app.day == app.today ? "Today" : "Today · \(Day.short(app.day))"
         case .week: "Today · Week of \(Day.short(Day.monday(of: app.day)))"
         case .month: "Today · \(Day.monthsShort[Day.parts(app.day).m - 1])"
         }

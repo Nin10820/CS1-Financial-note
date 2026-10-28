@@ -64,7 +64,7 @@ struct ProfileView: View {
             }
             .font(AppFont.main(16))
             .navigationTitle("Profile")
-            .tint(Tokens.brand500)
+            .tint(Tokens.brand600)
         }
     }
 
@@ -410,7 +410,7 @@ private struct AboutView: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: Space.s6) {
-                    Text("PRINCIPLE").font(AppFont.main(11, .semibold)).tracking(0.6).foregroundStyle(.white.opacity(0.7))
+                    Text("PRINCIPLE").font(AppFont.main(11, .semibold)).tracking(0.6).foregroundStyle(Tokens.onDarkMuted)
                     Text("A layer to look through, not a layer of control")
                         .font(AppFont.title(20, .bold))
                         .foregroundStyle(.white)

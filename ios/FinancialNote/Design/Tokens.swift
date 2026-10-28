@@ -41,6 +41,15 @@ enum Tokens {
     static let brand700 = Color(light: 0x3B6922, dark: 0x9CD472)
     static let brand800 = Color(light: 0x2C481F, dark: 0xC8E9AD)
 
+    /// Fill for prominent buttons with white text: brand-700 in both modes, so the label
+    /// keeps a 6.5:1 contrast (brand-500 with white text is only 2.9:1).
+    static let action = Color(hex: 0x3B6922)
+
+    /// Text on the dark green cards. Solid colours (not see-through white) so the contrast is
+    /// the same however the card is drawn: about 9:1 and 6.8:1 on the card's green.
+    static let onDark = Color(hex: 0xDCE5D6)
+    static let onDarkMuted = Color(hex: 0xB3BFAD)
+
     // Greys and text
     static let text900 = Color(light: 0x0D121C, dark: 0xF3F4F6)
     static let text700 = Color(light: 0x364152, dark: 0xCDD5DF)

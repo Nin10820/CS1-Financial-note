@@ -27,6 +27,8 @@ struct WeekStrip: View {
                     .strokeBorder(Tokens.brand300, lineWidth: 1)
             }
         }
+        // Seven days must fit across the phone; past this size the strip stops growing.
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         .contentShape(.rect)
         .gesture(
             DragGesture(minimumDistance: 20).onEnded { g in

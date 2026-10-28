@@ -15,7 +15,7 @@ struct QuickNoteAccessory: View {
                     LogoMark(size: 20)
                     Text(placement == .inline ? "Quick note" : "e.g. coffee 24k, breakfast 35k…")
                         .font(AppFont.main(14))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Tokens.text700)
                         .lineLimit(1)
                     Spacer(minLength: 0)
                 }

@@ -38,6 +38,16 @@
                ReferencedContainer = "container:FinancialNote.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "F1A000000000000000000103"
+               BuildableName = "FinancialNoteUITests.xctest"
+               BlueprintName = "FinancialNoteUITests"
+               ReferencedContainer = "container:FinancialNote.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

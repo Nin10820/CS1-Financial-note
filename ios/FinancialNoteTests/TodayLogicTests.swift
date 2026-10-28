@@ -53,3 +53,11 @@ final class ColorThreadTests: XCTestCase {
         XCTAssertTrue(ok)
     }
 }
+
+final class DayHeadingTests: XCTestCase {
+    func testDayHeadings() {
+        XCTAssertEqual(Day.dayHeading("2026-10-29", today: "2026-10-29"), "Today")
+        XCTAssertEqual(Day.dayHeading("2026-10-28", today: "2026-10-29"), "Yesterday")
+        XCTAssertEqual(Day.dayHeading("2026-10-26", today: "2026-10-29"), "Mon 26 Oct")
+    }
+}

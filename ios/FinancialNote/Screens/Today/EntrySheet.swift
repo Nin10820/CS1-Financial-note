@@ -91,6 +91,7 @@ struct EntrySheet: View {
                         Text("Edit").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.glassProminent)
+                    .tint(Tokens.action)
                 }
                 .font(AppFont.main(16, .semibold))
                 .controlSize(.large)
