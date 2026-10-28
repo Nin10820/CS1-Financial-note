@@ -22,14 +22,10 @@ struct RootView: View {
                 ScanView()
             }
             Tab("Finance", systemImage: "chart.pie.fill", value: AppState.TabID.finance) {
-                ComingLaterView(
-                    title: "Finance", systemImage: "chart.pie",
-                    text: "Assets, debt and “Taken care of” come in a later build.")
+                FinanceView()
             }
             Tab("Profile", systemImage: "person.fill", value: AppState.TabID.profile) {
-                ComingLaterView(
-                    title: "Profile", systemImage: "person",
-                    text: "Your name, your data and display settings come in a later build. Everything already stays on this phone.")
+                ProfileView()
             }
         }
         .tabBarMinimizeBehavior(.onScrollDown)
@@ -54,6 +50,7 @@ struct RootView: View {
             guard !didApplyPrefs else { return }
             didApplyPrefs = true
             app.hidden = profiles.first?.hideOnOpen ?? false
+            app.assetsHidden = app.hidden || (profiles.first?.hideAssets ?? false)
         }
     }
 }

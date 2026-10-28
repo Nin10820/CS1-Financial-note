@@ -16,6 +16,8 @@ final class AppState {
     var dueMonth = Month.of(Day.today())
     /// Amounts shown as "••••••". Starts hidden when Profile › Display says so.
     var hidden = false
+    /// Finance totals hidden; starts hidden when Profile › Display says so for assets or for all amounts.
+    var assetsHidden = false
     /// The quick-note card, when open.
     var quick: QuickNoteRequest?
     var dayNoteOpen = false
