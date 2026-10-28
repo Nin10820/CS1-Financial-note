@@ -19,7 +19,7 @@ struct FinancialNoteApp: App {
 
     var body: some Scene {
         WindowGroup {
-            FoundationView()
+            RootView()
         }
         .modelContainer(container)
     }

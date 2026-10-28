@@ -40,6 +40,27 @@ nonisolated enum Day {
         return self.iso(date(year: y, month: m, day: d + days))
     }
 
+    /// Monday of the week that holds `iso`.
+    static func monday(of iso: String) -> String {
+        let weekday = calendar.component(.weekday, from: date(iso)) // 1 = Sunday
+        return addDays(iso, -((weekday + 5) % 7))
+    }
+
+    /// "Monday, October 27" for VoiceOver.
+    static func spoken(_ iso: String) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US")
+        f.dateFormat = "EEEE, MMMM d"
+        return f.string(from: date(iso))
+    }
+
+    /// "21:14"
+    static func clock(_ at: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        return f.string(from: at)
+    }
+
     /// Days in a month (1-based month).
     static func daysIn(year: Int, month: Int) -> Int {
         calendar.range(of: .day, in: .month, for: date(year: year, month: month, day: 1))?.count ?? 30

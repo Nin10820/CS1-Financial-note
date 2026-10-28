@@ -5,10 +5,11 @@ import UIKit
 // variant: greys and surfaces flip, brand and category colours lift a step so they read on dark.
 // Change a value in Figma first, then in tokens.css, then here.
 
-extension Color {
+// `nonisolated`: SwiftUI resolves colours on its render thread, not only on the main actor.
+nonisolated extension Color {
     /// A colour that follows light / dark mode.
     init(light: UInt32, dark: UInt32) {
-        self.init(uiColor: UIColor { traits in
+        self.init(uiColor: UIColor { @Sendable traits in
             UIColor(hex: traits.userInterfaceStyle == .dark ? dark : light)
         })
     }
@@ -16,7 +17,7 @@ extension Color {
     init(hex: UInt32) { self.init(uiColor: UIColor(hex: hex)) }
 }
 
-extension UIColor {
+nonisolated extension UIColor {
     convenience init(hex: UInt32) {
         self.init(
             red: CGFloat((hex >> 16) & 0xFF) / 255,
@@ -133,6 +134,6 @@ enum Space {
 }
 
 enum Corner {
-    static let c4: CGFloat = 4, c8: CGFloat = 8, c12: CGFloat = 12, c14: CGFloat = 14
+    static let c4: CGFloat = 4, c6: CGFloat = 6, c8: CGFloat = 8, c12: CGFloat = 12, c14: CGFloat = 14
     static let c16: CGFloat = 16, c20: CGFloat = 20
 }
