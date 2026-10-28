@@ -16,9 +16,7 @@ struct RootView: View {
                 TodayView()
             }
             Tab("Due", systemImage: "doc.text.fill", value: AppState.TabID.due) {
-                ComingLaterView(
-                    title: "Due", systemImage: "doc.text",
-                    text: "Bills and installments come in the next build. Your sample bills are already saved on this phone.")
+                DueView()
             }
             Tab("Scan", systemImage: "viewfinder", value: AppState.TabID.scan) {
                 ScanView()

@@ -116,6 +116,20 @@ enum Tokens {
         }
     }
 
+    /// Soft tile (background, ink) from the Figma statement list.
+    static func billTileSoft(_ icon: BillIcon) -> (bg: Color, ink: Color) {
+        switch icon {
+        case .house: (Color(light: 0xE0EAFF, dark: 0x1E2250), Color(light: 0x3538CD, dark: 0x8B91F5))
+        case .drop: (Color(light: 0xDFF2FF, dark: 0x0B2C40), Color(light: 0x0085CA, dark: 0x4FB8F0))
+        case .gasPump: (Color(light: 0xCCFBEF, dark: 0x0E3B33), Color(light: 0x107569, dark: 0x2ED3B7))
+        case .lightning: (Color(light: 0xFFE6D5, dark: 0x4A1E0A), Color(light: 0xC4320A, dark: 0xFF8A5C))
+        case .phone: (Color(light: 0xE2F4D3, dark: 0x1C3314), Color(light: 0x3B6922, dark: 0x9CD472))
+        case .student: (Color(light: 0xD1E9FF, dark: 0x0F2A4D), Color(light: 0x1570EF, dark: 0x5B9BF5))
+        case .monitor: (Color(light: 0xF8EADC, dark: 0x3D2618), Color(light: 0xC85A34, dark: 0xE5875F))
+        case .bell: (Color(light: 0xEAECF0, dark: 0x202939), Color(light: 0x364152, dark: 0xCDD5DF))
+        }
+    }
+
     static func assetTile(_ icon: AssetIcon) -> Color {
         switch icon {
         case .gold: Color(hex: 0xF4B400)

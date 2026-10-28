@@ -12,6 +12,8 @@ final class AppState {
     /// The day Today shows, "YYYY-MM-DD".
     var day = Day.today()
     var range: DayRange = .day
+    /// The month Due shows, "YYYY-MM".
+    var dueMonth = Month.of(Day.today())
     /// Amounts shown as "••••••". Starts hidden when Profile › Display says so.
     var hidden = false
     /// The quick-note card, when open.
