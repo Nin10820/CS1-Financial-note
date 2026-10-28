@@ -1,0 +1,383 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXContainerItemProxy section */
+		F1A000000000000000000301 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F1A000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F1A000000000000000000101;
+			remoteInfo = FinancialNote;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		F1A000000000000000000201 /* FinancialNote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FinancialNote.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F1A000000000000000000202 /* FinancialNoteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FinancialNoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F1A000000000000000000203 /* FinancialNote-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "FinancialNote-Info.plist"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		F1A000000000000000000401 /* FinancialNote */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = FinancialNote;
+			sourceTree = "<group>";
+		};
+		F1A000000000000000000402 /* FinancialNoteTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = FinancialNoteTests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F1A000000000000000000501 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F1A000000000000000000502 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F1A000000000000000000601 = {
+			isa = PBXGroup;
+			children = (
+				F1A000000000000000000401 /* FinancialNote */,
+				F1A000000000000000000402 /* FinancialNoteTests */,
+				F1A000000000000000000603 /* Config */,
+				F1A000000000000000000602 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F1A000000000000000000602 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F1A000000000000000000201 /* FinancialNote.app */,
+				F1A000000000000000000202 /* FinancialNoteTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F1A000000000000000000603 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				F1A000000000000000000203 /* FinancialNote-Info.plist */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F1A000000000000000000101 /* FinancialNote */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F1A000000000000000000801 /* Build configuration list for PBXNativeTarget "FinancialNote" */;
+			buildPhases = (
+				F1A000000000000000000701 /* Sources */,
+				F1A000000000000000000501 /* Frameworks */,
+				F1A000000000000000000703 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F1A000000000000000000401 /* FinancialNote */,
+			);
+			name = FinancialNote;
+			productName = FinancialNote;
+			productReference = F1A000000000000000000201 /* FinancialNote.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F1A000000000000000000102 /* FinancialNoteTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F1A000000000000000000802 /* Build configuration list for PBXNativeTarget "FinancialNoteTests" */;
+			buildPhases = (
+				F1A000000000000000000702 /* Sources */,
+				F1A000000000000000000502 /* Frameworks */,
+				F1A000000000000000000704 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F1A000000000000000000901 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F1A000000000000000000402 /* FinancialNoteTests */,
+			);
+			name = FinancialNoteTests;
+			productName = FinancialNoteTests;
+			productReference = F1A000000000000000000202 /* FinancialNoteTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F1A000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2700;
+				LastUpgradeCheck = 2700;
+				TargetAttributes = {
+					F1A000000000000000000101 = {
+						CreatedOnToolsVersion = 27.1;
+					};
+					F1A000000000000000000102 = {
+						CreatedOnToolsVersion = 27.1;
+						TestTargetID = F1A000000000000000000101;
+					};
+				};
+			};
+			buildConfigurationList = F1A000000000000000000803 /* Build configuration list for PBXProject "FinancialNote" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				vi,
+				Base,
+			);
+			mainGroup = F1A000000000000000000601;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = F1A000000000000000000602 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F1A000000000000000000101 /* FinancialNote */,
+				F1A000000000000000000102 /* FinancialNoteTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F1A000000000000000000703 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F1A000000000000000000704 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F1A000000000000000000701 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F1A000000000000000000702 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F1A000000000000000000901 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F1A000000000000000000101 /* FinancialNote */;
+			targetProxy = F1A000000000000000000301 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		F1A000000000000000000A01 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		F1A000000000000000000A02 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 6.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		F1A000000000000000000A03 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/FinancialNote-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Financial Note";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.phamnguyen.financialnote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F1A000000000000000000A04 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/FinancialNote-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Financial Note";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.phamnguyen.financialnote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		F1A000000000000000000A05 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.phamnguyen.financialnote.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FinancialNote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FinancialNote";
+			};
+			name = Debug;
+		};
+		F1A000000000000000000A06 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = studio.phamnguyen.financialnote.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FinancialNote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FinancialNote";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F1A000000000000000000801 /* Build configuration list for PBXNativeTarget "FinancialNote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1A000000000000000000A03 /* Debug */,
+				F1A000000000000000000A04 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F1A000000000000000000802 /* Build configuration list for PBXNativeTarget "FinancialNoteTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1A000000000000000000A05 /* Debug */,
+				F1A000000000000000000A06 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F1A000000000000000000803 /* Build configuration list for PBXProject "FinancialNote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F1A000000000000000000A01 /* Debug */,
+				F1A000000000000000000A02 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F1A000000000000000000001 /* Project object */;
+}
