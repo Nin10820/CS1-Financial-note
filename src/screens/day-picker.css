@@ -29,13 +29,20 @@
   background: var(--white-48, rgb(255 255 255 / 48%));
 }
 /* CaretDown (Figma): points right while closed, down while the wheel is open. */
+/* CaretDown: points down, open or closed (as in the design). */
 .day-picker__caret {
   display: inline-flex;
-  transform: rotate(-90deg);
   transition: transform 0.3s var(--spring);
 }
-.day-picker__caret.is-open {
-  transform: none;
+.day-picker__steps {
+  display: flex;
+  gap: var(--sp-4);
+}
+.day-picker__steps .fn-icon-btn {
+  color: var(--grey-700);
+}
+.day-picker__steps .fn-icon-btn:disabled {
+  opacity: 0.3;
 }
 
 /* Week labels + days share one 7-column grid; cells are 44px circles with 4px gaps. */

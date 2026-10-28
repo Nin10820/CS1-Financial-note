@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { FilterChips, LogoMark, Sheet, SpendCard, TransItem } from "../components/ui"
 import { Icon } from "../components/Icon"
-import { clock, greeting, money, shortDate, today } from "../lib/format"
+import { addDays, clock, greeting, money, shortDate, today } from "../lib/format"
 import { categoryTone, type Entry } from "../lib/store"
 import type { AssistantOpen } from "./Assistant"
-import DayHeader from "./DayHeader"
+import DayHeader, { mondayOf, type Range } from "./DayHeader"
 import TabBar, { type Tab } from "../components/TabBar"
 
 type Filter = "all" | "expense" | "receive"
@@ -41,9 +41,38 @@ export default function Home({
   onTab: (t: Tab) => void
 }) {
   const [filter, setFilter] = useState<Filter>("all")
+  const [range, setRange] = useState<Range>("day")
+  const [menu, setMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!menu) return
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !menuRef.current?.contains(e.target as Node) && !(e.target as Element).closest?.(".tabbar__write")) setMenu(false)
+    }
+    document.addEventListener("pointerdown", close)
+    document.addEventListener("keydown", close)
+    return () => {
+      document.removeEventListener("pointerdown", close)
+      document.removeEventListener("keydown", close)
+    }
+  }, [menu])
   const marked = useMemo(() => new Set(entries.map((e) => e.date)), [entries])
 
-  const list = useMemo(() => entries.filter((e) => e.date === day).sort((a, b) => b.createdAt - a.createdAt), [entries, day])
+  // The days the card and list cover: the picked day, its Monday–Sunday week, or its month.
+  const [from, to] = range === "week" ? [mondayOf(day), addDays(mondayOf(day), 6)] : range === "month" ? [`${day.slice(0, 7)}-01`, `${day.slice(0, 7)}-31`] : [day, day]
+  const list = useMemo(
+    () => entries.filter((e) => e.date >= from && e.date <= to).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt),
+    [entries, from, to],
+  )
+  const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+  const cardLabel =
+    range === "week"
+      ? "Spent this week"
+      : range === "month"
+        ? `Spent in ${MONTHS[Number(day.slice(5, 7)) - 1]}`
+        : day === today()
+          ? "Spent today"
+          : `Spent on ${shortDate(day)}`
   const out = list.filter((e) => e.flow === "out").reduce((s, e) => s + e.amount, 0)
   const incoming = list.filter((e) => e.flow === "in").reduce((s, e) => s + e.amount, 0)
   const notes = new Set(list.map((e) => e.noteId)).size
@@ -53,7 +82,7 @@ export default function Home({
   return (
     <div className="screen">
       <span className="screen__glow" aria-hidden="true" />
-      <DayHeader day={day} onDayChange={onDayChange} title="Transaction" marked={marked} onProfile={() => onTab("profile")} />
+      <DayHeader day={day} onDayChange={onDayChange} title="Today" marked={marked} range={range} onRange={setRange} onProfile={() => onTab("profile")} />
 
       {list.length === 0 ? (
         <section className="home-empty" aria-label="Nothing recorded yet">
@@ -77,13 +106,17 @@ export default function Home({
               </li>
             ))}
           </ul>
-          {day !== today() && <p className="t-capture-12-r home-empty__day">Nothing recorded on {shortDate(day)}.</p>}
+          {(range !== "day" || day !== today()) && (
+            <p className="t-capture-12-r home-empty__day">
+              Nothing recorded {range === "week" ? "this week" : range === "month" ? `in ${MONTHS[Number(day.slice(5, 7)) - 1]}` : `on ${shortDate(day)}`}.
+            </p>
+          )}
         </section>
       ) : (
         <>
           <div className="screen__card">
             <SpendCard
-              label={day === today() ? "Spent today" : `Spent on ${shortDate(day)}`}
+              label={cardLabel}
               amount={money(out)}
               meta={`${notes} ${notes === 1 ? "note" : "notes"} · updated ${clock(updated)}`}
               out={money(out)}
@@ -122,14 +155,28 @@ export default function Home({
                 ))}
               </div>
             ) : (
-              <p className="t-body-14-r screen__none">Nothing {filter === "expense" ? "spent" : "received"} on this day.</p>
+              <p className="t-body-14-r screen__none">Nothing {filter === "expense" ? "spent" : "received"} {range === "day" ? "on this day" : range === "week" ? "this week" : "this month"}.</p>
             )}
           </Sheet>
         </>
       )}
 
       <div className="screen__bottom">
-        <TabBar active="expense" onTab={onTab} onQuickNote={onQuickNote} action={{ label: "Note", onClick: onNote }} />
+        <div className="note-menu-anchor" ref={menuRef}>
+          {menu && (
+            <div className="note-menu lg lg--thick lg-morph" role="menu" aria-label="Write">
+              <button type="button" role="menuitem" className="note-menu__item" onClick={() => (setMenu(false), onQuickNote())}>
+                <Icon name="file-edit" size={20} />
+                Quick note
+              </button>
+              <button type="button" role="menuitem" className="note-menu__item" onClick={() => (setMenu(false), onNote())}>
+                <Icon name="note" size={20} />
+                Notes of the day
+              </button>
+            </div>
+          )}
+        </div>
+        <TabBar active="expense" onTab={onTab} onQuickNote={onQuickNote} action={{ label: "Write", onClick: () => setMenu((m) => !m), expanded: menu }} />
       </div>
     </div>
   )

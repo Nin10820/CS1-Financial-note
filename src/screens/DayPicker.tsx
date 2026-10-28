@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react"
-import { Button } from "../components/ui"
+import { Button, IconButton } from "../components/ui"
 import { Icon } from "../components/Icon"
 import { pad, today } from "../lib/format"
 import ModalSheet, { ModalHeader } from "./ModalSheet"
@@ -112,6 +112,12 @@ export default function DayPicker({
               <Icon name="caret-down" size={14} />
             </span>
           </button>
+          {!months && (
+            <span className="day-picker__steps">
+              <IconButton icon="caret-left" label="Previous month" variant="plain" size={32} iconSize={16} onClick={() => shift(-1)} />
+              <IconButton icon="caret-right" label="Next month" variant="plain" size={32} iconSize={16} disabled={atLatest} onClick={() => shift(1)} />
+            </span>
+          )}
         </div>
 
         {months ? (

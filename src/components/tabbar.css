@@ -1,135 +1,74 @@
-/* Bottom navigation — Figma "Navigation Bar" (949:30623). Floating glass capsules, a selection
-   lens that springs between tabs and swells while held, collapsing to a compact bar on scroll.
-   Expanded: 12 top · 44 quick-note row · 8 gap · 60 tabs · 24 bottom. Collapsed: 12 · 44 · 24. */
-
-/* ── Layout ─────────────────────────────────────────────── */
+/* Bottom navigation — Figma Navigation Bar Ver 2 (961:31747).
+   12 top · 56 write button · 12 gap · 62 tab capsule · 24 bottom (the home indicator sits below). */
 .tabbar {
-  position: relative;
-  height: 148px;
-  transition: height 0.4s var(--spring);
-}
-.tabbar.is-collapsed {
-  height: 80px;
-}
-
-.tabbar__full,
-.tabbar__mini {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  padding: 0 var(--sp-20) var(--sp-24);
-  transition: opacity 0.25s ease, transform 0.45s var(--spring), filter 0.25s ease;
-}
-.tabbar__full {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-8);
-}
-.tabbar.is-collapsed .tabbar__full {
-  opacity: 0;
-  transform: translateY(28px) scale(0.94);
-  filter: blur(4px);
-  pointer-events: none;
-}
-.tabbar__mini {
-  display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: var(--sp-12);
-  opacity: 0;
-  transform: translateY(18px) scale(1.04);
-  filter: blur(4px);
-  pointer-events: none;
-}
-.tabbar.is-collapsed .tabbar__mini {
-  opacity: 1;
-  transform: none;
-  filter: none;
-  pointer-events: auto;
+  padding: var(--sp-12) var(--sp-20) var(--sp-24);
 }
 
-/* ── Quick-note field (__quick-note) ────────────────────── */
-.tabbar__row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-12);
-  padding: 0 var(--sp-12);
-}
-.tabbar__note {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  min-width: 0;
-  height: 44px;
-  padding: var(--sp-4) var(--sp-16) var(--sp-4) 4.5px;
-  border-radius: var(--rounded);
-  text-align: left;
-  transition: transform 0.35s var(--spring), background-color 0.2s;
-}
-.tabbar__note:active {
-  transform: scale(0.985);
-}
-@media (hover: hover) {
-  .tabbar__note:hover {
-    background: var(--white-24);
-  }
-}
-.tabbar__note-logo {
+/* Round write button: brand gradient with a glassy inner edge. */
+.tabbar__write {
   display: grid;
   place-items: center;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-}
-.tabbar__note-text {
-  overflow: hidden;
-  color: var(--grey-400);
-  font-size: 14px;
-  line-height: 20px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.tabbar .lg-round {
-  width: 44px;
-  height: 44px;
-}
-/* The screen action is the one primary button: solid brand glass, white icon (High Fi 2). */
-.tabbar__action {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: 0;
+  border-inline: 0.5px solid rgb(13 18 28 / 80%);
+  border-radius: var(--rounded);
+  background: linear-gradient(180deg, var(--brand-400) 0%, var(--brand-500) 100%);
+  box-shadow:
+    inset 0 -1px 2px rgb(255 255 255 / 90%),
+    inset 0 1px 2px rgb(13 18 28 / 6%),
+    inset 0 -0.5px 0 rgb(13 18 28 / 64%),
+    0 6px 16px rgb(95 168 47 / 30%);
   color: var(--text-white);
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ── Tabs + sliding lens ────────────────────────────────── */
 .tabbar__tabs {
-  --pad: 4px;
+  --pad: 12px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  height: 60px;
-  padding: var(--pad);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: 100%;
+  height: 62px;
+  padding: var(--sp-4) var(--pad);
   border-radius: var(--rounded);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
+/* 82 × 54 lens behind the picked tab (Figma: dark 8%). */
 .tabbar__lens {
+  --w: calc((100% - 2 * var(--pad)) / 5);
   position: absolute;
-  top: var(--pad);
-  bottom: var(--pad);
-  left: var(--pad);
+  top: 4px;
+  bottom: 4px;
+  left: calc(var(--pad) - 7px + var(--i) * var(--w));
   z-index: 0;
-  width: calc((100% - 2 * var(--pad)) / 4);
+  width: calc(var(--w) + 14px);
   border-radius: var(--rounded);
-  background: var(--bg-4);
-  transform: translateX(calc(var(--i) * 100%));
-  transition: transform 0.5s var(--spring), background-color 0.25s ease, box-shadow 0.25s ease, scale 0.35s var(--spring);
+  background: var(--dark-8);
+  transition: left 0.5s var(--spring), background-color 0.25s ease, box-shadow 0.25s ease, scale 0.35s var(--spring);
 }
-/* Held: the lens swells into a clear droplet that magnifies what's under it. */
+/* Held: the lens swells into a clear droplet. */
 .tabbar__tabs.is-pressing .tabbar__lens {
-  scale: 1.12 1.18;
+  scale: 1.08 1.12;
   background: rgb(255 255 255 / 55%);
   box-shadow: var(--lg-glow), 0 8px 22px rgb(13 18 28 / 14%);
   -webkit-backdrop-filter: blur(2px) saturate(160%);
   backdrop-filter: blur(2px) saturate(160%);
-  transition: transform 0.28s var(--spring), background-color 0.2s ease, box-shadow 0.2s ease, scale 0.3s var(--spring);
+  transition: left 0.28s var(--spring), background-color 0.2s ease, box-shadow 0.2s ease, scale 0.3s var(--spring);
+}
+.tabbar__lens::after {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.tabbar__tabs.is-pressing .tabbar__lens::after {
+  opacity: 1;
 }
 .tabbar__tab {
   position: relative;
@@ -139,7 +78,8 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 0;
+  min-width: 0;
+  padding: var(--sp-6) 0;
   border: 0;
   border-radius: var(--rounded);
   background: none;
@@ -147,19 +87,12 @@
   font-size: 11px;
   font-weight: var(--weight-m);
   line-height: 14px;
-  transition: color 0.25s ease, transform 0.35s var(--spring);
+  transition: color 0.25s ease;
 }
 .tabbar__tab > :first-child {
   transition: transform 0.35s var(--spring);
 }
-.tabbar__tab span {
-  color: var(--grey-400);
-  transition: color 0.25s ease;
-}
 .tabbar__tab.is-lit {
-  color: var(--brand-500);
-}
-.tabbar__tab.is-lit span {
   color: var(--brand-500);
 }
 .tabbar__tabs.is-pressing .tabbar__tab.is-lit > :first-child {
@@ -170,27 +103,9 @@
   outline-offset: -2px;
 }
 
-/* ── Collapsed bar ──────────────────────────────────────── */
-.tabbar__mini-tab {
-  color: var(--brand-500);
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .tabbar,
-  .tabbar__full,
-  .tabbar__mini,
   .tabbar__lens,
-  .tabbar__tab,
-  .lg-round {
+  .tabbar__tab {
     transition: none;
   }
-}
-
-/* The lens rim only shows while it is held and turns into glass. */
-.tabbar__lens::after {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-.tabbar__tabs.is-pressing .tabbar__lens::after {
-  opacity: 1;
 }

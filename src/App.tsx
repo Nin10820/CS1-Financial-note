@@ -10,6 +10,7 @@ import Assistant, { type AssistantOpen } from "./screens/Assistant"
 import QuickNote from "./screens/QuickNote"
 import Finance from "./screens/Finance"
 import Profile from "./screens/Profile"
+import Scan from "./screens/Scan"
 import type { Tab } from "./components/TabBar"
 import EntrySheet, { SummarySheet } from "./screens/EntrySheet"
 import { today } from "./lib/format"
@@ -20,7 +21,7 @@ import "./screens/note.css"
 import "./screens/due.css"
 import "./styles/press.css"
 
-type Screen = "transaction" | "note" | "due" | "installments" | "finance" | "profile"
+type Screen = "transaction" | "note" | "due" | "installments" | "scan" | "finance" | "profile"
 type Overlay =
   | { kind: "assistant"; opts: AssistantOpen }
   | { kind: "quick" }
@@ -149,6 +150,7 @@ export default function App() {
         />
       )}
       {screen === "profile" && <Profile store={store} onTab={onTab} onQuickNote={quick} />}
+      {screen === "scan" && <Scan onTab={onTab} onQuickNote={quick} />}
 
       {overlay?.kind === "quick" && (
         <QuickNote
