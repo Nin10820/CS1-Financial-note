@@ -58,7 +58,8 @@ struct EntrySheet: View {
                 .padding(.bottom, Space.s24)
             }
             .scrollDismissesKeyboard(.interactively)
-            .background(Tokens.bg1)
+            // Grey sheet so the white cards stand out, as in Figma (bg-3 #F3F4F6).
+            .background(Tokens.bg3)
             .safeAreaInset(edge: .bottom) { isNew ? AnyView(composer) : AnyView(footer) }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
