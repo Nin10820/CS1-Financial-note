@@ -18,8 +18,8 @@ final class AppState {
     var hidden = false
     /// Finance totals hidden; starts hidden when Profile › Display says so for assets or for all amounts.
     var assetsHidden = false
-    /// The quick-note card, when open.
-    var quick: QuickNoteRequest?
+    /// The Assistant sheet, when open, and what it opens with.
+    var assistant: AssistantSeed?
     var dayNoteOpen = false
 
     /// Called when the calendar day changes: if Today was showing today, it moves along.
@@ -29,8 +29,9 @@ final class AppState {
         if day == old { day = today }
     }
 
-    func openQuickNote(date: String? = nil, text: String = "", drafts: [Draft]? = nil) {
-        quick = QuickNoteRequest(date: date ?? day, text: text, drafts: drafts)
+    /// Opens the Assistant on the picked day, optionally with a day's note already read.
+    func openAssistant(date: String? = nil, noteLines: [String]? = nil, notice: String? = nil) {
+        assistant = AssistantSeed(date: date ?? day, noteLines: noteLines, notice: notice)
     }
 }
 
@@ -57,10 +58,11 @@ enum DayRange: String, CaseIterable, Identifiable {
     }
 }
 
-struct QuickNoteRequest: Identifiable {
+struct AssistantSeed: Identifiable {
     let id = UUID()
     var date: String
-    var text: String
-    /// Set when the note has been read: the card shows "Here's what I got".
-    var drafts: [Draft]?
+    /// Lines from Notes of the day, read as soon as the Assistant opens.
+    var noteLines: [String]?
+    /// A plain message to show first ("… comes later").
+    var notice: String?
 }

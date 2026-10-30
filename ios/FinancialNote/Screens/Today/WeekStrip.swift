@@ -81,8 +81,8 @@ struct WeekStrip: View {
     }
 }
 
-/// Picks any past day: the system graphical calendar, whose month title opens the month / year
-/// wheel (Figma 964:33538) on its own.
+/// Day picker (Figma 962:32146): Today / Day / Done over the system graphical calendar, whose
+/// month title opens the month / year wheel (964:33538) on its own.
 struct DayPickerSheet: View {
     @Binding var day: String
     @Environment(\.dismiss) private var dismiss
@@ -98,14 +98,17 @@ struct DayPickerSheet: View {
             .datePickerStyle(.graphical)
             .tint(Tokens.brand500)
             .padding(.horizontal)
-            .navigationTitle("Pick a day")
+            .navigationTitle("Day")
             .toolbarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Today") { day = Day.today() }
+                        .foregroundStyle(Tokens.text900)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", systemImage: "checkmark") { dismiss() }
+                    Button("Done") { dismiss() }
+                        .font(AppFont.main(15, .semibold))
+                        .foregroundStyle(Tokens.brand700)
                 }
             }
         }

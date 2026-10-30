@@ -14,6 +14,17 @@ nonisolated enum Category: String, Codable, Sendable, CaseIterable {
     case bills = "Bills"
     case received = "Received"
     case other = "Other"
+
+    var symbol: String {
+        switch self {
+        case .food: "fork.knife"
+        case .transport: "car.fill"
+        case .shopping: "bag.fill"
+        case .bills: "doc.text.fill"
+        case .received: "arrow.down.circle.fill"
+        case .other: "square.grid.2x2.fill"
+        }
+    }
 }
 
 nonisolated enum BillKind: String, Codable, Sendable, CaseIterable {

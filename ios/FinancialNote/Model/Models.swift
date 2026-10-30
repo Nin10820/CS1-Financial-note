@@ -24,6 +24,12 @@ final class Entry {
     var billId: String?
     /// Part of the sample data (removable in one switch).
     var sample: Bool
+    /// Tags picked in the entry sheet ("Food", "Drinks", or the user's own).
+    var tags: [String] = []
+    /// The user's own words about this line.
+    var comment: String = ""
+    /// Where the money came from or went to: "Cash", "Card", "Transfer" or an asset's name.
+    var paidFrom: String?
 
     var flow: Flow {
         get { Flow(rawValue: flowRaw) ?? .out }
@@ -247,6 +253,8 @@ final class Profile {
     /// "YYYY-MM-DD" — first time the app was opened on this phone.
     var joined: String
     var birthYear: Int?
+    /// Tags the user made with "New Tag".
+    var customTags: [String] = []
 
     init(name: String = "Nin", hideOnOpen: Bool = false, hideAssets: Bool = false, joined: String = Day.today(), birthYear: Int? = nil) {
         self.name = name

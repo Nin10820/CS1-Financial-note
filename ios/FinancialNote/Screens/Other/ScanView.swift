@@ -13,7 +13,7 @@ struct ScanView: View {
                 Text("Reading receipts with the camera isn't built yet. You can type what you spent instead — one line is enough.")
                     .font(AppFont.main(15))
             } actions: {
-                Button("Type it instead") { app.openQuickNote() }
+                Button("Type it instead") { app.openAssistant() }
                     .font(AppFont.main(16, .semibold))
                     .buttonStyle(.glassProminent)
                     .tint(Tokens.action)

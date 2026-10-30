@@ -18,6 +18,17 @@ final class FinancialNoteUITests: XCTestCase {
         button.tap()
     }
 
+    /// Every tab opens its own screen (the floating write button must not get in the way).
+    func testTabsSwitch() {
+        for (name, title) in [("Due", "Due"), ("Finance", "Finance"), ("Profile", "Profile"), ("Today", "Show Daily")] {
+            tab(name)
+            let shown = app.navigationBars[title].waitForExistence(timeout: 3) || app.staticTexts[title].waitForExistence(timeout: 1)
+                || app.buttons[title].waitForExistence(timeout: 1)
+            XCTAssertTrue(shown, "\(name) tab shows its screen")
+            XCTAssertFalse(app.navigationBars["Assistant"].exists, "Assistant must not open when switching to \(name)")
+        }
+    }
+
     /// Apple's accessibility audit on every tab: labels, hit areas, contrast, clipping.
     /// A few results are known false positives and are skipped, each for the reason given.
     func testAccessibilityAuditOnEveryTab() throws {
@@ -55,19 +66,33 @@ final class FinancialNoteUITests: XCTestCase {
         }
     }
 
-    /// Type a note, read it, save it, and find the lines on Today.
-    func testQuickNoteEndToEnd() {
-        let field = app.buttons["Write a quick note"]
-        XCTAssertTrue(field.waitForExistence(timeout: 5))
-        field.tap()
+    /// Write button → Assistant: type a note, read it, confirm, then find the lines on Today.
+    func testAssistantEndToEnd() {
+        let write = app.buttons["Write"]
+        XCTAssertTrue(write.waitForExistence(timeout: 5))
+        write.tap()
         let input = app.textFields["Write what you spent"].exists ? app.textFields["Write what you spent"] : app.textViews["Write what you spent"]
         XCTAssertTrue(input.waitForExistence(timeout: 5))
-        input.typeText("coffee 24k, phở bò 55k\n")
-        XCTAssertTrue(app.staticTexts["Here's what I got"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Phở bò"].exists)
-        app.buttons["Save 2 items"].tap()
+        input.tap()
+        input.typeText("coffee 24k, phở bò 55k · cash\n")
+        XCTAssertTrue(app.staticTexts["Here's what I got — nothing is saved until you confirm."].waitForExistence(timeout: 5))
+        app.buttons["Confirm"].tap()
+        XCTAssertTrue(app.staticTexts["Saved 2 items to \(Self.short(Date()))"].exists
+                      || app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH 'Saved 2 items'")).firstMatch.waitForExistence(timeout: 5))
+        app.buttons["View list"].tap()
         XCTAssertTrue(app.staticTexts["Phở bò"].waitForExistence(timeout: 5), "saved line shows on Today")
         XCTAssertTrue(app.staticTexts["Coffee"].exists)
+
+        // The entry sheet keeps how it was paid.
+        app.staticTexts["Phở bò"].tap()
+        XCTAssertTrue(app.buttons["Paid from, Cash"].waitForExistence(timeout: 5))
+    }
+
+    private static func short(_ d: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US")
+        f.dateFormat = "dd MMM"
+        return f.string(from: d)
     }
 
     /// Ticking a bill in Due records a "Bills" line on Today; unticking takes it away.

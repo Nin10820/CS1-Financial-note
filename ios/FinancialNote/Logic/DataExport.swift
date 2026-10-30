@@ -13,6 +13,9 @@ nonisolated struct ExportFile: Codable, Equatable, Sendable {
         var createdAt: Date
         var billId: String?
         var sample: Bool
+        var tags: [String]
+        var comment: String
+        var paidFrom: String?
     }
     struct NoteRow: Codable, Equatable, Sendable { var date: String; var lines: [String]; var updatedAt: Date }
     struct BillRow: Codable, Equatable, Sendable {
@@ -34,7 +37,12 @@ nonisolated struct ExportFile: Codable, Equatable, Sendable {
     }
     struct MoveRow: Codable, Equatable, Sendable { var id, title, icon: String; var amount: Int; var date: String; var sample: Bool }
     struct CareRow: Codable, Equatable, Sendable { var id, who, title: String; var amount: Int; var date: String; var sample: Bool }
-    struct Prefs: Codable, Equatable, Sendable { var hideOnOpen, hideAssets: Bool; var joined: String; var birthYear: Int? }
+    struct Prefs: Codable, Equatable, Sendable {
+        var hideOnOpen, hideAssets: Bool
+        var joined: String
+        var birthYear: Int?
+        var customTags: [String]
+    }
 
     var exported: Date
     var name: String
@@ -66,7 +74,8 @@ extension ExportFile {
             name: p?.name ?? "Nin",
             entries: store.all(Entry.self).sorted { $0.createdAt < $1.createdAt }.map {
                 EntryRow(id: $0.id, date: $0.date, title: $0.title, amount: $0.amount, flow: $0.flowRaw, category: $0.categoryRaw,
-                         noteId: $0.noteId, source: $0.source, createdAt: $0.createdAt, billId: $0.billId, sample: $0.sample)
+                         noteId: $0.noteId, source: $0.source, createdAt: $0.createdAt, billId: $0.billId, sample: $0.sample,
+                         tags: $0.tags, comment: $0.comment, paidFrom: $0.paidFrom)
             },
             notes: store.all(DayNote.self).sorted { $0.date < $1.date }.map { NoteRow(date: $0.date, lines: $0.lines, updatedAt: $0.updatedAt) },
             bills: store.all(Bill.self).sorted { $0.createdAt < $1.createdAt }.map {
@@ -84,7 +93,7 @@ extension ExportFile {
                 CareRow(id: $0.id, who: $0.who, title: $0.title, amount: $0.amount, date: $0.date, sample: $0.sample)
             },
             prefs: Prefs(hideOnOpen: p?.hideOnOpen ?? false, hideAssets: p?.hideAssets ?? false,
-                         joined: p?.joined ?? Day.today(), birthYear: p?.birthYear))
+                         joined: p?.joined ?? Day.today(), birthYear: p?.birthYear, customTags: p?.customTags ?? []))
     }
 }
 

@@ -32,7 +32,7 @@ struct TodayView: View {
                     if list.isEmpty {
                         EmptyDay(name: profiles.first?.name ?? "Nin", nothingNote: nothingNote) { idea in
                             switch idea {
-                            case .write: app.openQuickNote()
+                            case .write: app.openAssistant()
                             case .due: app.tab = .due
                             case .decisions:
                                 laterNotice = "Talking decisions through comes later. For now I record what you spend and receive, and keep track of bills."

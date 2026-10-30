@@ -81,9 +81,13 @@ struct DayNoteEditor: View {
 
     private func save() {
         LocalStore(context: context).saveDayNote(date: date, lines: lines)
-        let joined = lines.joined(separator: "\n")
+        let lines = lines
         dismiss()
         app.day = date
-        app.openQuickNote(date: date, text: joined, drafts: NoteParser.parse(joined, day: date))
+        // Wait for this sheet to close before the Assistant opens.
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            app.openAssistant(date: date, noteLines: lines)
+        }
     }
 }

@@ -11,6 +11,9 @@ nonisolated struct Draft: Equatable, Sendable, Identifiable {
     var date: String
     /// A bare number like "45" was read as 45,000.
     var assumedThousands = false
+    /// "Cash", "Transfer" or "Card" when the line said how it was paid. Not part of `==`, so the
+    /// web-parity cases (which predate it) still compare the same fields.
+    var paidFrom: String?
 
     static func == (a: Draft, b: Draft) -> Bool {
         a.title == b.title && a.amount == b.amount && a.flow == b.flow && a.category == b.category
@@ -169,13 +172,17 @@ nonisolated enum NoteParser {
             let category: Category = flow == .in ? .received : (rules.first { test($0.1, segment) }?.0 ?? .other)
             let value = read.map(\.value) ?? .nan
             let title = tidyTitle(rest)
+            let said = paidWith.firstMatch(in: rest, range: ns(rest))
+                .flatMap { Range($0.range(at: 1), in: rest) }
+                .map { String(rest[$0]) }
             return Draft(
                 title: title.isEmpty ? category.rawValue : title,
                 amount: value > 0 ? Int(value.rounded()) : nil,
                 flow: flow,
                 category: category,
                 date: base,
-                assumedThousands: read?.assumed ?? false
+                assumedThousands: read?.assumed ?? false,
+                paidFrom: Tags.paidFrom(said)
             )
         }
     }

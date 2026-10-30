@@ -31,12 +31,12 @@ final class TodayLogicTests: XCTestCase {
         XCTAssertEqual(app.day, "2026-10-20")
     }
 
-    func testOpeningQuickNoteUsesThePickedDay() {
+    func testOpeningTheAssistantUsesThePickedDay() {
         let app = AppState()
         app.day = "2026-10-20"
-        app.openQuickNote()
-        XCTAssertEqual(app.quick?.date, "2026-10-20")
-        XCTAssertNil(app.quick?.drafts)
+        app.openAssistant()
+        XCTAssertEqual(app.assistant?.date, "2026-10-20")
+        XCTAssertNil(app.assistant?.noteLines)
     }
 }
 
