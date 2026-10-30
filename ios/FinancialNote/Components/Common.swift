@@ -112,3 +112,41 @@ struct FilterChip: View {
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
+
+/// A soft grey pill or circle inside a glass composer (icon, optional text).
+struct ComposerChip: View {
+    var systemImage: String
+    var title: String?
+
+    var body: some View {
+        HStack(spacing: Space.s6) {
+            Image(systemName: systemImage).font(.system(size: 16, weight: .semibold))
+            if let title { Text(title).font(AppFont.main(15, .semibold)) }
+        }
+        .foregroundStyle(Tokens.text900)
+        .padding(.horizontal, title == nil ? 0 : Space.s16)
+        .frame(minWidth: 44, minHeight: 44)
+        .background(Tokens.text900.opacity(0.07), in: .capsule)
+        .contentShape(.capsule)
+    }
+}
+
+/// The filled round send button of a composer; always in colour (as in the reference), and does
+/// nothing until there is text.
+struct SendButton: View {
+    var enabled: Bool
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "paperplane")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(Tokens.action, in: .circle)
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .accessibilityLabel("Send")
+    }
+}

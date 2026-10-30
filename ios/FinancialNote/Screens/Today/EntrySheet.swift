@@ -336,36 +336,27 @@ struct EntrySheet: View {
             if let lineHint {
                 Text(lineHint).font(AppFont.main(12)).foregroundStyle(Tokens.grey400).padding(.horizontal, Space.s4)
             }
-            VStack(alignment: .leading, spacing: Space.s12) {
+            HStack(alignment: .bottom, spacing: Space.s12) {
                 TextField("e.g. coffee 24k, breakfast 35k…", text: $line, axis: .vertical)
-                    .font(AppFont.main(15))
+                    .font(AppFont.main(17))
                     .lineLimit(1...3)
                     .focused($focus, equals: .line)
                     .submitLabel(.done)
                     .accessibilityLabel("Fill from a line")
+                    .padding(.vertical, Space.s12)
                     .onChange(of: line) { _, new in
                         if new.hasSuffix("\n") {
                             line = String(new.dropLast())
                             fill()
                         }
                     }
-                HStack {
-                    Spacer()
-                    Button(action: fill) {
-                        Image(systemName: "arrow.up")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 36, height: 36)
-                            .background(line.trimmingCharacters(in: .whitespaces).isEmpty ? Tokens.grey300 : Tokens.action, in: .circle)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(line.trimmingCharacters(in: .whitespaces).isEmpty)
+                SendButton(enabled: !line.trimmingCharacters(in: .whitespaces).isEmpty, action: fill)
                     .accessibilityLabel("Fill the form")
-                }
             }
-            .padding(Space.s16)
-            .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
-            .shadow(color: .black.opacity(0.06), radius: 10, y: 2)
+            .padding(.leading, Space.s20)
+            .padding(.trailing, Space.s12)
+            .padding(.vertical, Space.s8)
+            .glassEffect(.regular.tint(Tokens.bgWhite.opacity(0.55)).interactive(), in: .rect(cornerRadius: 28))
         }
         .padding(.horizontal, Space.s12)
         .padding(.bottom, Space.s8)

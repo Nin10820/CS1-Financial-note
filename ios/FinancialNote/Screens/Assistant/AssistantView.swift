@@ -123,10 +123,12 @@ struct AssistantView: View {
         .padding(.bottom, app.aiChatting ? Space.s8 : 80)
     }
 
+    /// The composer: a Liquid Glass panel (as in the owner's reference) with soft grey chips,
+    /// a grey mic and a filled send button.
     private var composer: some View {
-        VStack(alignment: .leading, spacing: Space.s12) {
+        VStack(alignment: .leading, spacing: Space.s16) {
             TextField("Write what you spent, or ask about it…", text: $text, axis: .vertical)
-                .font(AppFont.main(15))
+                .font(AppFont.main(17))
                 .lineLimit(1...6)
                 .focused($focused)
                 .submitLabel(.send)
@@ -147,56 +149,28 @@ struct AssistantView: View {
                     Button("Template", systemImage: "doc.text") { app.templateOpen = true }
                     Button("Scan", systemImage: "qrcode.viewfinder") { app.scanOpen = true }
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Tokens.text700)
-                        .frame(width: 36, height: 36)
-                        .background(Tokens.bg4, in: .circle)
+                    ComposerChip(systemImage: "plus", title: nil)
                 }
                 .accessibilityLabel("More")
                 Button { picking = true } label: {
-                    HStack(spacing: Space.s4) {
-                        Image(systemName: "calendar")
-                        Text(date == app.today ? "Today" : Day.short(date))
-                    }
-                    .font(AppFont.main(13, .medium))
-                    .foregroundStyle(Tokens.text900)
-                    .padding(.horizontal, Space.s12)
-                    .frame(height: 36)
-                    .background(Tokens.bgWhite, in: .capsule)
-                    .overlay(Capsule().strokeBorder(Tokens.bd1))
+                    ComposerChip(systemImage: "calendar", title: date == app.today ? "Today" : Day.short(date))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("For \(Day.long(date)). Change day")
-                Spacer()
+                Spacer(minLength: 0)
                 Button {
                     focused = false
                     voiceOpen = true
                 } label: {
-                    Image(systemName: "mic")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Tokens.text700)
-                        .frame(width: 44, height: 44)
-                        .contentShape(.rect)
+                    ComposerChip(systemImage: "mic", title: nil)
                 }
                 .buttonStyle(.plain)
-                .frame(width: 44, height: 44)
                 .accessibilityLabel("Voice note")
-                Button(action: send) {
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 36, height: 36)
-                        .background(canSend ? Tokens.text900 : Tokens.grey300, in: .circle)
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSend)
-                .accessibilityLabel("Send")
+                SendButton(enabled: canSend, action: send)
             }
         }
         .padding(Space.s16)
-        .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
-        .shadow(color: .black.opacity(0.06), radius: 10, y: 2)
+        .glassEffect(.regular.tint(Tokens.bgWhite.opacity(0.55)).interactive(), in: .rect(cornerRadius: 28))
     }
 
     // MARK: - Chat History drawer

@@ -73,7 +73,7 @@ struct AIHome: View {
                                         .lineLimit(1)
                                     Text(Day.dayHeading(note.date, today: Day.today()))
                                         .font(AppFont.main(13))
-                                        .foregroundStyle(Tokens.grey400)
+                                        .foregroundStyle(Tokens.text700)
                                 }
                                 Spacer(minLength: Space.s8)
                                 Image(systemName: "chevron.right")

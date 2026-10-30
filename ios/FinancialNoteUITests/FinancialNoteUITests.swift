@@ -42,6 +42,9 @@ final class FinancialNoteUITests: XCTestCase {
                 // Text scrolled under the floating tab bar and quick-note field: the audit measures
                 // contrast through the glass, not as the user reads it once scrolled into view.
                 if issue.auditType == .contrast, frame.minY >= 700 { return true }
+                // On the AI tab the glass composer floats higher (above the tab bar), and the
+                // Recents list scrolls behind it.
+                if issue.auditType == .contrast, name == "AI", frame.minY >= 600 { return true }
                 // Borderline results are not failures.
                 if issue.compactDescription.contains("nearly passed") { return true }
                 // System glass buttons: the audit samples the glass highlight, not the fill. Our
