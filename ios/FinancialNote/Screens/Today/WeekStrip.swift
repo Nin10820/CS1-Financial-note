@@ -57,11 +57,11 @@ struct WeekStrip: View {
         } label: {
             VStack(spacing: Space.s4) {
                 Text(String(d.suffix(2)))
-                    .font(AppFont.heading(20, .medium, relativeTo: .title3))
+                    .font(AppFont.heading(20, picked ? .medium : .regular, relativeTo: .title3))
                     .monospacedDigit()
                     .foregroundStyle(picked ? Tokens.brand700 : strong ? Tokens.text900 : Tokens.grey300)
                 Text(name)
-                    .font(AppFont.heading(12, .medium, relativeTo: .caption))
+                    .font(AppFont.capture(.medium))
                     .foregroundStyle(d == today ? Tokens.todayRed : picked ? Tokens.brand700 : Tokens.grey400)
             }
             .frame(maxWidth: .infinity)
@@ -108,7 +108,7 @@ struct DayPickerSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
-                        .font(AppFont.main(15, .semibold))
+                        .font(AppFont.main(14, .semibold))
                         .foregroundStyle(Tokens.brand700)
                 }
             }

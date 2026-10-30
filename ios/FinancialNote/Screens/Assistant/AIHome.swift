@@ -34,7 +34,7 @@ struct AIHome: View {
                         ForEach([LocalAnswers.Ask.today, .bills, .lastMonth, .received], id: \.self) { q in
                             Button { onAsk(q) } label: {
                                 Label(q.question, systemImage: Self.symbol(q))
-                                    .font(AppFont.main(15, .medium))
+                                    .font(AppFont.main(14, .medium))
                                     .foregroundStyle(Tokens.text900)
                                     .padding(.horizontal, Space.s16)
                                     .frame(minHeight: 48)
@@ -72,7 +72,7 @@ struct AIHome: View {
                                         .foregroundStyle(Tokens.text900)
                                         .lineLimit(1)
                                     Text(Day.dayHeading(note.date, today: Day.today()))
-                                        .font(AppFont.main(13))
+                                        .font(AppFont.main(12))
                                         .foregroundStyle(Tokens.text700)
                                 }
                                 Spacer(minLength: Space.s8)
@@ -95,7 +95,7 @@ struct AIHome: View {
     private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: Space.s12) {
             Text(title)
-                .font(AppFont.heading(24, .semibold, relativeTo: .title2))
+                .font(AppFont.section)
                 .foregroundStyle(Tokens.text900)
                 .accessibilityAddTraits(.isHeader)
             content()
@@ -136,12 +136,12 @@ private struct ShortcutCard: View {
                     }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(AppFont.main(17, .semibold))
+                        .font(AppFont.main(16, .semibold))
                         .foregroundStyle(Tokens.text900)
                         .multilineTextAlignment(.leading)
                         .lineLimit(2, reservesSpace: true)
                     if let subtitle {
-                        Text(subtitle).font(AppFont.main(13)).foregroundStyle(Tokens.grey400)
+                        Text(subtitle).font(AppFont.main(12)).foregroundStyle(Tokens.grey400)
                     }
                 }
                 .padding(.horizontal, Space.s16)
@@ -169,7 +169,7 @@ struct ReportCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s8) {
             Text(hidden ? report.summary.replacingOccurrences(of: #"[\d,]+ đ"#, with: "••• đ", options: .regularExpression) : report.summary)
-                .font(AppFont.main(15))
+                .font(AppFont.main(14))
                 .foregroundStyle(Tokens.text700)
                 .frame(maxWidth: .infinity, alignment: .leading)
             if !report.rows.isEmpty {

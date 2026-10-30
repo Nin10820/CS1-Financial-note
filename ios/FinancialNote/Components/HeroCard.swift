@@ -14,20 +14,20 @@ struct HeroCard<Buttons: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s8) {
             Text(label.uppercased())
-                .font(AppFont.main(13, .medium, relativeTo: .caption))
+                .font(AppFont.main(12, .medium, relativeTo: .caption))
                 .tracking(0.4)
                 .foregroundStyle(Tokens.onDark)
             HStack(spacing: Space.s12) {
                 HStack(alignment: .firstTextBaseline, spacing: Space.s4) {
                     Text(hidden ? "••••••" : Money.format(amount))
-                        .font(AppFont.main(32, .bold, relativeTo: .largeTitle))
+                        .font(AppFont.amount(40))
                         .monospacedDigit()
                         .foregroundStyle(.white)
                         .contentTransition(.numericText())
                         .minimumScaleFactor(0.7)
                         .lineLimit(1)
                     Text("đ")
-                        .font(AppFont.main(24, .semibold, relativeTo: .title))
+                        .font(AppFont.currency(for: 40))
                         .foregroundStyle(Tokens.onDark)
                 }
                 .accessibilityElement(children: .ignore)

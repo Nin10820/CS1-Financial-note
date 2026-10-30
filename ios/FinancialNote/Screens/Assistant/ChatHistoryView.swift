@@ -55,7 +55,7 @@ struct ChatHistoryView: View {
                         Button { onOpen(note) } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(note.source)
-                                    .font(AppFont.main(15, .semibold))
+                                    .font(AppFont.main(14, .semibold))
                                     .foregroundStyle(Tokens.text900)
                                     .lineLimit(2)
                                 Text("\(note.count) \(note.count == 1 ? "item" : "items")")
@@ -102,7 +102,7 @@ struct NoteDetailView: View {
         List {
             Section {
                 Text(note.source)
-                    .font(AppFont.main(15))
+                    .font(AppFont.main(14))
                     .padding(.vertical, Space.s4)
             } header: {
                 Text("You wrote · \(Day.long(note.date))")

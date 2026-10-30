@@ -116,11 +116,11 @@ struct ScanView: View {
                 Button("Open Settings") {
                     if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
                 }
-                .font(AppFont.main(15, .semibold))
+                .font(AppFont.main(14, .semibold))
                 .buttonStyle(.glass)
             }
             Button("Type it instead") { open { app.templateOpen = true } }
-                .font(AppFont.main(15, .semibold))
+                .font(AppFont.main(14, .semibold))
                 .buttonStyle(.glassProminent)
                 .tint(Tokens.action)
                 .padding(.top, Space.s8)

@@ -153,7 +153,7 @@ struct DueView: View {
             }
             .accessibilityLabel("Previous month")
             Text(DueText.monthLabel(app.dueMonth))
-                .font(AppFont.title(24, .bold, relativeTo: .title))
+                .font(AppFont.greeting)
                 .foregroundStyle(Tokens.text900)
                 .contentTransition(.numericText())
                 .accessibilityAddTraits(.isHeader)
@@ -176,7 +176,7 @@ struct DueView: View {
                 .font(AppFont.main(14))
                 .foregroundStyle(Tokens.grey400)
             Button("Add a bill", systemImage: "plus") { sheet = .add(nil) }
-                .font(AppFont.main(15, .semibold))
+                .font(AppFont.main(14, .semibold))
                 .buttonStyle(.glassProminent)
                     .tint(Tokens.action)
         }
@@ -211,7 +211,7 @@ private struct GroupHeader: View {
                     .font(.system(size: 11, weight: .bold))
                     .rotationEffect(.degrees(open ? 0 : -90))
             }
-            .font(AppFont.main(13, .semibold, relativeTo: .caption))
+            .font(AppFont.main(12, .semibold, relativeTo: .caption))
             .foregroundStyle(done ? Tokens.brand700 : Tokens.text700)
             .padding(.horizontal, Space.s12)
             .padding(.vertical, Space.s6)
@@ -267,7 +267,7 @@ struct BillCard: View {
                 HStack {
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
                         Text((!paid && bill.varies ? "~" : "") + (hidden ? "••••••" : Money.format(amount)))
-                            .font(AppFont.main(15, .semibold))
+                            .font(AppFont.main(14, .semibold))
                             .foregroundStyle(Tokens.text900)
                             .monospacedDigit()
                         Text("đ").font(AppFont.main(12, .medium)).foregroundStyle(Tokens.grey400)

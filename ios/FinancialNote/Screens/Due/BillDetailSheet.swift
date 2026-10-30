@@ -57,7 +57,7 @@ struct BillDetailSheet: View {
         VStack(alignment: .leading, spacing: Space.s8) {
             BillTile(icon: bill.icon, size: 40)
             Text(bill.name)
-                .font(AppFont.main(20, .bold, relativeTo: .title3))
+                .font(AppFont.h6(.bold))
                 .foregroundStyle(Tokens.text900)
             HStack(spacing: Space.s4) {
                 Text("Status:").foregroundStyle(Tokens.grey400)
@@ -70,7 +70,7 @@ struct BillDetailSheet: View {
                     Text("· \(step.paidCount)/\(step.total) paid").foregroundStyle(Tokens.grey400)
                 }
             }
-            .font(AppFont.main(13, .medium, relativeTo: .caption))
+            .font(AppFont.main(12, .medium, relativeTo: .caption))
             .accessibilityElement(children: .combine)
             if let step {
                 ProgressView(value: Double(step.paidCount), total: Double(max(step.total, 1)))
@@ -89,7 +89,7 @@ struct BillDetailSheet: View {
             if due != nil && record == nil && bill.varies {
                 HStack(alignment: .firstTextBaseline, spacing: Space.s4) {
                     TextField("0", text: $amountText)
-                        .font(AppFont.main(28, .bold, relativeTo: .title))
+                        .font(AppFont.amount(32))
                         .keyboardType(.numberPad)
                         .monospacedDigit()
                         .fixedSize()
@@ -99,7 +99,7 @@ struct BillDetailSheet: View {
                             let formatted = digits.isEmpty ? "" : Money.format(Int(digits) ?? 0)
                             if formatted != new { amountText = formatted }
                         }
-                    Text("đ").font(AppFont.main(20, .semibold)).foregroundStyle(Tokens.grey400)
+                    Text("đ").font(AppFont.currency(for: 32)).foregroundStyle(Tokens.grey400)
                     Image(systemName: "pencil").foregroundStyle(Tokens.grey300).accessibilityHidden(true)
                 }
                 Text("Changes each month — type what you actually paid")
@@ -152,7 +152,7 @@ struct BillDetailSheet: View {
         let rows = bill.paid.sorted { $0.key > $1.key }
         return VStack(alignment: .leading, spacing: Space.s8) {
             Text("History")
-                .font(AppFont.main(15, .semibold))
+                .font(AppFont.main(14, .semibold))
                 .foregroundStyle(Tokens.text900)
                 .accessibilityAddTraits(.isHeader)
             if rows.isEmpty {

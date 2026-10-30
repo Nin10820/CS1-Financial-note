@@ -76,7 +76,7 @@ struct TodayView: View {
             Button("Today") {
                 app.day = app.today
             }
-            .font(AppFont.main(15, .semibold))
+            .font(AppFont.main(14, .semibold))
             .foregroundStyle(Tokens.text900)
             .accessibilityLabel("Go to today")
         }
@@ -106,7 +106,7 @@ struct TodayView: View {
             HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
                 HStack(alignment: .top, spacing: 2) {
                     Text(String(format: "%02d", d))
-                        .font(AppFont.heading(40, .semibold, relativeTo: .largeTitle))
+                        .font(AppFont.heading(44, .medium, relativeTo: .largeTitle))
                         .foregroundStyle(Tokens.text900)
                         .monospacedDigit()
                     if app.day == app.today {
@@ -159,7 +159,7 @@ struct TodayView: View {
                 ForEach(Pane.allCases, id: \.self) { p in
                     Button { animate { pane = p } } label: {
                         Text(p.rawValue)
-                            .font(AppFont.heading(22, .semibold, relativeTo: .title2))
+                            .font(AppFont.section)
                             .foregroundStyle(pane == p ? Tokens.text900 : Tokens.grey400)
                             .frame(minHeight: 44)
                             .contentShape(.rect)
@@ -252,7 +252,7 @@ struct EmptyDay: View {
         VStack(spacing: Space.s16) {
             LogoMark(size: 64)
             Text("\(Day.greeting()), \(name)")
-                .font(AppFont.title(24, .bold, relativeTo: .title))
+                .font(AppFont.greeting)
                 .foregroundStyle(Tokens.text900)
                 .multilineTextAlignment(.center)
             VStack(spacing: 0) {
@@ -324,7 +324,7 @@ private struct FilePane: View {
                 app.dayNoteOpen = true
             } label: {
                 Label("Write a note for \(day == today ? "today" : Day.short(day))", systemImage: "square.and.pencil")
-                    .font(AppFont.main(15, .semibold))
+                    .font(AppFont.main(14, .semibold))
                     .foregroundStyle(Tokens.brand700)
                     .frame(minHeight: 44)
             }
@@ -342,7 +342,7 @@ struct NoteCard: View {
         VStack(alignment: .leading, spacing: Space.s8) {
             Text(title).font(AppFont.main(14, .semibold)).foregroundStyle(Tokens.text900)
             ForEach(Array(lines.prefix(3).enumerated()), id: \.offset) { _, l in
-                Text(l).font(AppFont.main(13)).foregroundStyle(Tokens.text700).lineLimit(1)
+                Text(l).font(AppFont.main(12)).foregroundStyle(Tokens.text700).lineLimit(1)
             }
             if lines.count > 3 {
                 Text("+\(lines.count - 3) more").font(AppFont.main(12)).foregroundStyle(Tokens.grey400)

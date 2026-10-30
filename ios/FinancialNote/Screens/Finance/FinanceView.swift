@@ -71,14 +71,14 @@ struct FinanceView: View {
         if assets.isEmpty {
             VStack(spacing: Space.s12) {
                 Text("Nothing written down yet")
-                    .font(AppFont.main(17, .semibold))
+                    .font(AppFont.main(16, .semibold))
                     .foregroundStyle(Tokens.text900)
                 Text("Add what you keep — cash, savings, gold, a fund — and this page adds it up. Nothing connects to your bank.")
                     .font(AppFont.main(14))
                     .foregroundStyle(Tokens.grey400)
                     .multilineTextAlignment(.center)
                 Button("Add an asset", systemImage: "plus") { adding = true }
-                    .font(AppFont.main(15, .semibold))
+                    .font(AppFont.main(14, .semibold))
                     .buttonStyle(.glassProminent)
                     .tint(Tokens.action)
             }
@@ -97,7 +97,7 @@ struct FinanceView: View {
                         .padding(Space.s16)
                 } else {
                     Text("The line appears after your second month of updates.")
-                        .font(AppFont.main(13))
+                        .font(AppFont.main(12))
                         .foregroundStyle(Tokens.grey400)
                         .padding(Space.s16)
                 }
@@ -143,12 +143,12 @@ private struct TotalBlock: View {
             Text("Total Asset").font(AppFont.main(14, .medium)).foregroundStyle(Tokens.text700)
             HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
                 Text(hidden ? "••••••" : Money.format(total))
-                    .font(AppFont.main(28, .bold, relativeTo: .title))
+                    .font(AppFont.amount(32))
                     .monospacedDigit()
                     .foregroundStyle(Tokens.text900)
                     .minimumScaleFactor(0.7)
                     .lineLimit(1)
-                Text("đ").font(AppFont.main(22, .semibold)).foregroundStyle(Tokens.grey400)
+                Text("đ").font(AppFont.currency(for: 32)).foregroundStyle(Tokens.grey400)
                 if let growth, !hidden { GrowthBadge(pct: growth) }
             }
             .accessibilityElement(children: .combine)
@@ -175,7 +175,7 @@ private struct TotalBlock: View {
                         Text("\(grp.kind.label):").foregroundStyle(Tokens.text700).lineLimit(1).fixedSize()
                         Text("\(grp.pct)%").foregroundStyle(Tokens.text900)
                     }
-                    .font(AppFont.main(13, .medium))
+                    .font(AppFont.main(12, .medium))
                     .accessibilityElement(children: .combine)
                 }
             }
@@ -282,7 +282,7 @@ struct AssetTile: View {
 
     var body: some View {
         Text(icon.mark)
-            .font(AppFont.main(13, .bold))
+            .font(AppFont.main(12, .bold))
             .foregroundStyle(icon == .gold ? Color(hex: 0x0D121C) : .white)
             .frame(width: 36, height: 36)
             .background(Tokens.assetTile(icon), in: .rect(cornerRadius: Corner.c8))
@@ -301,7 +301,7 @@ struct MoneyRow: View {
         HStack(spacing: Space.s12) {
             if let icon { AssetTile(icon: icon) }
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(AppFont.main(15, .semibold)).foregroundStyle(Tokens.text900)
+                Text(title).font(AppFont.main(14, .semibold)).foregroundStyle(Tokens.text900)
                 Text(sub).font(AppFont.main(12)).foregroundStyle(Tokens.grey400)
             }
             Spacer()
@@ -359,14 +359,14 @@ private struct TotalAssetsSection: View {
                     HStack(spacing: Space.s8) {
                         RoundedRectangle(cornerRadius: 3).fill(Tokens.assetKind(g.kind)).frame(width: 12, height: 12)
                         Text(g.kind.label).font(AppFont.main(16, .semibold)).foregroundStyle(Tokens.text900)
-                        Text("\(g.pct)%").font(AppFont.main(13, .medium)).foregroundStyle(Tokens.grey400)
+                        Text("\(g.pct)%").font(AppFont.main(12, .medium)).foregroundStyle(Tokens.grey400)
                         Spacer()
                         AmountText(value: g.sum, hidden: hidden)
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityAddTraits(.isHeader)
                     if list.isEmpty {
-                        Text("Nothing here yet.").font(AppFont.main(13)).foregroundStyle(Tokens.grey400).padding(.vertical, Space.s4)
+                        Text("Nothing here yet.").font(AppFont.main(12)).foregroundStyle(Tokens.grey400).padding(.vertical, Space.s4)
                     }
                     ForEach(list) { a in
                         Divider().overlay(Tokens.bd0)
@@ -380,7 +380,7 @@ private struct TotalAssetsSection: View {
                 Text("\(hidden ? "••••••" : Money.format(s.total)) đ in total ·")
                 Button("Add an asset", action: onAdd).foregroundStyle(Tokens.brand600)
             }
-            .font(AppFont.main(13))
+            .font(AppFont.main(12))
             .foregroundStyle(Tokens.grey400)
             .frame(maxWidth: .infinity)
         }
@@ -406,7 +406,7 @@ private struct DebtSection: View {
             .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
 
             if d.rows.isEmpty {
-                Text("No installments left to pay.").font(AppFont.main(13)).foregroundStyle(Tokens.grey400)
+                Text("No installments left to pay.").font(AppFont.main(12)).foregroundStyle(Tokens.grey400)
                     .frame(maxWidth: .infinity)
             } else {
                 VStack(spacing: 0) {
@@ -414,7 +414,7 @@ private struct DebtSection: View {
                         if i > 0 { Divider().overlay(Tokens.bd0) }
                         HStack(alignment: .top) {
                             VStack(alignment: .leading, spacing: Space.s6) {
-                                Text(r.bill.name).font(AppFont.main(15, .semibold)).foregroundStyle(Tokens.text900)
+                                Text(r.bill.name).font(AppFont.main(14, .semibold)).foregroundStyle(Tokens.text900)
                                 Text("\(r.bill.lender.map { "\($0) · " } ?? "")\(r.left) of \(r.bill.payments ?? 0) left")
                                     .font(AppFont.main(12))
                                     .foregroundStyle(Tokens.grey400)

@@ -102,13 +102,13 @@ struct EntrySheet: View {
     private var amountHeader: some View {
         VStack(spacing: Space.s4) {
             Text("Amount")
-                .font(AppFont.main(13))
+                .font(AppFont.body(.medium))
                 .foregroundStyle(Tokens.grey400)
             HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
                 TextField("0", text: Binding(
                     get: { d.amount.map(Money.format) ?? "" },
                     set: { d.amount = Int($0.filter(\.isNumber)) }))
-                    .font(AppFont.main(36, .bold, relativeTo: .largeTitle))
+                    .font(AppFont.amount(44))
                     .monospacedDigit()
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.center)
@@ -116,7 +116,7 @@ struct EntrySheet: View {
                     .focused($focus, equals: .amount)
                     .accessibilityLabel("Amount in dong")
                 Text("đ")
-                    .font(AppFont.main(28, .semibold, relativeTo: .title))
+                    .font(AppFont.currency(for: 44))
                     .foregroundStyle(Tokens.grey400)
             }
         }
@@ -127,7 +127,7 @@ struct EntrySheet: View {
     private var nameCard: some View {
         HStack(spacing: Space.s12) {
             TextField("Name", text: $d.title)
-                .font(AppFont.main(16, .medium))
+                .font(AppFont.heading(18, .regular))
                 .focused($focus, equals: .name)
             Menu {
                 Picker("Category", selection: categoryBinding) {
@@ -223,7 +223,7 @@ struct EntrySheet: View {
                         animate { d.tags.append(suggestion) }
                     } label: {
                         Label("Suggest tag", systemImage: "sparkles")
-                            .font(AppFont.main(13, .medium))
+                            .font(AppFont.main(12, .medium))
                             .foregroundStyle(Tokens.text900)
                             .padding(.horizontal, Space.s12)
                             .padding(.vertical, Space.s6)
@@ -279,7 +279,7 @@ struct EntrySheet: View {
                 .padding(.top, Space.s8)
             if commenting || !d.comment.isEmpty {
                 TextField("Add comment", text: $d.comment, axis: .vertical)
-                    .font(AppFont.main(15))
+                    .font(AppFont.main(14))
                     .lineLimit(3...6)
                     .focused($focus, equals: .comment)
                     .padding(Space.s16)
@@ -290,7 +290,7 @@ struct EntrySheet: View {
                     focus = .comment
                 } label: {
                     Label("Add comment", systemImage: "plus")
-                        .font(AppFont.main(15))
+                        .font(AppFont.body(.medium))
                         .foregroundStyle(Tokens.text700)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(Space.s16)
@@ -338,7 +338,7 @@ struct EntrySheet: View {
             }
             HStack(alignment: .bottom, spacing: Space.s12) {
                 TextField("e.g. coffee 24k, breakfast 35k…", text: $line, axis: .vertical)
-                    .font(AppFont.main(17))
+                    .font(AppFont.main(16))
                     .lineLimit(1...3)
                     .focused($focus, equals: .line)
                     .submitLabel(.done)
@@ -366,7 +366,7 @@ struct EntrySheet: View {
 
     private func row<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
         HStack {
-            Text(label).font(AppFont.main(15)).foregroundStyle(Tokens.text700)
+            Text(label).font(AppFont.body(.medium)).foregroundStyle(Color(light: 0x202939, dark: 0xE3E8EF))
             Spacer()
             content()
         }

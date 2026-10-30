@@ -25,11 +25,11 @@ struct AmountText: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 2) {
             Text(hidden ? "••••••" : sign + (value.map(Money.format) ?? "—"))
-                .font(AppFont.main(size, .semibold))
+                .font(size >= 24 ? AppFont.amount(size >= 28 ? 32 : size) : AppFont.main(size, .medium))
                 .foregroundStyle(color)
                 .monospacedDigit()
             Text("đ")
-                .font(AppFont.main(max(12, size * 0.78), .medium))
+                .font(size >= 24 ? AppFont.currency(for: 32) : AppFont.main(12, .medium))
                 .foregroundStyle(currencyColor)
         }
         .accessibilityElement(children: .ignore)
@@ -121,7 +121,7 @@ struct ComposerChip: View {
     var body: some View {
         HStack(spacing: Space.s6) {
             Image(systemName: systemImage).font(.system(size: 16, weight: .semibold))
-            if let title { Text(title).font(AppFont.main(15, .semibold)) }
+            if let title { Text(title).font(AppFont.main(14, .semibold)) }
         }
         .foregroundStyle(Tokens.text900)
         .padding(.horizontal, title == nil ? 0 : Space.s16)

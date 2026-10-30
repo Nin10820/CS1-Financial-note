@@ -54,7 +54,7 @@ struct TagChip: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(selected ? ink : Tokens.secondary500)
                 Text(name)
-                    .font(AppFont.main(13, .medium))
+                    .font(AppFont.main(12, .medium))
                     .lineLimit(1)
                     .fixedSize()
             }
@@ -137,7 +137,7 @@ struct TagPickerSheet: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
-                        .font(AppFont.main(15, .semibold))
+                        .font(AppFont.main(14, .semibold))
                         .foregroundStyle(Tokens.brand700)
                 }
             }

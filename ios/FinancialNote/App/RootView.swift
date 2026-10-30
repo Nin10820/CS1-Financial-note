@@ -90,7 +90,7 @@ private struct AppTabBar: View {
                                     .font(.system(size: 19, weight: .semibold))
                                     .symbolEffect(.bounce, value: app.tab == id)
                                 if !small {
-                                    Text(title).font(AppFont.main(11, .semibold, relativeTo: .caption2))
+                                    Text(title).font(AppFont.main(11, .medium, relativeTo: .caption2))
                                 }
                             }
                             .foregroundStyle(on ? Tokens.brand600 : Tokens.text900)
@@ -209,7 +209,7 @@ struct ActionPill: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
-                .font(AppFont.main(15, .semibold))
+                .font(AppFont.main(14, .semibold))
                 .foregroundStyle(Tokens.brand800)
                 .padding(.horizontal, Space.s16)
                 .padding(.vertical, Space.s12)

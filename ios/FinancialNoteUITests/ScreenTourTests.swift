@@ -61,12 +61,7 @@ final class ScreenTourTests: XCTestCase {
         app.navigationBars.buttons["Close chat history"].firstMatch.tap()
         sleep(1)
 
-        // Scan, from the composer's + menu.
-        app.buttons["More"].firstMatch.tap()
-        XCTAssertTrue(app.buttons["Scan"].waitForExistence(timeout: 3))
-        app.buttons["Scan"].tap()
-        sleep(1)
-        snap(app, "10-scan")
+        // Scan has its own test (ScanFlowTests).
     }
 }
 

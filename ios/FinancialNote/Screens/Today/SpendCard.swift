@@ -13,17 +13,17 @@ struct SpendCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s8) {
             Text(label)
-                .font(AppFont.main(14, .medium))
+                .font(AppFont.capture())
                 .foregroundStyle(Tokens.onDark)
             HStack(alignment: .center, spacing: Space.s12) {
                 HStack(alignment: .firstTextBaseline, spacing: Space.s4) {
                     Text(hidden ? "••••••" : Money.format(out))
-                        .font(AppFont.main(32, .bold, relativeTo: .largeTitle))
+                        .font(AppFont.amount(40))
                         .monospacedDigit()
                         .foregroundStyle(.white)
                         .contentTransition(.numericText())
                     Text("đ")
-                        .font(AppFont.main(24, .semibold, relativeTo: .title))
+                        .font(AppFont.currency(for: 40))
                         .foregroundStyle(Tokens.onDark)
                 }
                 .accessibilityElement(children: .ignore)
@@ -41,7 +41,7 @@ struct SpendCard: View {
                 .accessibilityLabel(hidden ? "Show amounts" : "Hide amounts")
             }
             Text(meta)
-                .font(AppFont.main(12, .regular, relativeTo: .caption))
+                .font(AppFont.capture(.medium))
                 .foregroundStyle(Tokens.onDarkMuted)
             VStack(alignment: .leading, spacing: Space.s8) {
                 HeroLeader(filled: true, label: "Out", value: out, hidden: hidden)

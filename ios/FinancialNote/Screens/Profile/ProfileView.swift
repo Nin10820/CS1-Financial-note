@@ -24,9 +24,9 @@ struct ProfileView: View {
                             HStack(spacing: Space.s12) {
                                 Avatar(name: p.name, size: 48)
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(p.name).font(AppFont.main(17, .semibold))
+                                    Text(p.name).font(AppFont.main(16, .semibold))
                                     Text("Using it since \(FinanceText.monthLabel(Month.of(p.joined)))")
-                                        .font(AppFont.main(13)).foregroundStyle(.secondary)
+                                        .font(AppFont.main(12)).foregroundStyle(.secondary)
                                 }
                             }
                         }
@@ -83,7 +83,7 @@ struct ProfileView: View {
     private func row(_ title: String, _ sub: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
-            Text(sub).font(AppFont.main(13)).foregroundStyle(.secondary)
+            Text(sub).font(AppFont.main(12)).foregroundStyle(.secondary)
         }
     }
 
@@ -135,9 +135,9 @@ private struct ProfileDetail: View {
             Section {
                 VStack(spacing: Space.s8) {
                     Avatar(name: profile.name, size: 72)
-                    Text(profile.name).font(AppFont.title(22, .bold))
+                    Text(profile.name).font(AppFont.page)
                     Text("On this phone since \(DueText.ddmmyyyy(profile.joined)) · \(days) days")
-                        .font(AppFont.main(13)).foregroundStyle(.secondary)
+                        .font(AppFont.main(12)).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity)
                 .listRowBackground(Color.clear)
@@ -208,7 +208,7 @@ private struct YourDataView: View {
             Section("Sent to a server") {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Nothing")
-                    Text("Notes are read on this phone in this version").font(AppFont.main(13)).foregroundStyle(.secondary)
+                    Text("Notes are read on this phone in this version").font(AppFont.main(12)).foregroundStyle(.secondary)
                 }
             }
             Section {
@@ -243,7 +243,7 @@ private struct AIInfoView: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Reads your notes")
-                        Text("Splits items, amounts and days").font(AppFont.main(13)).foregroundStyle(.secondary)
+                        Text("Splits items, amounts and days").font(AppFont.main(12)).foregroundStyle(.secondary)
                     }
                 }
                 LabeledContent {
@@ -251,14 +251,14 @@ private struct AIInfoView: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Answers when you ask")
-                        Text("Comes later · it never speaks first").font(AppFont.main(13)).foregroundStyle(.secondary)
+                        Text("Comes later · it never speaks first").font(AppFont.main(12)).foregroundStyle(.secondary)
                     }
                 }
             }
             Section {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Investment tips")
-                    Text("Left out on purpose, not “not yet”").font(AppFont.main(13)).foregroundStyle(.secondary)
+                    Text("Left out on purpose, not “not yet”").font(AppFont.main(12)).foregroundStyle(.secondary)
                 }
                 Text("Comments on how you spend")
                 Text("Overspending alerts")
@@ -342,13 +342,13 @@ private struct DisplayView: View {
                 Toggle(isOn: Binding(get: { profile.hideOnOpen }, set: { profile.hideOnOpen = $0; try? context.save() })) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Hide balances")
-                        Text("Tap the eye to show them").font(AppFont.main(13)).foregroundStyle(.secondary)
+                        Text("Tap the eye to show them").font(AppFont.main(12)).foregroundStyle(.secondary)
                     }
                 }
                 Toggle(isOn: Binding(get: { profile.hideAssets }, set: { profile.hideAssets = $0; try? context.save() })) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Hide asset totals")
-                        Text("Applies to Finance too").font(AppFont.main(13)).foregroundStyle(.secondary)
+                        Text("Applies to Finance too").font(AppFont.main(12)).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -412,7 +412,7 @@ private struct AboutView: View {
                 VStack(alignment: .leading, spacing: Space.s6) {
                     Text("PRINCIPLE").font(AppFont.main(11, .semibold)).tracking(0.6).foregroundStyle(Tokens.onDarkMuted)
                     Text("A layer to look through, not a layer of control")
-                        .font(AppFont.title(20, .bold))
+                        .font(AppFont.heading(20, .semibold))
                         .foregroundStyle(.white)
                 }
                 .padding(.vertical, Space.s8)
@@ -440,14 +440,14 @@ private struct AboutView: View {
     private func sub(_ title: String, _ s: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
-            Text(s).font(AppFont.main(13)).foregroundStyle(.secondary)
+            Text(s).font(AppFont.main(12)).foregroundStyle(.secondary)
         }
     }
 }
 
 private func intro(_ title: String, _ sub: String) -> some View {
     VStack(alignment: .leading, spacing: Space.s4) {
-        Text(title).font(AppFont.title(22, .bold, relativeTo: .title2)).foregroundStyle(Tokens.text900)
+        Text(title).font(AppFont.section).foregroundStyle(Tokens.text900)
         Text(sub).font(AppFont.main(14)).foregroundStyle(.secondary)
     }
     .listRowBackground(Color.clear)

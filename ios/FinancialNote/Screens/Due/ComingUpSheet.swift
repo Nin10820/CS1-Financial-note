@@ -97,7 +97,7 @@ struct ComingUpSheet: View {
                         .padding(.top, 5)
                         VStack(alignment: .leading, spacing: Space.s4) {
                             Text(DueText.monthLabel(row.m) + (row.m == now ? " · this month" : ""))
-                                .font(AppFont.main(13, .medium))
+                                .font(AppFont.main(12, .medium))
                                 .foregroundStyle(Tokens.grey400)
                             AmountText(value: row.s.remaining + row.s.paid, size: 18, hidden: app.hidden)
                             Text("\(row.s.due.count) \(row.s.due.count == 1 ? "bill" : "bills")"
@@ -136,14 +136,14 @@ private struct MonthCell: View {
             VStack(alignment: .leading, spacing: Space.s4) {
                 HStack {
                     Text(Day.monthsShort[Day.parts(month + "-01").m - 1])
-                        .font(AppFont.main(13, .medium))
+                        .font(AppFont.main(12, .medium))
                     Spacer()
                     if allPaid && !selected {
                         Image(systemName: "checkmark.circle.fill").foregroundStyle(Tokens.brand600)
                     }
                 }
                 Text(hidden ? "•••" : DueText.short(total))
-                    .font(AppFont.main(15, .bold))
+                    .font(AppFont.main(14, .bold))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)

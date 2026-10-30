@@ -17,12 +17,12 @@ struct CareCard<Footer: View>: View {
                 .foregroundStyle(Color(hex: 0xC6F36A))
             HStack(alignment: .firstTextBaseline, spacing: Space.s4) {
                 Text(hidden ? "••••••" : Money.format(total))
-                    .font(AppFont.main(32, .bold, relativeTo: .largeTitle))
+                    .font(AppFont.amount(40))
                     .monospacedDigit()
                     .foregroundStyle(.white)
                     .minimumScaleFactor(0.7)
                     .lineLimit(1)
-                Text("đ").font(AppFont.main(24, .semibold)).foregroundStyle(Tokens.onDark)
+                Text("đ").font(AppFont.currency(for: 40)).foregroundStyle(Tokens.onDark)
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(hidden ? "Taken care of, hidden" : "Taken care of, \(Money.format(total)) dong")
@@ -88,7 +88,7 @@ struct FamilyView: View {
                         .foregroundStyle(Tokens.text900)
                     if let share, !app.assetsHidden {
                         Text("About \(share)% of what you earned in the last 30 days")
-                            .font(AppFont.main(13, .medium))
+                            .font(AppFont.main(12, .medium))
                             .foregroundStyle(Tokens.brand600)
                     }
                 }

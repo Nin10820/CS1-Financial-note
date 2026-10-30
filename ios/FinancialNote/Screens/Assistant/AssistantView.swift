@@ -128,7 +128,7 @@ struct AssistantView: View {
     private var composer: some View {
         VStack(alignment: .leading, spacing: Space.s16) {
             TextField("Write what you spent, or ask about it…", text: $text, axis: .vertical)
-                .font(AppFont.main(17))
+                .font(AppFont.main(16))
                 .lineLimit(1...6)
                 .focused($focused)
                 .submitLabel(.send)
@@ -368,7 +368,7 @@ private struct TurnView: View {
 
     private func bubble(_ text: String) -> some View {
         Text(text)
-            .font(AppFont.main(15))
+            .font(AppFont.main(14))
             .foregroundStyle(Tokens.text900)
             .padding(.horizontal, Space.s12)
             .padding(.vertical, Space.s8)
@@ -452,7 +452,7 @@ private struct TurnView: View {
 
     private func bot(_ text: String) -> some View {
         Text(text)
-            .font(AppFont.main(15))
+            .font(AppFont.main(14))
             .foregroundStyle(Tokens.text700)
             .frame(maxWidth: .infinity, alignment: .leading)
     }

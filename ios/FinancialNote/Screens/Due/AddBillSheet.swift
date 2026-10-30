@@ -105,7 +105,7 @@ struct AddBillSheet: View {
         let label = Self.kinds.first { $0.0 == draft.kind }?.1.lowercased() ?? "kind of"
         let kind = Text(label).foregroundStyle(draft.kind == nil ? Tokens.grey400 : Tokens.brand600)
         return Text("Adding new \(kind)\n— tell us what you know:")
-            .font(AppFont.main(24, .semibold, relativeTo: .title2))
+            .font(AppFont.page)
             .foregroundStyle(Tokens.text700)
     }
 
@@ -126,7 +126,7 @@ struct AddBillSheet: View {
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(label).font(AppFont.main(15, .medium)).foregroundStyle(Tokens.text900)
+                                Text(label).font(AppFont.main(14, .medium)).foregroundStyle(Tokens.text900)
                                 Text(hint).font(AppFont.main(12)).foregroundStyle(Tokens.grey400)
                             }
                             Spacer()
@@ -165,7 +165,7 @@ struct AddBillSheet: View {
                 } footer: {
                     if draft.each > 0 {
                         Text("≈ \(Money.format(draft.each)) đ each month for \(draft.payments) months")
-                            .font(AppFont.main(13, .medium))
+                            .font(AppFont.main(12, .medium))
                     }
                 }
             } else {
