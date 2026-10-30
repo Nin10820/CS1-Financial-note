@@ -356,7 +356,7 @@ struct EntrySheet: View {
             .padding(.leading, Space.s20)
             .padding(.trailing, Space.s12)
             .padding(.vertical, Space.s8)
-            .glassEffect(.regular.tint(Tokens.bgWhite.opacity(0.55)).interactive(), in: .rect(cornerRadius: 28))
+            .composerGlass()
         }
         .padding(.horizontal, Space.s12)
         .padding(.bottom, Space.s8)

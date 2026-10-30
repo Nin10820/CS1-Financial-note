@@ -138,7 +138,8 @@ struct SendButton: View {
     var action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        // Not `.disabled`: iOS would fade it. It stays in full colour and just does nothing.
+        Button { if enabled { action() } } label: {
             Image(systemName: "paperplane")
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.white)
@@ -146,7 +147,24 @@ struct SendButton: View {
                 .background(Tokens.action, in: .circle)
         }
         .buttonStyle(.plain)
-        .disabled(!enabled)
         .accessibilityLabel("Send")
+        .accessibilityHint(enabled ? "" : "Write something first")
+    }
+}
+
+extension View {
+    /// The composer's Liquid Glass panel: clear glass (no white wash, so it reads as glass over
+    /// a light page), a thin bright rim and a soft shadow, as in the owner's reference.
+    func composerGlass() -> some View {
+        let shape = RoundedRectangle(cornerRadius: 28, style: .continuous)
+        return self
+            .glassEffect(.regular.interactive(), in: shape)
+            .overlay(
+                shape.strokeBorder(
+                    LinearGradient(colors: [.white.opacity(0.95), Tokens.text900.opacity(0.10)],
+                                   startPoint: .top, endPoint: .bottom),
+                    lineWidth: 1)
+                .allowsHitTesting(false))
+            .shadow(color: .black.opacity(0.08), radius: 18, y: 6)
     }
 }

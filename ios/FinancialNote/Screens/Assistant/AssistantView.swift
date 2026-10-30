@@ -170,7 +170,7 @@ struct AssistantView: View {
             }
         }
         .padding(Space.s16)
-        .glassEffect(.regular.tint(Tokens.bgWhite.opacity(0.55)).interactive(), in: .rect(cornerRadius: 28))
+        .composerGlass()
     }
 
     // MARK: - Chat History drawer
