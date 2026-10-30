@@ -9,13 +9,14 @@ final class TagTests: XCTestCase {
         XCTAssertEqual(Tags.suggest(title: "Cơm tấm", category: .food), "Food")
         XCTAssertEqual(Tags.suggest(title: "Snack", category: .food), "Snacks")
         XCTAssertEqual(Tags.suggest(title: "Bus card top-up", category: .transport), "Public Transit")
-        XCTAssertEqual(Tags.suggest(title: "Grab to work", category: .transport), "Transport")
+        XCTAssertNil(Tags.suggest(title: "Grab to work", category: .transport))
+        XCTAssertEqual(Tags.suggest(title: "Petrol", category: .transport), "Gas")
         XCTAssertEqual(Tags.suggest(title: "T-shirt", category: .shopping), "Clothing")
         XCTAssertEqual(Tags.suggest(title: "Internet", category: .bills), "Internet & Phone")
         XCTAssertEqual(Tags.suggest(title: "Rent", category: .bills), "Housing")
         XCTAssertNil(Tags.suggest(title: "Salary", category: .received))
         // Every suggestion is one of the default tags.
-        for name in ["Drinks", "Food", "Snacks", "Public Transit", "Transport", "Clothing", "Internet & Phone", "Housing"] {
+        for name in ["Drinks", "Food", "Snacks", "Public Transit", "Gas", "Clothing", "Internet & Phone", "Housing"] {
             XCTAssertNotNil(Tags.info(name), name)
         }
     }

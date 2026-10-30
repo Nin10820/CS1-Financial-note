@@ -1,14 +1,12 @@
 import SwiftData
 import SwiftUI
 
-/// Assistant — Figma High Fi 2 (994:6222, 984:36122): write what you spent in your own words,
-/// read it back as lines, fix any line, then confirm. The reader runs on the phone; nothing is
-/// sent anywhere. The ≡ button opens Chat History (994:7938).
-struct AssistantSheet: View {
-    var seed: AssistantSeed
+/// The AI tab — Figma "Talk With AI" (1073:18676): the greeting, then write what you spent in
+/// your own words. The reader runs on the phone and nothing is sent anywhere; lines are only
+/// saved after Confirm. ≡ slides Chat History in from the left (1077:22810).
+struct AssistantView: View {
     @Environment(AppState.self) private var app
     @Environment(\.modelContext) private var context
-    @Environment(\.dismiss) private var dismiss
     @Query(sort: \Entry.createdAt, order: .reverse) private var entries: [Entry]
     @Query private var profiles: [Profile]
 
@@ -18,11 +16,9 @@ struct AssistantSheet: View {
     @State private var picking = false
     @State private var fixing: FixTarget?
     @State private var later: String?
-    @State private var path: [Route] = []
-    @State private var started = false
+    @State private var drawer = false
+    @State private var path: [ChatHistoryView.Note] = []
     @FocusState private var focused: Bool
-
-    enum Route: Hashable { case history }
 
     struct FixTarget: Identifiable {
         var turn: UUID
@@ -37,8 +33,8 @@ struct AssistantSheet: View {
         var drafts: [Draft]
         var status: Status = .review
         var noteId: String?
-        /// Set when the note came from Notes of the day.
-        var attachedLines: Int?
+        /// Set when the note came from Notes of the day: shown as a note card.
+        var attached: (date: String, lines: [String])?
         /// A plain message instead of a note ("… comes later").
         var notice: String?
     }
@@ -47,10 +43,20 @@ struct AssistantSheet: View {
         NavigationStack(path: $path) {
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: Space.s16) {
-                        if turns.isEmpty { hello }
+                    VStack(alignment: .leading, spacing: Space.s20) {
+                        if turns.isEmpty {
+                            EmptyDay(name: profiles.first?.name ?? "Nin", nothingNote: nil) { idea in
+                                switch idea {
+                                case .write: focused = true
+                                case .due: app.tab = .due
+                                case .decisions:
+                                    later = "Talking decisions through comes later. For now I record what you spend and receive, and keep track of bills."
+                                }
+                            }
+                            .padding(.top, Space.s32)
+                        }
                         ForEach($turns) { $turn in
-                            TurnView(turn: $turn, hidden: app.hidden,
+                            TurnView(turn: $turn, hidden: app.hidden, today: app.today,
                                      onFix: { i in fixing = FixTarget(turn: turn.id, index: i) },
                                      onConfirm: { confirm(turn.id) },
                                      onDiscard: { set(turn.id, .discarded) },
@@ -66,31 +72,29 @@ struct AssistantSheet: View {
                     if let last = turns.last { animate { proxy.scrollTo(last.id, anchor: .bottom) } }
                 }
             }
-            .background(Tokens.bg1)
+            .background(alignment: .top) {
+                LinearGradient(colors: [Tokens.brand100, Tokens.bg3], startPoint: .top, endPoint: .bottom)
+                    .frame(height: 240).ignoresSafeArea().accessibilityHidden(true)
+            }
+            .background(Tokens.bg3)
             .safeAreaInset(edge: .bottom) { bottom }
-            .navigationTitle("Assistant")
-            .toolbarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button { path.append(.history) } label: { Image(systemName: "line.3.horizontal") }
+                    Button {
+                        focused = false
+                        animate { drawer = true }
+                    } label: { Image(systemName: "line.3.horizontal") }
                         .accessibilityLabel("Chat history")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Close", systemImage: "xmark") { dismiss() }
+                    Button("Close", systemImage: "xmark") { app.tab = .today }
                 }
             }
-            .navigationDestination(for: Route.self) { _ in
-                ChatHistoryView(
-                    onNew: {
-                        turns = []
-                        text = ""
-                        path = []
-                        focused = true
-                    },
-                    onView: view)
+            .navigationDestination(for: ChatHistoryView.Note.self) { note in
+                NoteDetailView(note: note, onView: view)
             }
         }
-        .presentationDetents([.large])
+        .overlay { if drawer { historyDrawer } }
         .sheet(isPresented: $picking) { DayPickerSheet(day: $date) }
         .sheet(item: $fixing) { target in DraftFixSheet(draft: draftBinding(target)) }
         .alert("Comes later", isPresented: Binding(get: { later != nil }, set: { if !$0 { later = nil } })) {
@@ -98,50 +102,27 @@ struct AssistantSheet: View {
         } message: {
             Text(later ?? "")
         }
-        .onAppear(perform: start)
+        .onAppear(perform: takeSeed)
+        .onChange(of: turns.isEmpty, initial: true) { _, empty in app.aiChatting = !empty }
+        .onChange(of: app.assistant?.id) { _, _ in takeSeed() }
     }
 
-    // MARK: - Parts
-
-    private var hello: some View {
-        VStack(spacing: Space.s12) {
-            LogoMark(size: 56)
-            Text("Empty your head here\nI'll note for you")
-                .font(AppFont.main(18, .semibold, relativeTo: .title3))
-                .foregroundStyle(Tokens.text900)
-                .multilineTextAlignment(.center)
-            Text("\(Day.greeting()), \(profiles.first?.name ?? "Nin"). What did you spend today?")
-                .font(AppFont.main(14))
-                .foregroundStyle(Tokens.grey400)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, Space.s32)
-    }
+    // MARK: - Bottom: actions and composer
 
     private var bottom: some View {
-        VStack(alignment: .trailing, spacing: Space.s8) {
-            if turns.isEmpty {
-                Menu {
-                    ForEach(templates, id: \.self) { line in
-                        Button(line) { add(line) }
+        VStack(alignment: .trailing, spacing: Space.s12) {
+            if turns.isEmpty && !app.actionsOpen {
+                GlassEffectContainer(spacing: Space.s12) {
+                    VStack(alignment: .trailing, spacing: Space.s12) {
+                        ActionPill(title: "Talk With AI", systemImage: "sparkles") { focused = true }
+                        ActionPill(title: "Template", systemImage: "doc.text") { app.templateOpen = true }
+                        ActionPill(title: "Scan", systemImage: "qrcode.viewfinder") { app.scanOpen = true }
                     }
-                    Divider()
-                    Button("Notes of the day", systemImage: "note.text") { openDayNote() }
-                } label: {
-                    pill("Template", systemImage: "doc.text")
                 }
-                .accessibilityHint("Adds a line you often write")
-                Button {
-                    later = "Scanning a receipt or QR code comes later. You can type what you spent instead — one line is enough."
-                } label: {
-                    pill("Scan QR code", systemImage: "qrcode.viewfinder")
-                }
-                .buttonStyle(.plain)
             }
             composer
         }
-        .padding(.horizontal, Space.s12)
+        .padding(.horizontal, Space.s16)
         .padding(.bottom, Space.s8)
     }
 
@@ -162,14 +143,17 @@ struct AssistantSheet: View {
                 }
             HStack(spacing: Space.s8) {
                 Menu {
-                    Button("Notes of the day", systemImage: "note.text") { openDayNote() }
-                    Button("Photo of a receipt — comes later", systemImage: "photo") {}
-                        .disabled(true)
+                    Button("Notes of the day", systemImage: "note.text") {
+                        app.day = date
+                        app.dayNoteOpen = true
+                    }
+                    Button("Template", systemImage: "doc.text") { app.templateOpen = true }
+                    Button("Scan", systemImage: "qrcode.viewfinder") { app.scanOpen = true }
                 } label: {
                     Image(systemName: "plus")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Tokens.text700)
-                        .frame(width: 40, height: 40)
+                        .frame(width: 36, height: 36)
                         .background(Tokens.bg4, in: .circle)
                 }
                 .accessibilityLabel("More")
@@ -181,7 +165,7 @@ struct AssistantSheet: View {
                     .font(AppFont.main(13, .medium))
                     .foregroundStyle(Tokens.text900)
                     .padding(.horizontal, Space.s12)
-                    .frame(height: 40)
+                    .frame(height: 36)
                     .background(Tokens.bgWhite, in: .capsule)
                     .overlay(Capsule().strokeBorder(Tokens.bd1))
                 }
@@ -194,20 +178,21 @@ struct AssistantSheet: View {
                     Image(systemName: "mic")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(Tokens.text700)
-                        .frame(width: 40, height: 40)
-                        .background(Tokens.bg4, in: .circle)
+                        .frame(width: 44, height: 44)
+                        .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
+                .frame(width: 44, height: 44)
                 .accessibilityLabel("Voice note")
                 Button(action: send) {
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 16, weight: .bold))
-                        .frame(width: 26, height: 26)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 36, height: 36)
+                        .background(canSend ? Tokens.text900 : Tokens.grey300, in: .circle)
                 }
-                .buttonStyle(.glassProminent)
-                .buttonBorderShape(.circle)
-                .tint(Tokens.action)
-                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .buttonStyle(.plain)
+                .disabled(!canSend)
                 .accessibilityLabel("Send")
             }
         }
@@ -216,55 +201,77 @@ struct AssistantSheet: View {
         .shadow(color: .black.opacity(0.06), radius: 10, y: 2)
     }
 
-    private func pill(_ title: String, systemImage: String) -> some View {
-        Label(title, systemImage: systemImage)
-            .font(AppFont.main(14, .semibold))
-            .foregroundStyle(Tokens.brand700)
-            .padding(.horizontal, Space.s16)
-            .padding(.vertical, Space.s12)
-            .background(Tokens.bgWhite, in: .capsule)
-            .shadow(color: .black.opacity(0.06), radius: 8, y: 2)
+    // MARK: - Chat History drawer
+
+    private var historyDrawer: some View {
+        ZStack(alignment: .leading) {
+            Color.black.opacity(0.16)
+                .ignoresSafeArea()
+                .onTapGesture { animate { drawer = false } }
+                .accessibilityLabel("Close chat history")
+                .accessibilityAddTraits(.isButton)
+            NavigationStack {
+                ChatHistoryView(
+                    onNew: {
+                        turns = []
+                        text = ""
+                        animate { drawer = false }
+                        focused = true
+                    },
+                    onView: view,
+                    onOpen: { note in
+                        animate { drawer = false }
+                        path = [note]
+                    })
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button { animate { drawer = false } } label: { Image(systemName: "line.3.horizontal") }
+                            .accessibilityLabel("Close chat history")
+                    }
+                }
+            }
+            .frame(width: 310)
+            .background(Tokens.bg1)
+            .clipShape(UnevenRoundedRectangle(bottomTrailingRadius: Corner.c20, topTrailingRadius: Corner.c20))
+            .ignoresSafeArea(edges: .vertical)
+            .transition(UIAccessibility.isReduceMotionEnabled ? .opacity : .move(edge: .leading))
+        }
+        .accessibilityAddTraits(.isModal)
     }
 
     // MARK: - Logic
 
-    /// The user's own recent lines, so the common ones are one tap away.
-    private var templates: [String] {
-        var seen: [String] = []
-        for e in entries where e.flow == .out && !e.noteId.hasPrefix("bill-") {
-            let line = "\(e.title.lowercased(with: Locale(identifier: "vi"))) \(Int((Double(e.amount) / 1000).rounded()))k"
-            if !seen.contains(line) { seen.append(line) }
-            if seen.count == 5 { break }
-        }
-        return seen.isEmpty ? ["đậu hũ 15k", "thịt xay 50k", "cafe 25k"] : seen
-    }
+    private var canSend: Bool { !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
-    private func start() {
-        guard !started else { return }
-        started = true
+    /// Takes what Today, Notes of the day or the + menu asked the tab to start with.
+    private func takeSeed() {
+        guard let seed = app.assistant else { return }
+        app.assistant = nil
         date = seed.date
         if let notice = seed.notice {
-            turns = [Turn(text: "", drafts: [], notice: notice)]
+            turns.append(Turn(text: "", drafts: [], notice: notice))
         } else if let lines = seed.noteLines, !lines.isEmpty {
+            dropReviews()
             let joined = lines.joined(separator: "\n")
-            turns = [Turn(text: joined, drafts: NoteParser.parse(joined, day: seed.date), attachedLines: lines.count)]
+            animate {
+                turns.append(Turn(text: joined, drafts: NoteParser.parse(joined, day: seed.date),
+                                  attached: (seed.date, lines)))
+            }
         } else {
             focused = true
         }
     }
 
-    private func add(_ line: String) {
-        let t = text.trimmingCharacters(in: .whitespaces)
-        text = t.isEmpty ? line : "\(t.hasSuffix(",") ? String(t.dropLast()) : t), \(line)"
-        focused = true
+    /// An unfinished review is dropped when a new note comes in; nothing from it was saved.
+    private func dropReviews() {
+        for i in turns.indices where turns[i].status == .review && turns[i].notice == nil { turns[i].status = .discarded }
     }
 
     private func send() {
         let note = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !note.isEmpty else { return }
         text = ""
-        // An unfinished review is dropped when a new note is sent; nothing from it was saved.
-        for i in turns.indices where turns[i].status == .review && turns[i].notice == nil { turns[i].status = .discarded }
+        dropReviews()
         animate { turns.append(Turn(text: note, drafts: NoteParser.parse(note, day: date))) }
     }
 
@@ -300,16 +307,9 @@ struct AssistantSheet: View {
     private func view(_ day: String) {
         app.day = day
         app.range = .day
+        path = []
+        drawer = false
         app.tab = .today
-        dismiss()
-    }
-
-    private func openDayNote() {
-        dismiss()
-        Task {
-            try? await Task.sleep(for: .milliseconds(450))
-            app.dayNoteOpen = true
-        }
     }
 
     private func draftBinding(_ t: FixTarget) -> Binding<Draft> {
@@ -327,10 +327,11 @@ struct AssistantSheet: View {
     }
 }
 
-/// One note and the Assistant's answer.
+/// One note and the reply (Figma 1077:22408, 1086:27021).
 private struct TurnView: View {
-    @Binding var turn: AssistantSheet.Turn
+    @Binding var turn: AssistantView.Turn
     var hidden: Bool
+    var today: String
     var onFix: (Int) -> Void
     var onConfirm: () -> Void
     var onDiscard: () -> Void
@@ -342,29 +343,37 @@ private struct TurnView: View {
             if let notice = turn.notice {
                 bot(notice)
             } else {
-                userBubble
+                mine
                 reply
             }
         }
     }
 
-    private var userBubble: some View {
-        HStack {
-            Spacer(minLength: Space.s32)
-            VStack(alignment: .leading, spacing: Space.s4) {
-                if let n = turn.attachedLines {
-                    Label("Notes of the day · \(n) \(n == 1 ? "line" : "lines")", systemImage: "note.text")
-                        .font(AppFont.main(12, .semibold))
-                        .foregroundStyle(Tokens.brand800)
-                }
-                Text(turn.text)
-                    .font(AppFont.main(15))
-                    .foregroundStyle(Tokens.text900)
+    /// What the user sent: a note card for Notes of the day, otherwise a bubble.
+    @ViewBuilder
+    private var mine: some View {
+        VStack(alignment: .trailing, spacing: Space.s8) {
+            if let a = turn.attached {
+                NoteCard(title: "Note - \(Day.long(a.date))", lines: a.lines)
+                    .frame(maxWidth: 220)
+                    .padding(Space.s8)
+                    .background(Tokens.bg4, in: .rect(cornerRadius: Corner.c16))
+                bubble(a.date == today ? "My note today" : "My note for \(Day.short(a.date))")
+            } else {
+                bubble(turn.text)
             }
-            .padding(.horizontal, Space.s16)
-            .padding(.vertical, Space.s12)
-            .background(Tokens.brand200, in: .rect(cornerRadius: Corner.c16))
         }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+    }
+
+    private func bubble(_ text: String) -> some View {
+        Text(text)
+            .font(AppFont.main(15))
+            .foregroundStyle(Tokens.text900)
+            .padding(.horizontal, Space.s12)
+            .padding(.vertical, Space.s8)
+            .background(Tokens.bg4, in: .rect(cornerRadius: Corner.c12))
+            .padding(.leading, Space.s32)
     }
 
     @ViewBuilder
@@ -379,10 +388,10 @@ private struct TurnView: View {
                 bot("Saved \(drafts.count) \(drafts.count == 1 ? "item" : "items") to \(Day.short(drafts.first?.date ?? ""))"
                     + (total > 0 && !hidden ? " · spent \(Money.format(total)) đ." : "."))
                 HStack(spacing: Space.s8) {
-                    Button("Undo", action: onUndo).buttonStyle(.glass)
-                    Button("View list", action: onView).buttonStyle(.glassProminent).tint(Tokens.action)
+                    Spacer()
+                    replyButton("Undo", filled: false, action: onUndo)
+                    replyButton("View list", filled: true, action: onView)
                 }
-                .font(AppFont.main(14, .semibold))
             }
         case .review:
             if drafts.isEmpty {
@@ -390,34 +399,55 @@ private struct TurnView: View {
             } else {
                 let missing = drafts.filter { $0.amount == nil }.count
                 VStack(alignment: .leading, spacing: Space.s8) {
-                    bot("Here's what I got — nothing is saved until you confirm.")
+                    VStack(alignment: .leading, spacing: 2) {
+                        bot("Here's what I got — nothing is saved until you confirm:")
+                        ForEach(Array(drafts.enumerated()), id: \.offset) { _, d in
+                            Text("•  \(d.title): \(d.amount.map { hidden ? "•••" : "\(Money.format($0))đ" } ?? "no amount")")
+                                .font(AppFont.main(14))
+                                .foregroundStyle(Tokens.text700)
+                        }
+                    }
                     VStack(spacing: 0) {
                         ForEach(Array(drafts.enumerated()), id: \.offset) { i, d in
                             if i > 0 { Divider().overlay(Tokens.bd0) }
-                            Button { onFix(i) } label: { DraftRow(index: i, draft: d, hidden: hidden) }
+                            Button { onFix(i) } label: { DraftRow(draft: d, hidden: hidden) }
                                 .buttonStyle(.plain)
                                 .accessibilityHint("Fix this line")
                         }
                     }
                     .padding(.horizontal, Space.s12)
-                    .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c16))
-                    .overlay(RoundedRectangle(cornerRadius: Corner.c16).strokeBorder(Tokens.bd1))
-                    if missing > 0 {
-                        Text("\(missing) \(missing == 1 ? "line needs" : "lines need") an amount — tap it to fix")
-                            .font(AppFont.main(12))
-                            .foregroundStyle(Tokens.grey400)
-                    }
+                    .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c14))
+                    .overlay(RoundedRectangle(cornerRadius: Corner.c14).strokeBorder(Tokens.secondary300))
                     HStack(spacing: Space.s8) {
-                        Button("Discard", action: onDiscard).buttonStyle(.glass)
-                        Button("Confirm", action: onConfirm)
-                            .buttonStyle(.glassProminent)
-                            .tint(Tokens.action)
+                        if missing > 0 {
+                            Text("\(missing) \(missing == 1 ? "line needs" : "lines need") an amount")
+                                .font(AppFont.main(12))
+                                .foregroundStyle(Tokens.grey400)
+                        }
+                        Spacer()
+                        replyButton("Discard", filled: false, action: onDiscard)
+                        replyButton("Confirm", filled: true, action: onConfirm)
                             .disabled(missing > 0)
+                            .opacity(missing > 0 ? 0.5 : 1)
                     }
-                    .font(AppFont.main(14, .semibold))
                 }
             }
         }
+    }
+
+    private func replyButton(_ title: String, filled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(AppFont.main(14, .semibold))
+                .foregroundStyle(filled ? .white : Tokens.text900)
+                .padding(.horizontal, Space.s16)
+                .frame(minHeight: 36)
+                .background(filled ? Tokens.action : Tokens.bgWhite, in: .capsule)
+                .overlay(Capsule().strokeBorder(filled ? .clear : Tokens.bd1))
+                .contentShape(.capsule)
+        }
+        .buttonStyle(.plain)
+        .frame(minHeight: 44)
     }
 
     private func bot(_ text: String) -> some View {
@@ -428,20 +458,13 @@ private struct TurnView: View {
     }
 }
 
-/// A line read from a note: number, name, category, amount (or "Add amount").
+/// A line read from a note: name, category, amount (or "Add amount"), and a pencil to fix it.
 private struct DraftRow: View {
-    var index: Int
     var draft: Draft
     var hidden: Bool
 
     var body: some View {
         HStack(spacing: Space.s12) {
-            Text("\(index + 1)")
-                .font(AppFont.main(13, .medium))
-                .foregroundStyle(Tokens.text700)
-                .frame(width: 28, height: 28)
-                .background(Tokens.bg4, in: .circle)
-                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(draft.title).font(AppFont.main(14, .medium)).foregroundStyle(Tokens.text900)
                 HStack(spacing: Space.s4) {
@@ -460,6 +483,10 @@ private struct DraftRow: View {
             } else {
                 Text("Add amount").font(AppFont.main(14, .semibold)).foregroundStyle(Tokens.brand700)
             }
+            Image(systemName: "pencil")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Tokens.text700)
+                .accessibilityHidden(true)
         }
         .padding(.vertical, Space.s12)
         .contentShape(.rect)

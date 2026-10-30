@@ -46,6 +46,8 @@ enum Tokens {
     static let action = Color(hex: 0x3B6922)
     /// The round write button: brand-600 in both modes, 4.2:1 against its white icon.
     static let writeButton = Color(hex: 0x4C8A26)
+    /// Today's weekday in the strip and the dot by the date (red, readable at small sizes).
+    static let todayRed = Color(light: 0xD92D20, dark: 0xF97066)
 
     /// Text on the dark green cards. Solid colours (not see-through white) so the contrast is
     /// the same however the card is drawn: about 9:1 and 6.8:1 on the card's green.

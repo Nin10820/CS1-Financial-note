@@ -8,7 +8,7 @@ struct SpendCard: View {
     var incoming: Int
     var meta: String
     @Binding var hidden: Bool
-    var onSummary: () -> Void
+    var onSummary: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s8) {
@@ -48,6 +48,7 @@ struct SpendCard: View {
                 HeroLeader(filled: false, label: "In", value: incoming, hidden: hidden)
             }
             .padding(.top, Space.s8)
+            if let onSummary {
             Button(action: onSummary) {
                 Label("Summary", systemImage: "chart.pie.fill")
                     .font(AppFont.main(14, .medium))
@@ -59,6 +60,7 @@ struct SpendCard: View {
             }
             .buttonStyle(.plain)
             .padding(.top, Space.s8)
+            }
         }
         .padding(Space.s16)
         .frame(maxWidth: .infinity, alignment: .leading)

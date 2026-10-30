@@ -1,24 +1,39 @@
 import SwiftData
 import SwiftUI
 
-/// Entry sheet — Figma High Fi 2 (994:10250, 1052:6286): the amount on top, then name and
-/// category, day / paid from / kind, tags, a comment, and delete in the corner. Everything is
-/// editable in place; the green check saves.
+/// What kind of line this is (Figma "Kind of"): spending, money in, a bill, or a bill that
+/// comes back every month (also added to Due).
+enum EntryKind: String, CaseIterable, Identifiable {
+    case expense = "Expense", receive = "Receive", bill = "Bill", monthly = "Monthly bill"
+    var id: String { rawValue }
+}
+
+/// Entry sheet — Figma Quick-note (1072:18481): Amount on top, Name with its category, then
+/// Date, Kind of, Currency, From; Category tags with Suggest tag; Comment; delete in the corner.
+/// Opened on a saved line it edits it; opened with `nil` (Template) it starts blank and has a
+/// composer at the bottom that fills the form from one typed line. The green check saves.
 struct EntrySheet: View {
-    @Bindable var entry: Entry
+    var entry: Entry?
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var app
     @Query private var assets: [Asset]
 
     @State private var d = EntryEdit()
+    @State private var start = EntryEdit()
     @State private var loaded = false
     @State private var confirmDelete = false
     @State private var pickingTags = false
+    @State private var pickingDate = false
+    @State private var dateSet = true
     @State private var commenting = false
+    @State private var line = ""
+    @State private var lineHint: String?
     @FocusState private var focus: Field?
 
-    enum Field { case amount, name, comment }
+    enum Field { case amount, name, comment, line }
+
+    private var isNew: Bool { entry == nil }
 
     var body: some View {
         NavigationStack {
@@ -29,8 +44,8 @@ struct EntrySheet: View {
                     detailsCard
                     tagsCard
                     commentBlock
-                    if !entry.source.isEmpty {
-                        Text("From your note: “\(entry.source)”")
+                    if let source = entry?.source, !source.isEmpty {
+                        Text("From your note: “\(source)”")
                             .font(AppFont.main(12))
                             .foregroundStyle(Tokens.grey400)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -42,7 +57,7 @@ struct EntrySheet: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .background(Tokens.bg1)
-            .safeAreaInset(edge: .bottom) { footer }
+            .safeAreaInset(edge: .bottom) { isNew ? AnyView(composer) : AnyView(footer) }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close", systemImage: "xmark") { dismiss() }
@@ -51,16 +66,27 @@ struct EntrySheet: View {
                     Button("Save", systemImage: "checkmark", action: save)
                         .buttonStyle(.glassProminent)
                         .tint(Tokens.action)
-                        .disabled(!d.isValid || d == EntryEdit(entry))
+                        .disabled(!d.isValid || (!isNew && d == start))
                 }
             }
-            .sheet(isPresented: $pickingTags) { TagPickerSheet(selected: $d.tags) }
+            .sheet(isPresented: $pickingTags) {
+                TagPickerSheet(selected: $d.tags, suggestion: Tags.suggest(title: d.title, category: d.category))
+            }
+            .sheet(isPresented: $pickingDate) { EntryDateSheet(date: $d.date) { dateSet = true } }
         }
         .presentationDetents([.large])
         .onAppear {
             guard !loaded else { return }
             loaded = true
-            d = EntryEdit(entry)
+            if let entry {
+                d = EntryEdit(entry)
+            } else {
+                d = EntryEdit()
+                d.date = app.day
+                dateSet = false
+                focus = .line
+            }
+            start = d
         }
     }
 
@@ -68,7 +94,7 @@ struct EntrySheet: View {
 
     private var amountHeader: some View {
         VStack(spacing: Space.s4) {
-            Text(d.flow == .out ? "Amount spent" : "Amount received")
+            Text("Amount")
                 .font(AppFont.main(13))
                 .foregroundStyle(Tokens.grey400)
             HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
@@ -97,7 +123,7 @@ struct EntrySheet: View {
                 .font(AppFont.main(16, .medium))
                 .focused($focus, equals: .name)
             Menu {
-                Picker("Category", selection: $d.category) {
+                Picker("Category", selection: categoryBinding) {
                     ForEach(Category.allCases, id: \.self) { c in
                         Label(c.rawValue, systemImage: c.symbol).tag(c)
                     }
@@ -119,35 +145,60 @@ struct EntrySheet: View {
 
     private var detailsCard: some View {
         VStack(spacing: 0) {
-            row("Day") {
-                DatePicker("Day", selection: Binding(get: { Day.date(d.date) }, set: { d.date = Day.iso($0) }),
-                           in: ...Date.now, displayedComponents: .date)
-                    .labelsHidden()
-                    .datePickerStyle(.compact)
-            }
-            Divider().overlay(Tokens.bd0)
-            row("Paid from") {
-                Menu {
-                    Picker("Paid from", selection: $d.paidFrom) {
-                        Text("Not set").tag(String?.none)
-                        ForEach(paidFromOptions, id: \.self) { Text($0).tag(String?.some($0)) }
+            row("Date") {
+                Button { pickingDate = true } label: {
+                    HStack(spacing: Space.s6) {
+                        if dateSet {
+                            chip(Self.dateText(d.date), systemImage: "calendar", trailing: nil)
+                        } else {
+                            Text("Select Date").font(AppFont.main(14)).foregroundStyle(Tokens.grey400)
+                        }
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Tokens.grey400)
                     }
-                } label: {
-                    chip(d.paidFrom ?? "Not set", systemImage: d.paidFrom.map(Self.paidSymbol) ?? "questionmark.circle", trailing: "chevron.down")
+                    .frame(minHeight: 44)
+                    .contentShape(.rect)
                 }
-                .accessibilityLabel("Paid from, \(d.paidFrom ?? "not set")")
+                .buttonStyle(.plain)
+                .accessibilityLabel("Date, \(dateSet ? Day.long(d.date) : "not set")")
             }
             Divider().overlay(Tokens.bd0)
             row("Kind of") {
                 Menu {
-                    Picker("Kind of", selection: flowBinding) {
-                        Text("Expense").tag(Flow.out)
-                        Text("Receive").tag(Flow.in)
+                    Picker("Kind of", selection: kindBinding) {
+                        ForEach(kinds) { Text($0.rawValue).tag($0) }
                     }
                 } label: {
-                    chip(d.flow == .out ? "Expense" : "Receive", systemImage: nil, trailing: "chevron.up.chevron.down")
+                    valueLabel(d.kind.rawValue, trailing: "chevron.up.chevron.down")
                 }
-                .accessibilityLabel("Kind of, \(d.flow == .out ? "Expense" : "Receive")")
+                .accessibilityLabel("Kind of, \(d.kind.rawValue)")
+            }
+            Divider().overlay(Tokens.bd0)
+            row("Currency") {
+                Menu {
+                    Picker("Currency", selection: .constant("VND")) { Text("(đ) Vietnam Đồng").tag("VND") }
+                } label: {
+                    valueLabel("(đ) Vietnam Đồng", trailing: "chevron.up.chevron.down")
+                }
+                .accessibilityLabel("Currency, Vietnam Đồng")
+            }
+            Divider().overlay(Tokens.bd0)
+            row("From") {
+                Menu {
+                    Picker("From", selection: $d.paidFrom) {
+                        Text("Not set").tag(String?.none)
+                        ForEach(paidFromOptions, id: \.self) { Text($0).tag(String?.some($0)) }
+                    }
+                } label: {
+                    HStack(spacing: Space.s6) {
+                        if let p = d.paidFrom {
+                            Image(systemName: Self.paidSymbol(p)).foregroundStyle(Tokens.secondary500)
+                        }
+                        valueLabel(d.paidFrom ?? "Not set", trailing: "chevron.up.chevron.down", muted: d.paidFrom == nil)
+                    }
+                }
+                .accessibilityLabel("From, \(d.paidFrom ?? "not set")")
             }
         }
         .padding(.horizontal, Space.s16)
@@ -158,7 +209,7 @@ struct EntrySheet: View {
         let suggestion = Tags.suggest(title: d.title, category: d.category)
         return VStack(alignment: .leading, spacing: Space.s12) {
             HStack {
-                Text("Tags").font(AppFont.main(15)).foregroundStyle(Tokens.text700)
+                Text("Category").font(AppFont.main(16, .semibold)).foregroundStyle(Tokens.text900)
                 Spacer()
                 if let suggestion, !d.tags.contains(suggestion) {
                     Button {
@@ -176,25 +227,35 @@ struct EntrySheet: View {
                     .accessibilityHint("Adds “\(suggestion)”")
                 }
             }
-            if !d.tags.isEmpty {
+            if d.tags.isEmpty {
+                Button { pickingTags = true } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Tokens.text700)
+                        .frame(width: 32, height: 32)
+                        .background(Tokens.bg4, in: .circle)
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .overlay(RoundedRectangle(cornerRadius: Corner.c14).strokeBorder(Tokens.bd2, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Add tags")
+            } else {
                 FlowLayout {
                     ForEach(d.tags, id: \.self) { t in
                         TagChip(name: t, selected: true) { animate { d.tags.removeAll { $0 == t } } }
                     }
+                    Button { pickingTags = true } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(Tokens.text700)
+                            .frame(width: 34, height: 34)
+                            .background(Tokens.bg4, in: .circle)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Add tags")
                 }
             }
-            Button { pickingTags = true } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(Tokens.text700)
-                    .frame(width: 32, height: 32)
-                    .background(Tokens.bg4, in: .circle)
-                    .frame(maxWidth: .infinity, minHeight: 48)
-                    .overlay(RoundedRectangle(cornerRadius: Corner.c14).strokeBorder(Tokens.bd2, style: StrokeStyle(lineWidth: 1, dash: [4, 3])))
-                    .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Add tags")
         }
         .padding(Space.s16)
         .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c16))
@@ -210,9 +271,9 @@ struct EntrySheet: View {
                 .padding(.leading, Space.s4)
                 .padding(.top, Space.s8)
             if commenting || !d.comment.isEmpty {
-                TextField("Write a comment", text: $d.comment, axis: .vertical)
+                TextField("Add comment", text: $d.comment, axis: .vertical)
                     .font(AppFont.main(15))
-                    .lineLimit(1...5)
+                    .lineLimit(3...6)
                     .focused($focus, equals: .comment)
                     .padding(Space.s16)
                     .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c16))
@@ -233,6 +294,7 @@ struct EntrySheet: View {
         }
     }
 
+    /// Saved lines: the bin, with "Are you sure…" next to it.
     private var footer: some View {
         HStack {
             Button(role: .destructive) {
@@ -248,14 +310,57 @@ struct EntrySheet: View {
             .accessibilityLabel("Delete")
             .confirmationDialog("Are you sure you want to delete this?", isPresented: $confirmDelete, titleVisibility: .visible) {
                 Button("Yes, delete", role: .destructive) {
-                    context.delete(entry)
-                    try? context.save()
+                    if let entry {
+                        context.delete(entry)
+                        try? context.save()
+                    }
                     dismiss()
                 }
             }
             Spacer()
         }
         .padding(.horizontal, Space.s16)
+        .padding(.bottom, Space.s8)
+    }
+
+    /// Template: type one line ("cơm tấm 35k · cash") and the form fills itself.
+    private var composer: some View {
+        VStack(alignment: .leading, spacing: Space.s8) {
+            if let lineHint {
+                Text(lineHint).font(AppFont.main(12)).foregroundStyle(Tokens.grey400).padding(.horizontal, Space.s4)
+            }
+            VStack(alignment: .leading, spacing: Space.s12) {
+                TextField("e.g. coffee 24k, breakfast 35k…", text: $line, axis: .vertical)
+                    .font(AppFont.main(15))
+                    .lineLimit(1...3)
+                    .focused($focus, equals: .line)
+                    .submitLabel(.done)
+                    .accessibilityLabel("Fill from a line")
+                    .onChange(of: line) { _, new in
+                        if new.hasSuffix("\n") {
+                            line = String(new.dropLast())
+                            fill()
+                        }
+                    }
+                HStack {
+                    Spacer()
+                    Button(action: fill) {
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 36, height: 36)
+                            .background(line.trimmingCharacters(in: .whitespaces).isEmpty ? Tokens.grey300 : Tokens.action, in: .circle)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(line.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .accessibilityLabel("Fill the form")
+                }
+            }
+            .padding(Space.s16)
+            .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
+            .shadow(color: .black.opacity(0.06), radius: 10, y: 2)
+        }
+        .padding(.horizontal, Space.s12)
         .padding(.bottom, Space.s8)
     }
 
@@ -270,19 +375,38 @@ struct EntrySheet: View {
         .frame(minHeight: 52)
     }
 
-    private func chip(_ text: String, systemImage: String?, trailing: String) -> some View {
+    private func chip(_ text: String, systemImage: String?, trailing: String?) -> some View {
         HStack(spacing: Space.s6) {
-            if let systemImage { Image(systemName: systemImage).foregroundStyle(Tokens.brand600) }
+            if let systemImage { Image(systemName: systemImage).foregroundStyle(Tokens.text700) }
             Text(text).foregroundStyle(Tokens.text900)
-            Image(systemName: trailing)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(Tokens.grey400)
+            if let trailing {
+                Image(systemName: trailing).font(.system(size: 10, weight: .semibold)).foregroundStyle(Tokens.grey400)
+            }
         }
         .font(AppFont.main(14, .medium))
         .padding(.horizontal, Space.s12)
         .padding(.vertical, Space.s8)
         .background(Tokens.bg4, in: .capsule)
     }
+
+    private func valueLabel(_ text: String, trailing: String, muted: Bool = false) -> some View {
+        HStack(spacing: Space.s6) {
+            Text(text).foregroundStyle(muted ? Tokens.grey400 : Tokens.text900)
+            Image(systemName: trailing).font(.system(size: 10, weight: .semibold)).foregroundStyle(Tokens.grey400)
+        }
+        .font(AppFont.main(14, .medium))
+        .frame(minHeight: 44)
+        .contentShape(.rect)
+    }
+
+    /// "15 Oct 2026"
+    static func dateText(_ iso: String) -> String {
+        let (y, m, dd) = Day.parts(iso)
+        return "\(dd) \(Day.monthsShort[m - 1]) \(y)"
+    }
+
+    /// A monthly bill can only be started from a new line.
+    private var kinds: [EntryKind] { isNew ? EntryKind.allCases : [.expense, .receive, .bill] }
 
     /// Cash, card or transfer, plus the user's own accounts written in Finance.
     private var paidFromOptions: [String] {
@@ -301,17 +425,95 @@ struct EntrySheet: View {
         }
     }
 
-    private var flowBinding: Binding<Flow> {
-        Binding(get: { d.flow }, set: { f in
-            d.flow = f
-            if f == .in { d.category = .received } else if d.category == .received { d.category = .other }
+    private var kindBinding: Binding<EntryKind> {
+        Binding(get: { d.kind }, set: { d.setKind($0) })
+    }
+
+    private var categoryBinding: Binding<Category> {
+        Binding(get: { d.category }, set: { c in
+            d.category = c
+            if c == .received { d.setKind(.receive) } else if d.kind == .receive { d.setKind(.expense) }
+            if c == .bills && d.kind == .expense { d.kind = .bill }
         })
     }
 
+    private func fill() {
+        let text = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        let drafts = NoteParser.parse(text, day: d.date)
+        guard let first = drafts.first else { return }
+        animate {
+            d.title = first.title
+            if let a = first.amount { d.amount = a }
+            d.category = first.category
+            d.setKind(first.flow == .in ? .receive : first.category == .bills ? .bill : .expense)
+            d.date = first.date
+            dateSet = true
+            if let p = first.paidFrom { d.paidFrom = p }
+            if d.tags.isEmpty, let t = Tags.suggest(title: first.title, category: first.category) { d.tags = [t] }
+            d.source = text
+        }
+        lineHint = drafts.count > 1
+            ? "Filled from the first line. For several lines at once, use Talk With AI."
+            : first.amount == nil ? "No amount in that line — type it above." : nil
+        line = ""
+        focus = nil
+    }
+
     private func save() {
-        d.apply(to: entry)
+        if let entry {
+            d.apply(to: entry)
+        } else {
+            let e = Entry(date: d.date, title: "", amount: 0, flow: .out, category: .other,
+                          noteId: UUID().uuidString, source: d.source)
+            d.apply(to: e)
+            context.insert(e)
+            if d.kind == .monthly {
+                // Also remember it in Due as a monthly bill, already paid for this month.
+                let bill = Bill(kind: .recurring, name: e.title, icon: BillMath.guessIcon(e.title, kind: .recurring),
+                                amount: e.amount, start: e.date, payWith: e.paidFrom,
+                                paid: [Month.of(e.date): PaidRecord(amount: e.amount, at: .now, entryId: e.id)])
+                context.insert(bill)
+                e.billId = bill.id
+                e.noteId = "bill-\(bill.id)-\(Month.of(e.date))"
+            }
+        }
         try? context.save()
         dismiss()
+    }
+}
+
+/// The date for one line (Figma 1085:24326): X, title, ✓ over the system calendar.
+struct EntryDateSheet: View {
+    @Binding var date: String
+    var onPick: () -> Void
+    @State private var picked = Date.now
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            DatePicker("Date", selection: $picked, in: ...Date.now, displayedComponents: .date)
+                .datePickerStyle(.graphical)
+                .tint(Tokens.brand500)
+                .padding(.horizontal)
+                .navigationTitle("Date")
+                .toolbarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close", systemImage: "xmark") { dismiss() }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done", systemImage: "checkmark") {
+                            date = Day.iso(picked)
+                            onPick()
+                            dismiss()
+                        }
+                        .tint(Tokens.action)
+                    }
+                }
+        }
+        .presentationDetents([.medium, .large])
+        .onAppear { picked = Day.date(date) }
     }
 }
 
@@ -321,10 +523,13 @@ struct EntryEdit: Equatable {
     var amount: Int?
     var flow: Flow = .out
     var category: Category = .other
+    var kind: EntryKind = .expense
     var date = Day.today()
     var paidFrom: String?
     var tags: [String] = []
     var comment = ""
+    /// The line typed into Template, kept as the entry's source.
+    var source = ""
 
     init() {}
 
@@ -333,13 +538,31 @@ struct EntryEdit: Equatable {
         amount = e.amount
         flow = e.flow
         category = e.category
+        kind = e.flow == .in ? .receive : e.category == .bills ? .bill : .expense
         date = e.date
         paidFrom = e.paidFrom
         tags = e.tags
         comment = e.comment
+        source = e.source
     }
 
     var isValid: Bool { !title.trimmingCharacters(in: .whitespaces).isEmpty && (amount ?? 0) > 0 }
+
+    /// Kind decides money in or out, and Bill / Monthly bill file the line under Bills.
+    mutating func setKind(_ k: EntryKind) {
+        kind = k
+        switch k {
+        case .receive:
+            flow = .in
+            category = .received
+        case .bill, .monthly:
+            flow = .out
+            category = .bills
+        case .expense:
+            flow = .out
+            if category == .received || category == .bills { category = .other }
+        }
+    }
 
     func apply(to e: Entry) {
         e.title = title.trimmingCharacters(in: .whitespaces)

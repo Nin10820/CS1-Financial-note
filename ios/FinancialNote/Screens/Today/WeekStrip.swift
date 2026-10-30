@@ -56,13 +56,14 @@ struct WeekStrip: View {
             withAnimation(reduceMotion ? nil : .snappy) { day = d }
         } label: {
             VStack(spacing: Space.s4) {
-                Text(name)
-                    .font(AppFont.heading(13, .medium, relativeTo: .caption))
                 Text(String(d.suffix(2)))
                     .font(AppFont.heading(20, .medium, relativeTo: .title3))
                     .monospacedDigit()
+                    .foregroundStyle(picked ? Tokens.brand700 : strong ? Tokens.text900 : Tokens.grey300)
+                Text(name)
+                    .font(AppFont.heading(12, .medium, relativeTo: .caption))
+                    .foregroundStyle(d == today ? Tokens.todayRed : picked ? Tokens.brand700 : Tokens.grey400)
             }
-            .foregroundStyle(picked ? Tokens.brand700 : strong ? Tokens.text900 : Tokens.grey300)
             .frame(maxWidth: .infinity)
             .padding(.vertical, Space.s8)
             .background {
@@ -76,7 +77,7 @@ struct WeekStrip: View {
         .buttonStyle(.plain)
         .disabled(future)
         .opacity(future ? 0.6 : 1)
-        .accessibilityLabel(Day.spoken(d))
+        .accessibilityLabel(Day.spoken(d) + (d == today ? ", today" : ""))
         .accessibilityAddTraits(d == day ? .isSelected : [])
     }
 }

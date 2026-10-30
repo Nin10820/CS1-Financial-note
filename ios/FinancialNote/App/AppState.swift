@@ -4,7 +4,8 @@ import Observation
 /// What the screens share: the open tab, the picked day, and what is open on top.
 @Observable
 final class AppState {
-    enum TabID: Hashable { case today, due, scan, finance, profile }
+    /// The four tabs of Navigation Bar (Figma 2026-10-30).
+    enum TabID: Hashable { case today, due, finance, ai }
 
     var tab: TabID = .today
     /// Today's date, refreshed when the clock passes midnight.
@@ -18,9 +19,17 @@ final class AppState {
     var hidden = false
     /// Finance totals hidden; starts hidden when Profile › Display says so for assets or for all amounts.
     var assetsHidden = false
-    /// The Assistant sheet, when open, and what it opens with.
+    /// Something for the AI tab to start with (a day's note, a notice). Taken once by the tab.
     var assistant: AssistantSeed?
     var dayNoteOpen = false
+    /// The + menu: Talk With AI, Template, Scan.
+    var actionsOpen = false
+    /// A blank entry sheet with a composer (Template).
+    var templateOpen = false
+    var scanOpen = false
+    var profileOpen = false
+    /// The AI tab has a conversation on screen: the tab bar steps aside for its composer.
+    var aiChatting = false
 
     /// Called when the calendar day changes: if Today was showing today, it moves along.
     func dayChanged() {
@@ -29,9 +38,11 @@ final class AppState {
         if day == old { day = today }
     }
 
-    /// Opens the Assistant on the picked day, optionally with a day's note already read.
+    /// Goes to the AI tab on the picked day, optionally with a day's note already read.
     func openAssistant(date: String? = nil, noteLines: [String]? = nil, notice: String? = nil) {
         assistant = AssistantSeed(date: date ?? day, noteLines: noteLines, notice: notice)
+        actionsOpen = false
+        tab = .ai
     }
 }
 

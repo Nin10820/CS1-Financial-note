@@ -75,6 +75,7 @@ struct TagChip: View {
 /// "Select tag" (Figma 1052:6578): default tags, the user's own, and New Tag.
 struct TagPickerSheet: View {
     @Binding var selected: [String]
+    var suggestion: String? = nil
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Query private var profiles: [Profile]
@@ -95,29 +96,38 @@ struct TagPickerSheet: View {
                     }
                     Divider().overlay(Tokens.bd1)
                     section("Custom") {
-                        if custom.isEmpty {
-                            Text("Tags you make show up here.")
-                                .font(AppFont.main(13))
-                                .foregroundStyle(Tokens.grey400)
-                        }
                         FlowLayout {
                             ForEach(custom, id: \.self) { name in
                                 TagChip(name: name, selected: selected.contains(name)) { toggle(name) }
                             }
+                            Button {
+                                newName = ""
+                                naming = true
+                            } label: {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(Tokens.text700)
+                                    .frame(width: 34, height: 34)
+                                    .background(Tokens.bgWhite, in: .circle)
+                                    .overlay(Circle().strokeBorder(Tokens.bd1))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("New tag")
                         }
                     }
-                    Button {
-                        newName = ""
-                        naming = true
-                    } label: {
-                        Label("New Tag", systemImage: "plus")
-                            .font(AppFont.main(14, .medium))
-                            .foregroundStyle(Tokens.text900)
-                            .padding(.horizontal, Space.s16)
-                            .padding(.vertical, Space.s8)
-                            .background(Tokens.bg4, in: .capsule)
+                    if let suggestion, !selected.contains(suggestion) {
+                        Button { toggle(suggestion) } label: {
+                            Label("Suggest tag", systemImage: "sparkles")
+                                .font(AppFont.main(14, .medium))
+                                .foregroundStyle(Tokens.text900)
+                                .padding(.horizontal, Space.s16)
+                                .padding(.vertical, Space.s8)
+                                .background(Tokens.bgWhite, in: .capsule)
+                                .overlay(Capsule().strokeBorder(Tokens.bd1))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Adds “\(suggestion)”")
                     }
-                    .buttonStyle(.plain)
                 }
                 .padding(Space.s20)
             }

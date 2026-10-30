@@ -6,6 +6,7 @@ import SwiftUI
 struct ChatHistoryView: View {
     var onNew: () -> Void
     var onView: (String) -> Void
+    var onOpen: (Note) -> Void
     @Query(sort: \Entry.createdAt, order: .reverse) private var entries: [Entry]
 
     struct Note: Identifiable, Hashable {
@@ -51,9 +52,7 @@ struct ChatHistoryView: View {
             ForEach(days, id: \.self) { day in
                 Section {
                     ForEach(notes.filter { $0.date == day }) { note in
-                        NavigationLink {
-                            NoteDetailView(note: note, onView: onView)
-                        } label: {
+                        Button { onOpen(note) } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(note.source)
                                     .font(AppFont.main(15, .semibold))
@@ -63,7 +62,10 @@ struct ChatHistoryView: View {
                                     .font(AppFont.main(12))
                                     .foregroundStyle(Tokens.grey400)
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(.rect)
                         }
+                        .buttonStyle(.plain)
                     }
                 } header: {
                     Text(Self.heading(day))
@@ -72,6 +74,8 @@ struct ChatHistoryView: View {
             }
         }
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Tokens.bg1)
         .navigationTitle("Chat History")
         .toolbarTitleDisplayMode(.large)
         .toolbar {
@@ -84,7 +88,7 @@ struct ChatHistoryView: View {
 }
 
 /// One saved note: what was written and the lines it became.
-private struct NoteDetailView: View {
+struct NoteDetailView: View {
     var note: ChatHistoryView.Note
     var onView: (String) -> Void
     @Environment(\.modelContext) private var context
