@@ -26,6 +26,8 @@ final class AppState {
     var actionsOpen = false
     /// A blank entry sheet with a composer (Template).
     var templateOpen = false
+    /// What a scanned QR code filled in, for the Template sheet.
+    var templatePrefill: EntryEdit?
     var scanOpen = false
     var profileOpen = false
     /// The AI tab has a conversation on screen: the tab bar steps aside for its composer.

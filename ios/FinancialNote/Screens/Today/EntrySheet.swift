@@ -14,6 +14,8 @@ enum EntryKind: String, CaseIterable, Identifiable {
 /// composer at the bottom that fills the form from one typed line. The green check saves.
 struct EntrySheet: View {
     var entry: Entry?
+    /// A new line already filled in (from a scanned QR code).
+    var prefill: EntryEdit? = nil
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var app
@@ -80,6 +82,10 @@ struct EntrySheet: View {
             loaded = true
             if let entry {
                 d = EntryEdit(entry)
+            } else if let prefill {
+                d = prefill
+                dateSet = true
+                focus = prefill.amount == nil ? .amount : nil
             } else {
                 d = EntryEdit()
                 d.date = app.day

@@ -103,7 +103,9 @@ struct AssistantView: View {
             Text(later ?? "")
         }
         .onAppear(perform: takeSeed)
-        .onChange(of: turns.isEmpty, initial: true) { _, empty in app.aiChatting = !empty }
+        .onChange(of: turns.isEmpty, initial: true) { _, empty in app.aiChatting = !empty || focused }
+        // While typing, the tab bar steps aside so it never sits on the composer.
+        .onChange(of: focused) { _, now in app.aiChatting = now || !turns.isEmpty }
         .onChange(of: app.assistant?.id) { _, _ in takeSeed() }
     }
 
@@ -123,7 +125,8 @@ struct AssistantView: View {
             composer
         }
         .padding(.horizontal, Space.s16)
-        .padding(.bottom, Space.s8)
+        // Above the floating tab bar when it shows; right on the keyboard while typing.
+        .padding(.bottom, app.aiChatting ? Space.s8 : 80)
     }
 
     private var composer: some View {

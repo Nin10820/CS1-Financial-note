@@ -69,3 +69,30 @@ final class ScreenTourTests: XCTestCase {
         snap(app, "10-scan")
     }
 }
+
+/// A payment QR read by Scan opens a filled-in line. The camera can't run in the Simulator, so
+/// the test hands Scan a VietQR payload through a debug-only launch argument.
+@MainActor
+final class ScanFlowTests: XCTestCase {
+    private func tlv(_ id: String, _ value: String) -> String { id + String(format: "%02d", value.count) + value }
+
+    func testScannedPaymentQRBecomesALine() {
+        let bene = tlv("00", "970423") + tlv("01", "0123456789")
+        let payload = tlv("00", "01") + tlv("01", "12") + tlv("38", tlv("00", "A000000727") + tlv("01", bene))
+            + tlv("53", "704") + tlv("54", "65000") + tlv("58", "VN") + tlv("62", tlv("08", "Bun bo Hue")) + "6304ABCD"
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTesting", "-scanPayload", payload]
+        app.launch()
+        XCTAssertTrue(app.buttons["Add"].waitForExistence(timeout: 5))
+        app.buttons["Add"].tap()
+        app.buttons["Scan"].tap()
+        // Scan closes and the line opens, filled in from the code.
+        let name = app.textFields["Name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 6))
+        XCTAssertEqual(name.value as? String, "Bun bo Hue")
+        XCTAssertEqual(app.textFields["Amount in dong"].value as? String, "65,000")
+        XCTAssertTrue(app.buttons["From, Transfer"].exists)
+        app.buttons["Save"].tap()
+        XCTAssertTrue(app.staticTexts["Bun bo Hue"].waitForExistence(timeout: 5), "saved line shows on Today")
+    }
+}

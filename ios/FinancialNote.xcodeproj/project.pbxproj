@@ -335,6 +335,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/FinancialNote-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Financial Note";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan reads payment QR codes and receipts on your phone. No photo is kept or sent.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -364,6 +365,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/FinancialNote-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Financial Note";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan reads payment QR codes and receipts on your phone. No photo is kept or sent.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

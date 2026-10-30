@@ -12,26 +12,28 @@ struct RootView: View {
         @Bindable var app = app
         TabView(selection: $app.tab) {
             Tab("Today", systemImage: "calendar", value: AppState.TabID.today) {
-                TodayView().toolbarVisibility(.hidden, for: .tabBar)
+                TodayView().toolbarVisibility(.hidden, for: .tabBar).modifier(BarRoom(show: true))
             }
             Tab("Due", systemImage: "doc.text.fill", value: AppState.TabID.due) {
-                DueView().toolbarVisibility(.hidden, for: .tabBar)
+                DueView().toolbarVisibility(.hidden, for: .tabBar).modifier(BarRoom(show: true))
             }
             Tab("Finance", systemImage: "chart.pie.fill", value: AppState.TabID.finance) {
-                FinanceView().toolbarVisibility(.hidden, for: .tabBar)
+                FinanceView().toolbarVisibility(.hidden, for: .tabBar).modifier(BarRoom(show: true))
             }
             Tab("AI", systemImage: "sparkles", value: AppState.TabID.ai) {
                 AssistantView().toolbarVisibility(.hidden, for: .tabBar)
             }
         }
         .tint(Tokens.brand600)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            // The AI tab has its own composer at the bottom; the bar steps aside there.
+        .overlay(alignment: .bottom) {
+            // The AI tab has its own composer at the bottom; the bar steps aside while chatting.
             if app.tab != .ai || !app.aiChatting { AppTabBar() }
         }
         .overlay { ActionMenu() }
         .sheet(isPresented: $app.dayNoteOpen) { DayNoteEditor() }
-        .sheet(isPresented: $app.templateOpen) { EntrySheet(entry: nil) }
+        .sheet(isPresented: $app.templateOpen, onDismiss: { app.templatePrefill = nil }) {
+            EntrySheet(entry: nil, prefill: app.templatePrefill)
+        }
         .sheet(isPresented: $app.profileOpen) { ProfileView() }
         .fullScreenCover(isPresented: $app.scanOpen) { ScanView() }
         .environment(app)
@@ -158,5 +160,16 @@ struct ActionPill: View {
         .buttonStyle(.plain)
         // A near-white tint keeps the green label readable over whatever is behind the glass.
         .glassEffect(.regular.tint(Tokens.bgWhite.opacity(0.9)).interactive(), in: .capsule)
+    }
+}
+
+/// Leaves room under a tab's content for the floating tab bar, so nothing ends up behind it.
+private struct BarRoom: ViewModifier {
+    var show: Bool
+
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom, spacing: 0) {
+            Color.clear.frame(height: show ? 72 : 0)
+        }
     }
 }
