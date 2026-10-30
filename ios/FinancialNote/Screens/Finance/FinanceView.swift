@@ -38,6 +38,7 @@ struct FinanceView: View {
                 .padding(.horizontal, Space.s20)
                 .padding(.bottom, Space.s24)
             }
+            .modifier(MinimizesTabBar())
             .background(Tokens.bg3)
             .navigationTitle("Finance")
             .toolbarTitleDisplayMode(.inline)

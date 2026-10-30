@@ -47,6 +47,7 @@ struct TodayView: View {
                 .padding(.horizontal, Space.s20)
                 .padding(.bottom, Space.s24)
             }
+            .modifier(MinimizesTabBar())
             .scrollBounceBehavior(.basedOnSize)
             .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 110 } action: { _, now in
                 scrolled = now

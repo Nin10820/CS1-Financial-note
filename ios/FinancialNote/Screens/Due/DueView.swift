@@ -81,6 +81,7 @@ struct DueView: View {
                 .padding(.horizontal, Space.s20)
                 .padding(.bottom, Space.s24)
             }
+            .modifier(MinimizesTabBar())
             .background(alignment: .top) {
                 LinearGradient(colors: [Tokens.brand100, Tokens.bg3], startPoint: .top, endPoint: .bottom)
                     .frame(height: 320).ignoresSafeArea().accessibilityHidden(true)

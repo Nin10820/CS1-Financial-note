@@ -40,7 +40,10 @@ struct RootView: View {
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in
             app.dayChanged()
         }
-        .onChange(of: app.tab) { _, _ in app.actionsOpen = false }
+        .onChange(of: app.tab) { _, _ in
+            app.actionsOpen = false
+            app.barMinimized = false
+        }
         .onAppear {
             guard !didApplyPrefs else { return }
             didApplyPrefs = true
@@ -52,10 +55,16 @@ struct RootView: View {
 
 /// Navigation Bar (Figma 2026-10-30): Today, Due, Finance, AI in one glass capsule, and the
 /// round green + beside it. The system tab bar can't hold a separate + on this iOS, so this is
-/// drawn with the system Liquid Glass effect (glassEffect), which still follows Reduce
-/// Transparency and the light / dark look.
+/// built from the system Liquid Glass effect and given the system bar's behaviour back: a glass
+/// lens that slides between tabs and can be dragged, the bar shrinking while you scroll down,
+/// and the + morphing with the bar. It follows Reduce Transparency, Reduce Motion and dark mode.
 private struct AppTabBar: View {
     @Environment(AppState.self) private var app
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var glass
+    /// The tab under the finger while dragging along the bar.
+    @State private var dragging: AppState.TabID?
+    @State private var pressed = false
 
     private let tabs: [(AppState.TabID, String, String)] = [
         (.today, "Today", "calendar"),
@@ -64,49 +73,97 @@ private struct AppTabBar: View {
         (.ai, "AI", "sparkles"),
     ]
 
+    private var spring: Animation? { reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.72) }
+
     var body: some View {
+        let small = app.barMinimized && !app.actionsOpen
+        let lit = dragging ?? app.tab
         GlassEffectContainer(spacing: Space.s12) {
             HStack(spacing: Space.s12) {
-                HStack(spacing: 0) {
-                    ForEach(tabs, id: \.0) { id, title, symbol in
-                        let on = app.tab == id
-                        Button {
-                            app.tab = id
-                        } label: {
+                GeometryReader { g in
+                    let w = g.size.width / CGFloat(tabs.count)
+                    HStack(spacing: 0) {
+                        ForEach(tabs, id: \.0) { id, title, symbol in
+                            let on = lit == id
                             VStack(spacing: 2) {
-                                Image(systemName: symbol).font(.system(size: 19, weight: .semibold))
-                                Text(title).font(AppFont.main(11, .semibold, relativeTo: .caption2))
+                                Image(systemName: symbol)
+                                    .font(.system(size: 19, weight: .semibold))
+                                    .symbolEffect(.bounce, value: app.tab == id)
+                                if !small {
+                                    Text(title).font(AppFont.main(11, .semibold, relativeTo: .caption2))
+                                }
                             }
                             .foregroundStyle(on ? Tokens.brand600 : Tokens.text900)
-                            .frame(maxWidth: .infinity, minHeight: 52)
-                            .background { if on { Capsule().fill(Tokens.text900.opacity(0.08)) } }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background {
+                                if on {
+                                    // The lens: its own piece of glass that slides to the picked tab.
+                                    Capsule()
+                                        .fill(.clear)
+                                        .glassEffect(.regular.tint(Tokens.text900.opacity(0.06)).interactive(), in: .capsule)
+                                        .matchedGeometryEffect(id: "lens", in: glass)
+                                        .scaleEffect(pressed && !reduceMotion ? 1.12 : 1)
+                                }
+                            }
                             .contentShape(.capsule)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(title)
+                            .accessibilityAddTraits(app.tab == id ? [.isSelected, .isButton] : .isButton)
+                            .accessibilityAction { go(id) }
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(title)
-                        .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
                     }
+                    // Tap a tab, or drag along the bar: the lens follows the finger.
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { v in
+                                let i = min(max(Int(v.location.x / w), 0), tabs.count - 1)
+                                withAnimation(spring) {
+                                    pressed = true
+                                    dragging = tabs[i].0
+                                }
+                            }
+                            .onEnded { v in
+                                let i = min(max(Int(v.location.x / w), 0), tabs.count - 1)
+                                withAnimation(spring) {
+                                    pressed = false
+                                    dragging = nil
+                                }
+                                go(tabs[i].0)
+                            }
+                    )
                 }
+                .frame(height: small ? 40 : 52)
                 .padding(4)
                 .glassEffect(.regular.interactive(), in: .capsule)
+                .glassEffectID("bar", in: glass)
 
                 Button {
-                    animate { app.actionsOpen.toggle() }
+                    withAnimation(spring) { app.actionsOpen.toggle() }
                 } label: {
                     Image(systemName: "plus")
-                        .font(.system(size: 22, weight: .semibold))
+                        .font(.system(size: small ? 18 : 22, weight: .semibold))
                         .foregroundStyle(.white)
                         .rotationEffect(.degrees(app.actionsOpen ? 45 : 0))
-                        .frame(width: 60, height: 60)
+                        .frame(width: small ? 48 : 60, height: small ? 48 : 60)
                 }
                 .buttonStyle(.plain)
                 .glassEffect(.regular.tint(Tokens.writeButton).interactive(), in: .circle)
+                .glassEffectID("plus", in: glass)
                 .accessibilityLabel(app.actionsOpen ? "Close menu" : "Add")
                 .accessibilityHint("Talk With AI, Template or Scan")
             }
         }
-        .padding(.horizontal, Space.s20)
+        .padding(.horizontal, small ? Space.s32 : Space.s20)
         .padding(.bottom, Space.s4)
+        .animation(spring, value: small)
+        .sensoryFeedback(.selection, trigger: lit)
+    }
+
+    private func go(_ id: AppState.TabID) {
+        withAnimation(spring) {
+            app.tab = id
+            app.barMinimized = false
+        }
     }
 }
 
@@ -170,6 +227,20 @@ private struct BarRoom: ViewModifier {
     func body(content: Content) -> some View {
         content.safeAreaInset(edge: .bottom, spacing: 0) {
             Color.clear.frame(height: show ? 72 : 0)
+        }
+    }
+}
+
+/// Shrinks the tab bar while scrolling down, brings it back when scrolling up or at the top.
+struct MinimizesTabBar: ViewModifier {
+    @Environment(AppState.self) private var app
+
+    func body(content: Content) -> some View {
+        content.onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { old, new in
+            let down = new > old + 4 && new > 60
+            let up = new < old - 4 || new < 30
+            if down && !app.barMinimized { app.barMinimized = true }
+            else if up && app.barMinimized { app.barMinimized = false }
         }
     }
 }

@@ -32,6 +32,9 @@ final class AppState {
     var profileOpen = false
     /// The AI tab has a conversation on screen: the tab bar steps aside for its composer.
     var aiChatting = false
+    /// The tab bar shrinks while you scroll down a list, like the system bar, and comes back
+    /// when you scroll up.
+    var barMinimized = false
 
     /// Called when the calendar day changes: if Today was showing today, it moves along.
     func dayChanged() {
