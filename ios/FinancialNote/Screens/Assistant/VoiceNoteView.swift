@@ -165,13 +165,9 @@ final class SpeechListener {
             engine.prepare()
             try engine.start()
 
-            task = recognizer.recognitionTask(with: request) { @Sendable [weak self] result, error in
-                let words = result?.bestTranscription.formattedString
-                let done = error != nil || (result?.isFinal ?? false)
-                Task { @MainActor in
-                    if let words { self?.text = words }
-                    if done { self?.stop() }
-                }
+            task = Self.listen(recognizer, request) { [weak self] words, done in
+                if let words { self?.text = words }
+                if done { self?.stop() }
             }
         } catch {
             problem = "The microphone couldn't start. You can type instead."
@@ -194,16 +190,34 @@ final class SpeechListener {
     /// The audio tap runs on the audio thread, so it lives outside the main actor.
     private nonisolated static func installTap(on node: AVAudioInputNode, feeding request: SFSpeechAudioBufferRecognitionRequest) {
         let format = node.outputFormat(forBus: 0)
-        node.installTap(onBus: 0, bufferSize: 1024, format: format) { @Sendable buffer, _ in
+        node.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
             request.append(buffer)
         }
     }
 
-    private static func allowed() async -> Bool {
-        let speech = await withCheckedContinuation { (c: CheckedContinuation<Bool, Never>) in
-            SFSpeechRecognizer.requestAuthorization { @Sendable status in c.resume(returning: status == .authorized) }
-        }
+    /// iOS answers on a background queue, so everything here stays off the main actor; only the
+    /// final yes / no comes back.
+    private nonisolated static func allowed() async -> Bool {
+        let speech = await speechAllowed()
         guard speech else { return false }
         return await AVAudioApplication.requestRecordPermission()
+    }
+
+    private nonisolated static func speechAllowed() async -> Bool {
+        await withCheckedContinuation { (c: CheckedContinuation<Bool, Never>) in
+            SFSpeechRecognizer.requestAuthorization { status in c.resume(returning: status == .authorized) }
+        }
+    }
+
+    /// Results arrive on a background queue; each one hops to the main actor for the screen.
+    private nonisolated static func listen(
+        _ recognizer: SFSpeechRecognizer, _ request: SFSpeechAudioBufferRecognitionRequest,
+        update: @escaping @MainActor (String?, Bool) -> Void
+    ) -> SFSpeechRecognitionTask {
+        recognizer.recognitionTask(with: request) { result, error in
+            let words = result?.bestTranscription.formattedString
+            let done = error != nil || (result?.isFinal ?? false)
+            Task { @MainActor in update(words, done) }
+        }
     }
 }
