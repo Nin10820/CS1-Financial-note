@@ -181,7 +181,7 @@ private struct ActionMenu: View {
                     .accessibilityAddTraits(.isButton)
                 GlassEffectContainer(spacing: Space.s12) {
                     VStack(alignment: .trailing, spacing: Space.s12) {
-                        ActionPill(title: "Talk With AI", systemImage: "sparkles") { app.openAssistant() }
+                        ActionPill(title: "Talk With AI", systemImage: "sparkles") { app.openAssistant(voice: true) }
                         ActionPill(title: "Template", systemImage: "doc.text") {
                             app.actionsOpen = false
                             app.templateOpen = true

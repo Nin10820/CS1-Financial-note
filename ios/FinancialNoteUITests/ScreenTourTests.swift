@@ -96,3 +96,45 @@ final class ScanFlowTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Bun bo Hue"].waitForExistence(timeout: 5), "saved line shows on Today")
     }
 }
+
+/// The AI page and Talk With AI, with screenshots for review.
+@MainActor
+final class AITourTests: XCTestCase {
+    private func snap(_ app: XCUIApplication, _ name: String) {
+        let a = XCTAttachment(screenshot: app.screenshot())
+        a.name = name
+        a.lifetime = .keepAlways
+        add(a)
+    }
+
+    func testAIPageAndVoice() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTesting"]
+        app.launch()
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+
+        app.buttons["AI"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Shortcuts"].waitForExistence(timeout: 5))
+        sleep(1)
+        snap(app, "a1-home")
+
+        app.buttons["Which bills are left?"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'bill'")).firstMatch.waitForExistence(timeout: 5))
+        sleep(1)
+        snap(app, "a2-answer")
+
+        // Talk With AI from the + menu.
+        app.buttons["Close"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["Add"].waitForExistence(timeout: 5))
+        app.buttons["Add"].tap()
+        app.buttons["Talk With AI"].tap()
+        // Allow microphone / speech if iOS asks.
+        for _ in 0..<3 {
+            let allow = springboard.buttons["Allow"].exists ? springboard.buttons["Allow"] : springboard.buttons["OK"]
+            if allow.waitForExistence(timeout: 3) { allow.tap() } else { break }
+        }
+        sleep(2)
+        snap(app, "a3-voice")
+        XCTAssertTrue(app.buttons["Cancel"].exists)
+    }
+}

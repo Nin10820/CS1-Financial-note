@@ -8,6 +8,8 @@ struct AssistantView: View {
     @Environment(AppState.self) private var app
     @Environment(\.modelContext) private var context
     @Query(sort: \Entry.createdAt, order: .reverse) private var entries: [Entry]
+    @Query private var bills: [Bill]
+    @State private var voiceOpen = false
     @Query private var profiles: [Profile]
 
     @State private var turns: [Turn] = []
@@ -37,6 +39,8 @@ struct AssistantView: View {
         var attached: (date: String, lines: [String])?
         /// A plain message instead of a note ("… comes later").
         var notice: String?
+        /// An answer to a question, worked out on the phone.
+        var report: LocalAnswers.Report?
     }
 
     var body: some View {
@@ -45,15 +49,10 @@ struct AssistantView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Space.s20) {
                         if turns.isEmpty {
-                            EmptyDay(name: profiles.first?.name ?? "Nin", nothingNote: nil) { idea in
-                                switch idea {
-                                case .write: focused = true
-                                case .due: app.tab = .due
-                                case .decisions:
-                                    later = "Talking decisions through comes later. For now I record what you spend and receive, and keep track of bills."
-                                }
-                            }
-                            .padding(.top, Space.s32)
+                            AIHome(entries: entries, hidden: app.hidden,
+                                   onAsk: { ask($0) },
+                                   onOpen: { path = [$0] },
+                                   onTalk: { voiceOpen = true })
                         }
                         ForEach($turns) { $turn in
                             TurnView(turn: $turn, hidden: app.hidden, today: app.today,
@@ -72,11 +71,9 @@ struct AssistantView: View {
                     if let last = turns.last { animate { proxy.scrollTo(last.id, anchor: .bottom) } }
                 }
             }
-            .background(alignment: .top) {
-                LinearGradient(colors: [Tokens.brand100, Tokens.bg3], startPoint: .top, endPoint: .bottom)
-                    .frame(height: 240).ignoresSafeArea().accessibilityHidden(true)
-            }
-            .background(Tokens.bg3)
+            .background(Tokens.bg1)
+            .navigationTitle("AI")
+            .toolbarTitleDisplayMode(.inline)
             .safeAreaInset(edge: .bottom) { bottom }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -96,6 +93,12 @@ struct AssistantView: View {
         }
         .overlay { if drawer { historyDrawer } }
         .sheet(isPresented: $picking) { DayPickerSheet(day: $date) }
+        .fullScreenCover(isPresented: $voiceOpen) {
+            VoiceNoteView { said in
+                text = said
+                send()
+            }
+        }
         .sheet(item: $fixing) { target in DraftFixSheet(draft: draftBinding(target)) }
         .alert("Comes later", isPresented: Binding(get: { later != nil }, set: { if !$0 { later = nil } })) {
             Button("OK", role: .cancel) {}
@@ -113,15 +116,6 @@ struct AssistantView: View {
 
     private var bottom: some View {
         VStack(alignment: .trailing, spacing: Space.s12) {
-            if turns.isEmpty && !app.actionsOpen {
-                GlassEffectContainer(spacing: Space.s12) {
-                    VStack(alignment: .trailing, spacing: Space.s12) {
-                        ActionPill(title: "Talk With AI", systemImage: "sparkles") { focused = true }
-                        ActionPill(title: "Template", systemImage: "doc.text") { app.templateOpen = true }
-                        ActionPill(title: "Scan", systemImage: "qrcode.viewfinder") { app.scanOpen = true }
-                    }
-                }
-            }
             composer
         }
         .padding(.horizontal, Space.s16)
@@ -131,7 +125,7 @@ struct AssistantView: View {
 
     private var composer: some View {
         VStack(alignment: .leading, spacing: Space.s12) {
-            TextField("e.g. coffee 24k, breakfast 35k…", text: $text, axis: .vertical)
+            TextField("Write what you spent, or ask about it…", text: $text, axis: .vertical)
                 .font(AppFont.main(15))
                 .lineLimit(1...6)
                 .focused($focused)
@@ -176,7 +170,8 @@ struct AssistantView: View {
                 .accessibilityLabel("For \(Day.long(date)). Change day")
                 Spacer()
                 Button {
-                    later = "Voice notes come later. You can use the microphone on the keyboard to dictate."
+                    focused = false
+                    voiceOpen = true
                 } label: {
                     Image(systemName: "mic")
                         .font(.system(size: 15, weight: .semibold))
@@ -251,7 +246,9 @@ struct AssistantView: View {
         guard let seed = app.assistant else { return }
         app.assistant = nil
         date = seed.date
-        if let notice = seed.notice {
+        if seed.voice {
+            voiceOpen = true
+        } else if let notice = seed.notice {
             turns.append(Turn(text: "", drafts: [], notice: notice))
         } else if let lines = seed.noteLines, !lines.isEmpty {
             dropReviews()
@@ -275,7 +272,30 @@ struct AssistantView: View {
         guard !note.isEmpty else { return }
         text = ""
         dropReviews()
-        animate { turns.append(Turn(text: note, drafts: NoteParser.parse(note, day: date))) }
+        // A question gets an answer from what is saved; anything else is read as a note.
+        if let q = LocalAnswers.ask(for: note) {
+            animate { turns.append(Turn(text: note, drafts: [], status: .saved, report: answer(q))) }
+            return
+        }
+        let drafts = NoteParser.parse(note, day: date)
+        if note.hasSuffix("?") && !drafts.contains(where: { $0.amount != nil }) {
+            animate { turns.append(Turn(text: note, drafts: [], status: .saved, notice: nil,
+                                        report: LocalAnswers.Report(title: "", summary: LocalAnswers.outOfScope, rows: []))) }
+            return
+        }
+        animate { turns.append(Turn(text: note, drafts: drafts)) }
+    }
+
+    /// A shortcut or suggestion: shown as the question, then its answer.
+    private func ask(_ q: LocalAnswers.Ask) {
+        dropReviews()
+        animate { turns.append(Turn(text: q.question, drafts: [], status: .saved, report: answer(q))) }
+    }
+
+    private func answer(_ q: LocalAnswers.Ask) -> LocalAnswers.Report {
+        LocalAnswers.report(q, lines: entries.map { LocalAnswers.Line(date: $0.date, title: $0.title, amount: $0.amount,
+                                                                       flow: $0.flow, category: $0.category) },
+                            bills: bills, today: app.today)
     }
 
     private func set(_ id: UUID, _ status: Turn.Status, noteId: String? = nil) {
@@ -345,6 +365,9 @@ private struct TurnView: View {
         VStack(alignment: .leading, spacing: Space.s12) {
             if let notice = turn.notice {
                 bot(notice)
+            } else if let report = turn.report {
+                mine
+                ReportCard(report: report, hidden: hidden)
             } else {
                 mine
                 reply

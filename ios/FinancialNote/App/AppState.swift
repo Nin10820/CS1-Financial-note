@@ -44,8 +44,8 @@ final class AppState {
     }
 
     /// Goes to the AI tab on the picked day, optionally with a day's note already read.
-    func openAssistant(date: String? = nil, noteLines: [String]? = nil, notice: String? = nil) {
-        assistant = AssistantSeed(date: date ?? day, noteLines: noteLines, notice: notice)
+    func openAssistant(date: String? = nil, noteLines: [String]? = nil, notice: String? = nil, voice: Bool = false) {
+        assistant = AssistantSeed(date: date ?? day, noteLines: noteLines, notice: notice, voice: voice)
         actionsOpen = false
         tab = .ai
     }
@@ -81,4 +81,6 @@ struct AssistantSeed: Identifiable {
     var noteLines: [String]?
     /// A plain message to show first ("… comes later").
     var notice: String?
+    /// Open straight into Talk With AI (voice).
+    var voice = false
 }
