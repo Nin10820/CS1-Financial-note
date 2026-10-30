@@ -63,7 +63,7 @@ struct HeroCard<Buttons: View>: View {
         }
         .padding(Space.s16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Tokens.cardGradient, in: .rect(cornerRadius: Corner.c16))
+        .background { CardGradient().clipShape(.rect(cornerRadius: Corner.c20)) }
         .shadow(color: .black.opacity(0.16), radius: 9, y: 6)
     }
 }
@@ -81,7 +81,7 @@ struct HeroButton: View {
                 .foregroundStyle(.white)
                 .padding(.horizontal, Space.s12)
                 .padding(.vertical, Space.s8)
-                .background(.white.opacity(0.1), in: .capsule)
+                .background(.black.opacity(0.22), in: .capsule)
                 .overlay(Capsule().strokeBorder(.white.opacity(0.12)))
         }
         .buttonStyle(.plain)

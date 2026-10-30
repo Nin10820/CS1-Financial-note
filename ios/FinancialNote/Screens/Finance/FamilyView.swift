@@ -34,7 +34,7 @@ struct CareCard<Footer: View>: View {
         }
         .padding(Space.s16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Tokens.cardGradient, in: .rect(cornerRadius: Corner.c20))
+        .background { CardGradient().clipShape(.rect(cornerRadius: Corner.c20)) }
     }
 }
 

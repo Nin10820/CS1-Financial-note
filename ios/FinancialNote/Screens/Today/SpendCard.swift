@@ -64,7 +64,7 @@ struct SpendCard: View {
         }
         .padding(Space.s16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Tokens.cardGradient, in: .rect(cornerRadius: Corner.c16))
+        .background { CardGradient().clipShape(.rect(cornerRadius: Corner.c20)) }
         .shadow(color: .black.opacity(0.16), radius: 9, y: 6)
     }
 }

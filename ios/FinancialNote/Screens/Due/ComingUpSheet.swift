@@ -156,7 +156,7 @@ private struct MonthCell: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
                 if selected {
-                    RoundedRectangle(cornerRadius: Corner.c14).fill(Tokens.cardGradient)
+                    CardGradient().clipShape(.rect(cornerRadius: Corner.c14))
                 } else if empty {
                     RoundedRectangle(cornerRadius: Corner.c14)
                         .strokeBorder(Tokens.bd2, style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
