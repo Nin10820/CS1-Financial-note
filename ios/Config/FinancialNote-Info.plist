@@ -9,5 +9,17 @@
 		<string>Merriweather-Variable.ttf</string>
 		<string>BricolageGrotesque-Variable.ttf</string>
 	</array>
+	<!-- financialnote://paid — bank apps send the user back here after a transfer. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>studio.phamnguyen.financialnote</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>financialnote</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -50,4 +50,29 @@ final class VietQRTests: XCTestCase {
         let d = NoteParser.parse(lines.joined(separator: "\n"), day: "2026-10-30")
         XCTAssertEqual(d.map(\.amount), [35_000, 5_000])
     }
+
+    func testBankLinkCarriesTheTransfer() throws {
+        let bidv = try XCTUnwrap(BankApp.named("bidv"))
+        let url = try XCTUnwrap(bidv.transferURL(account: "51166878888", bankBIN: "970423", amount: 50000,
+                                                 note: "Bun bo Hue", name: "Au Thien Vy"))
+        let c = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
+        XCTAssertEqual(c.host, "dl.vietqr.io")
+        XCTAssertEqual(c.path, "/pay")
+        let q = Dictionary(uniqueKeysWithValues: (c.queryItems ?? []).map { ($0.name, $0.value ?? "") })
+        XCTAssertEqual(q["app"], "bidv")
+        XCTAssertEqual(q["ba"], "51166878888@tpb")
+        XCTAssertEqual(q["am"], "50000")
+        XCTAssertEqual(q["tn"], "Bun bo Hue")
+        XCTAssertEqual(q["bn"], "Au Thien Vy")
+        XCTAssertEqual(q["url"], "financialnote://paid")
+    }
+
+    func testNoLinkWithoutAnAccount() {
+        XCTAssertNil(BankApp.named("mb")?.transferURL(account: nil, bankBIN: "970423", amount: 1, note: "", name: nil))
+        XCTAssertNil(BankApp.named("mb")?.transferURL(account: "1", bankBIN: "999999", amount: 1, note: "", name: nil))
+    }
+
+    func testOnlyFiveBanksFillIn() {
+        XCTAssertEqual(Set(BankApp.all.filter(\.fills).map(\.id)), ["bidv", "mb", "icb", "acb", "ocb"])
+    }
 }

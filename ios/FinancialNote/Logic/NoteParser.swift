@@ -132,6 +132,11 @@ nonisolated enum NoteParser {
     private static func hasAmount(_ s: String) -> Bool { test(amount, s) }
 
     /// Splits a note into drafts. `day` is the "YYYY-MM-DD" the note is written for.
+    /// The category a few words suggest ("Bun bo Hue" → Food), Other when nothing fits.
+    static func guessCategory(_ text: String) -> Category {
+        rules.first { test($0.1, text) }?.0 ?? .other
+    }
+
     static func parse(_ text: String, day: String) -> [Draft] {
         let base = test(yesterday, text) ? Day.addDays(day, -1) : day
         // Each line (or ";") is read on its own; inside a line, split on "và/and/+" and on commas

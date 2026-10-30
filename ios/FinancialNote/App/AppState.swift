@@ -29,6 +29,12 @@ final class AppState {
     /// What a scanned QR code filled in, for the Template sheet.
     var templatePrefill: EntryEdit?
     var scanOpen = false
+    /// A scanned payment QR, open on the check screen.
+    var transfer: TransferDraft?
+    /// "Open bank app" was tapped; becomes `sentToBank` once the app goes to the background.
+    var handedOff: TransferDraft?
+    /// Handed to a bank app; asked about when the user comes back.
+    var sentToBank: TransferDraft?
     var profileOpen = false
     /// The AI tab has a conversation on screen: the tab bar steps aside for its composer.
     var aiChatting = false

@@ -255,6 +255,8 @@ final class Profile {
     var birthYear: Int?
     /// Tags the user made with "New Tag".
     var customTags: [String] = []
+    /// Bank apps the user pays from (VietQR app ids), picked after scanning a QR.
+    var banks: [String] = []
 
     init(name: String = "Nin", hideOnOpen: Bool = false, hideAssets: Bool = false, joined: String = Day.today(), birthYear: Int? = nil) {
         self.name = name

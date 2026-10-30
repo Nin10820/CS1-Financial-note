@@ -139,10 +139,15 @@ struct ScanView: View {
             .accessibilityAddTraits(.updatesFrequently)
     }
 
-    /// A payment code becomes a new line, filled in, to check and save.
+    /// A payment code opens the check screen: type the amount, pick a bank, open its app.
+    /// A code without an account (a shop's code some banks can't read) becomes a line to save.
     private func readCode(_ payload: String) {
         guard let qr = VietQR(payload: payload) else {
             notPayment = "That code isn't a payment QR"
+            return
+        }
+        if qr.account != nil, qr.bankBIN.flatMap({ BankApp.codes[$0] }) != nil {
+            open { app.transfer = TransferDraft(qr) }
             return
         }
         var e = EntryEdit()

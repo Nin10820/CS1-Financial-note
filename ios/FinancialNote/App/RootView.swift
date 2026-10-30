@@ -7,6 +7,8 @@ struct RootView: View {
     @State private var app = AppState()
     @Query private var profiles: [Profile]
     @State private var didApplyPrefs = false
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.modelContext) private var context
 
     var body: some View {
         @Bindable var app = app
@@ -36,6 +38,23 @@ struct RootView: View {
         }
         .sheet(isPresented: $app.profileOpen) { ProfileView() }
         .fullScreenCover(isPresented: $app.scanOpen) { ScanView() }
+        .fullScreenCover(item: $app.transfer) { TransferSheet(draft: $0) }
+        .alert(sentTitle, isPresented: Binding(
+            get: { app.sentToBank != nil && scenePhase == .active && app.transfer == nil },
+            set: { if !$0 { app.sentToBank = nil } })
+        ) {
+            Button("Yes, save it") { saveSent() }
+            Button("Not sent", role: .cancel) { app.sentToBank = nil }
+        } message: {
+            Text("The app can't see your bank. Saving adds it to your spending, marked as paid from \(app.sentToBank?.from?.name ?? "the bank").")
+        }
+        .onOpenURL { _ in }  // financialnote://paid — the bank app sending the user back.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background, let d = app.handedOff {
+                app.sentToBank = d
+                app.handedOff = nil
+            }
+        }
         .environment(app)
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged).receive(on: RunLoop.main)) { _ in
             app.dayChanged()
@@ -50,6 +69,23 @@ struct RootView: View {
             app.hidden = profiles.first?.hideOnOpen ?? false
             app.assetsHidden = app.hidden || (profiles.first?.hideAssets ?? false)
         }
+    }
+
+    private var sentTitle: String {
+        guard let d = app.sentToBank else { return "" }
+        return "Did you send \(Money.format(d.amount)) đ to \(d.payee)?"
+    }
+
+    /// The user says the transfer went through: it becomes a spending line, paid from that bank.
+    private func saveSent() {
+        guard let d = app.sentToBank else { return }
+        app.sentToBank = nil
+        let e = Entry(date: app.today, title: d.title, amount: d.amount, flow: .out, category: d.category,
+                      noteId: UUID().uuidString,
+                      source: "Scanned QR" + (d.bankName.map { " · \($0)" } ?? "") + (d.account.map { " \($0)" } ?? ""))
+        e.paidFrom = d.from?.name
+        if let t = Tags.suggest(title: d.title, category: d.category) { e.tags = [t] }
+        LocalStore(context: context).addEntries([e])
     }
 }
 

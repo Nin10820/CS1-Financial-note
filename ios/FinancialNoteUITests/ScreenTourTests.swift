@@ -71,7 +71,9 @@ final class ScreenTourTests: XCTestCase {
 final class ScanFlowTests: XCTestCase {
     private func tlv(_ id: String, _ value: String) -> String { id + String(format: "%02d", value.count) + value }
 
-    func testScannedPaymentQRBecomesALine() {
+    /// A personal transfer code (bank + account) opens the check screen: amount, bank, open app.
+    /// The bank app itself isn't opened here (that would leave the phone for vietqr.io).
+    func testScannedTransferQROpensCheckScreen() {
         let bene = tlv("00", "970423") + tlv("01", "0123456789")
         let payload = tlv("00", "01") + tlv("01", "12") + tlv("38", tlv("00", "A000000727") + tlv("01", bene))
             + tlv("53", "704") + tlv("54", "65000") + tlv("58", "VN") + tlv("62", tlv("08", "Bun bo Hue")) + "6304ABCD"
@@ -81,12 +83,33 @@ final class ScanFlowTests: XCTestCase {
         XCTAssertTrue(app.buttons["Add"].waitForExistence(timeout: 5))
         app.buttons["Add"].tap()
         app.buttons["Scan"].tap()
-        // Scan closes and the line opens, filled in from the code.
+        XCTAssertTrue(app.navigationBars["Check payment"].waitForExistence(timeout: 6))
+        XCTAssertTrue(app.staticTexts["Transfer to TPBank"].exists)
+        XCTAssertTrue(app.otherElements["Amount, 65,000 dong"].exists || app.staticTexts["Amount, 65,000 dong"].exists)
+        app.buttons["5"].tap()
+        XCTAssertTrue(app.staticTexts["Amount, 650,005 dong"].exists || app.otherElements["Amount, 650,005 dong"].exists)
+        app.buttons["Pay from, pick a bank"].tap()
+        let bidv = app.buttons["BIDV, fills in the details"]
+        XCTAssertTrue(bidv.waitForExistence(timeout: 3))
+        bidv.tap()
+        XCTAssertTrue(app.buttons["Open BIDV"].waitForExistence(timeout: 3))
+        app.buttons["Back"].tap()
+    }
+
+    /// A code with no account becomes a line, filled in, to check and save.
+    func testScannedShopQRBecomesALine() {
+        let payload = tlv("00", "01") + tlv("01", "12") + tlv("53", "704") + tlv("54", "65000") + tlv("58", "VN")
+            + tlv("59", "BUN BO HUE") + tlv("62", tlv("08", "Bun bo Hue")) + "6304ABCD"
+        let app = XCUIApplication()
+        app.launchArguments = ["-uiTesting", "-scanPayload", payload]
+        app.launch()
+        XCTAssertTrue(app.buttons["Add"].waitForExistence(timeout: 5))
+        app.buttons["Add"].tap()
+        app.buttons["Scan"].tap()
         let name = app.textFields["Name"]
         XCTAssertTrue(name.waitForExistence(timeout: 6))
         XCTAssertEqual(name.value as? String, "Bun bo Hue")
         XCTAssertEqual(app.textFields["Amount in dong"].value as? String, "65,000")
-        XCTAssertTrue(app.buttons["From, Transfer"].exists)
         app.buttons["Save"].tap()
         XCTAssertTrue(app.staticTexts["Bun bo Hue"].waitForExistence(timeout: 5), "saved line shows on Today")
     }

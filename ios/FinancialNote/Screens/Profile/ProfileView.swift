@@ -207,8 +207,8 @@ private struct YourDataView: View {
             }
             Section("Sent to a server") {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Nothing")
-                    Text("Notes are read on this phone in this version").font(AppFont.main(12)).foregroundStyle(.secondary)
+                    Text("Only when you open a bank app")
+                    Text("After scanning a QR, \"Open bank app\" sends the account, amount and note in a vietqr.io link so your bank app opens filled in. Notes are read on this phone.").font(AppFont.main(12)).foregroundStyle(.secondary)
                 }
             }
             Section {
@@ -218,7 +218,7 @@ private struct YourDataView: View {
             } header: {
                 Text("Never collected")
             } footer: {
-                Text("The app doesn't connect to a bank, so it can't spend money for you either.")
+                Text("The app doesn't connect to a bank and never moves money: transfers are confirmed in your bank's own app.")
             }
             Section {
                 ExportLink(label: "Download everything")
