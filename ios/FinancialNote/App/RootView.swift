@@ -208,10 +208,13 @@ private struct ActionMenu: View {
     @Environment(AppState.self) private var app
 
     var body: some View {
-        if app.actionsOpen {
-            ZStack(alignment: .bottomTrailing) {
-                Color.black.opacity(0.08)
+        // The stack is always there so only the pills animate in and out.
+        ZStack(alignment: .bottomTrailing) {
+            if app.actionsOpen {
+                // A light 4% dim that just fades in (no slide); a tap anywhere outside closes the menu.
+                Color.black.opacity(0.04)
                     .ignoresSafeArea()
+                    .transition(.opacity)
                     .onTapGesture { animate { app.actionsOpen = false } }
                     .accessibilityLabel("Close menu")
                     .accessibilityAddTraits(.isButton)
@@ -231,8 +234,11 @@ private struct ActionMenu: View {
                 .padding(.trailing, Space.s20)
                 // Sits just above the tab bar (60 pt + its bottom gap).
                 .padding(.bottom, 80)
+                // Grows out of the + button instead of sliding up from the bottom of the screen.
+                .transition(UIAccessibility.isReduceMotionEnabled
+                    ? .opacity
+                    : .scale(scale: 0.6, anchor: .bottomTrailing).combined(with: .opacity))
             }
-            .transition(.sheetLike)
         }
     }
 }

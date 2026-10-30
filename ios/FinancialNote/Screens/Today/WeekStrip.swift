@@ -123,7 +123,9 @@ struct MonthStrip: View {
         var spent: [String: Int] = [:]
         for e in entries where e.flow == .out { spent[Month.of(e.date), default: 0] += e.amount }
         return PeriodStrip(
-            keys: (0...Month.between(first, now)).map { Month.add(first, $0) },
+            // Through December, the months still to come shown greyed out.
+            keys: (0...Month.between(first, "\(now.prefix(4))-12")).map { Month.add(first, $0) },
+            last: now,
             selected: Binding(
                 get: { Month.of(day) },
                 set: { m in day = m == now ? today : "\(m)-01" }),
@@ -148,7 +150,9 @@ struct YearStrip: View {
         var spent: [String: Int] = [:]
         for e in entries where e.flow == .out { spent[String(e.date.prefix(4)), default: 0] += e.amount }
         return PeriodStrip(
-            keys: (first...now).map(String.init),
+            // Two years ahead, greyed out.
+            keys: (first...now + 2).map(String.init),
+            last: String(now),
             selected: Binding(
                 get: { String(day.prefix(4)) },
                 set: { y in day = y == String(now) ? today : "\(y)-01-01" }),
@@ -164,6 +168,8 @@ struct YearStrip: View {
 /// the middle; tapping a cell picks it too.
 private struct PeriodStrip: View {
     var keys: [String]
+    /// The latest one that can be picked; later ones are shown but disabled.
+    var last: String
     @Binding var selected: String
     var spent: [String: Int]
     var hidden: Bool
@@ -200,7 +206,13 @@ private struct PeriodStrip: View {
             if centred != k { withAnimation(reduceMotion ? nil : .snappy) { centred = k } }
         }
         .onChange(of: centred) { _, k in
-            if let k, k != selected { selected = k }
+            guard let k, k != selected else { return }
+            if k > last {
+                // Scrolled onto a period that hasn't come yet: go back to the latest one.
+                withAnimation(reduceMotion ? nil : .snappy) { centred = last }
+            } else {
+                selected = k
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(name)
@@ -208,8 +220,9 @@ private struct PeriodStrip: View {
 
     private func cell(_ k: String) -> some View {
         let picked = selected == k
+        let future = k > last
         let v = spent[k] ?? 0
-        let amount = hidden ? "•••" : v >= 1000 ? "\(Money.format(v / 1000))K" : Money.format(v)
+        let amount = future ? "—" : hidden ? "•••" : v >= 1000 ? "\(Money.format(v / 1000))K" : Money.format(v)
         return Button {
             withAnimation(reduceMotion ? nil : .snappy) { selected = k }
         } label: {
@@ -237,6 +250,8 @@ private struct PeriodStrip: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        .disabled(future)
+        .opacity(future ? 0.4 : 1)
         .accessibilityLabel("\(spoken(k)), \(hidden ? "amount hidden" : "\(Money.format(v)) dong spent")")
         .accessibilityAddTraits(picked ? .isSelected : [])
     }
