@@ -116,3 +116,80 @@ struct DayPickerSheet: View {
         .presentationDetents([.medium, .large])
     }
 }
+
+/// Monthly (Figma Today › Monthly): months side by side, each with what went out that month,
+/// "21,900K đ / October". The picked one is green. Scroll sideways for earlier months; months
+/// that haven't started can't be picked.
+struct MonthStrip: View {
+    @Binding var day: String
+    var today: String
+    var entries: [Entry]
+    var hidden: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var shown: String?
+
+    var body: some View {
+        let now = Month.of(today)
+        let first = "\(Int(now.prefix(4))! - 1)-01"
+        let months = (0...Month.between(first, now)).map { Month.add(first, $0) }
+        var spent: [String: Int] = [:]
+        for e in entries where e.flow == .out { spent[Month.of(e.date), default: 0] += e.amount }
+
+        return ScrollView(.horizontal) {
+            LazyHStack(spacing: Space.s4) {
+                ForEach(months, id: \.self) { m in
+                    cell(m, spent: spent[m] ?? 0)
+                        .containerRelativeFrame(.horizontal, count: 3, spacing: Space.s4)
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .scrollIndicators(.hidden)
+        .scrollTargetBehavior(.viewAligned)
+        .scrollPosition(id: $shown, anchor: .center)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+        .onAppear { shown = Month.of(day) }
+        .onChange(of: day) { _, d in
+            withAnimation(reduceMotion ? nil : .snappy) { shown = Month.of(d) }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Months")
+    }
+
+    private func cell(_ m: String, spent: Int) -> some View {
+        let picked = Month.of(day) == m
+        let mi = Int(m.suffix(2))! - 1
+        let amount = hidden ? "•••" : spent >= 1000 ? "\(Money.format(spent / 1000))K" : Money.format(spent)
+        return Button {
+            withAnimation(reduceMotion ? nil : .snappy) {
+                day = m == Month.of(today) ? today : "\(m)-01"
+            }
+        } label: {
+            VStack(spacing: Space.s4) {
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(amount).font(AppFont.capture(picked ? .semibold : .medium)).monospacedDigit()
+                    Text("đ").font(AppFont.main(11))
+                }
+                .foregroundStyle(picked ? Tokens.brand700 : Tokens.grey400)
+                Text(Day.monthsLong[mi])
+                    .font(AppFont.capture(.medium))
+                    .foregroundStyle(picked ? Tokens.brand700 : Tokens.text700)
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Space.s12)
+            .background {
+                if picked {
+                    RoundedRectangle(cornerRadius: Corner.c12)
+                        .fill(Tokens.brand100)
+                        .strokeBorder(Tokens.brand300, lineWidth: 1)
+                }
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(Day.monthsLong[mi]) \(m.prefix(4)), \(hidden ? "amount hidden" : "\(Money.format(spent)) dong spent")")
+        .accessibilityAddTraits(picked ? .isSelected : [])
+    }
+}

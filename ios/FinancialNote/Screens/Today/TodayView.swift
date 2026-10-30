@@ -28,7 +28,11 @@ struct TodayView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.s16) {
                     header
-                    WeekStrip(day: $app.day, range: app.range, today: app.today, marked: Set(entries.map(\.date)))
+                    if app.range == .month {
+                        MonthStrip(day: $app.day, today: app.today, entries: entries, hidden: app.hidden)
+                    } else {
+                        WeekStrip(day: $app.day, range: app.range, today: app.today, marked: Set(entries.map(\.date)))
+                    }
                     if list.isEmpty && pane == .recent {
                         EmptyDay(name: profiles.first?.name ?? "Nin", nothingNote: nothingNote) { idea in
                             switch idea {
@@ -92,46 +96,58 @@ struct TodayView: View {
         }
     }
 
-    /// "28• Oct 2026": the picked day large, a red dot when it is today. Tap to pick a day;
-    /// touch and hold to switch between Daily, Weekly and Monthly.
+    /// Left: "28• Oct 2026" (Daily, Weekly) or "2026•" (Monthly); the red dot marks now.
+    /// Tap it to pick a day. Right: "Daily ⌃⌄" switches between Daily, Weekly and Monthly.
     private var header: some View {
         @Bindable var app = app
         let (y, m, d) = Day.parts(app.day)
-        return Menu {
-            Button("Pick a day", systemImage: "calendar") { picking = true }
-            Picker("Show", selection: $app.range) {
-                ForEach(DayRange.allCases) { Text($0.label).tag($0) }
-            }
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
-                HStack(alignment: .top, spacing: 2) {
-                    Text(String(format: "%02d", d))
-                        .font(AppFont.heading(44, .medium, relativeTo: .largeTitle))
-                        .foregroundStyle(Tokens.text900)
-                        .monospacedDigit()
-                    if app.day == app.today {
-                        Circle().fill(Tokens.todayRed).frame(width: 8, height: 8).padding(.top, 8)
+        let isNow = app.range == .month ? Month.of(app.day) == Month.of(app.today) : app.day == app.today
+        return HStack(alignment: .center, spacing: Space.s8) {
+            Button {
+                picking = true
+            } label: {
+                HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
+                    HStack(alignment: .top, spacing: 2) {
+                        Text(app.range == .month ? String(y) : String(format: "%02d", d))
+                            .font(AppFont.heading(44, .medium, relativeTo: .largeTitle))
+                            .foregroundStyle(Tokens.text900)
+                            .monospacedDigit()
+                        if isNow {
+                            Circle().fill(Tokens.todayRed).frame(width: 8, height: 8).padding(.top, 8)
+                        }
+                    }
+                    if app.range != .month {
+                        Text("\(Day.monthsShort[m - 1]) \(String(y))")
+                            .font(AppFont.heading(24, .medium, relativeTo: .title))
+                            .foregroundStyle(Tokens.grey400)
                     }
                 }
-                Text("\(Day.monthsShort[m - 1]) \(String(y))")
-                    .font(AppFont.heading(24, .medium, relativeTo: .title))
-                    .foregroundStyle(Tokens.grey400)
-                if app.range != .day {
-                    Text(app.range.label)
-                        .font(AppFont.main(12, .semibold, relativeTo: .caption))
-                        .foregroundStyle(Tokens.brand700)
-                        .padding(.horizontal, Space.s8)
-                        .padding(.vertical, 2)
-                        .background(Tokens.brand100, in: .capsule)
-                }
+                .contentShape(.rect)
             }
-            .contentShape(.rect)
-        } primaryAction: {
-            picking = true
+            .buttonStyle(.plain)
+            .accessibilityLabel(app.range == .month
+                ? "\(Day.monthsLong[m - 1]) \(String(y))"
+                : "\(Day.spoken(app.day)), \(String(y))\(app.day == app.today ? ", today" : "")")
+            .accessibilityHint("Picks a day.")
+
+            Spacer(minLength: Space.s8)
+
+            Menu {
+                Picker("Show", selection: $app.range) {
+                    ForEach(DayRange.allCases) { Text($0.label).tag($0) }
+                }
+            } label: {
+                HStack(spacing: Space.s4) {
+                    Text(app.range.label)
+                    Image(systemName: "chevron.up.chevron.down").imageScale(.small)
+                }
+                .font(AppFont.capture(.medium))
+                .foregroundStyle(Tokens.text700)
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(.rect)
+            }
+            .accessibilityLabel("Show \(app.range.label)")
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(Day.spoken(app.day)), \(String(y))\(app.day == app.today ? ", today" : ""). \(app.range.label)")
-        .accessibilityHint("Picks a day. Touch and hold for Daily, Weekly or Monthly.")
     }
 
     private func card(_ list: [Entry]) -> some View {
