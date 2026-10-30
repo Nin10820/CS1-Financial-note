@@ -28,10 +28,13 @@ struct TodayView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Space.s16) {
                     header
-                    if app.range == .month {
+                    switch app.range {
+                    case .day:
+                        WeekStrip(day: $app.day, today: app.today, marked: Set(entries.map(\.date)))
+                    case .month:
                         MonthStrip(day: $app.day, today: app.today, entries: entries, hidden: app.hidden)
-                    } else {
-                        WeekStrip(day: $app.day, range: app.range, today: app.today, marked: Set(entries.map(\.date)))
+                    case .year:
+                        YearStrip(day: $app.day, today: app.today, entries: entries, hidden: app.hidden)
                     }
                     if list.isEmpty && pane == .recent {
                         EmptyDay(name: profiles.first?.name ?? "Nin", nothingNote: nothingNote) { idea in
@@ -101,14 +104,18 @@ struct TodayView: View {
     private var header: some View {
         @Bindable var app = app
         let (y, m, d) = Day.parts(app.day)
-        let isNow = app.range == .month ? Month.of(app.day) == Month.of(app.today) : app.day == app.today
+        let isNow = switch app.range {
+        case .day: app.day == app.today
+        case .month: Month.of(app.day) == Month.of(app.today)
+        case .year: app.day.prefix(4) == app.today.prefix(4)
+        }
         return HStack(alignment: .center, spacing: Space.s8) {
             Button {
                 picking = true
             } label: {
                 HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
                     HStack(alignment: .top, spacing: 2) {
-                        Text(app.range == .month ? String(y) : String(format: "%02d", d))
+                        Text(app.range == .day ? String(format: "%02d", d) : String(y))
                             .font(AppFont.heading(44, .medium, relativeTo: .largeTitle))
                             .foregroundStyle(Tokens.text900)
                             .monospacedDigit()
@@ -116,7 +123,7 @@ struct TodayView: View {
                             Circle().fill(Tokens.todayRed).frame(width: 8, height: 8).padding(.top, 8)
                         }
                     }
-                    if app.range != .month {
+                    if app.range == .day {
                         Text("\(Day.monthsShort[m - 1]) \(String(y))")
                             .font(AppFont.heading(24, .medium, relativeTo: .title))
                             .foregroundStyle(Tokens.grey400)
@@ -125,9 +132,7 @@ struct TodayView: View {
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(app.range == .month
-                ? "\(Day.monthsLong[m - 1]) \(String(y))"
-                : "\(Day.spoken(app.day)), \(String(y))\(app.day == app.today ? ", today" : "")")
+            .accessibilityLabel(headerLabel)
             .accessibilityHint("Picks a day.")
 
             Spacer(minLength: Space.s8)
@@ -221,10 +226,19 @@ struct TodayView: View {
 
     // MARK: - Words
 
+    private var headerLabel: String {
+        let (y, m, _) = Day.parts(app.day)
+        return switch app.range {
+        case .day: "\(Day.spoken(app.day)), \(String(y))\(app.day == app.today ? ", today" : "")"
+        case .month: "\(Day.monthsLong[m - 1]) \(String(y))"
+        case .year: String(y)
+        }
+    }
+
     private var cardLabel: String {
         let (_, m, _) = Day.parts(app.day)
         switch app.range {
-        case .week: return "Spent this week"
+        case .year: return "Spent in \(app.day.prefix(4))"
         case .month: return "Spent in \(Day.monthsLong[m - 1])"
         case .day: return app.day == app.today ? "Spent today" : "Spent on \(Day.short(app.day))"
         }
@@ -233,7 +247,7 @@ struct TodayView: View {
     private var summaryTitle: String {
         switch app.range {
         case .day: "Summary · \(Day.short(app.day))"
-        case .week: "Summary · week of \(Day.short(Day.monday(of: app.day)))"
+        case .year: "Summary · \(app.day.prefix(4))"
         case .month: "Summary · \(Day.monthsLong[Day.parts(app.day).m - 1])"
         }
     }
@@ -241,7 +255,7 @@ struct TodayView: View {
     /// "Nothing recorded on 07 Aug." under the greeting when it isn't today.
     private var nothingNote: String? {
         switch app.range {
-        case .week: "Nothing recorded this week."
+        case .year: "Nothing recorded in \(app.day.prefix(4))."
         case .month: "Nothing recorded in \(Day.monthsLong[Day.parts(app.day).m - 1])."
         case .day: app.day == app.today ? nil : "Nothing recorded on \(Day.short(app.day))."
         }
@@ -250,7 +264,7 @@ struct TodayView: View {
     private var scrolledTitle: String {
         switch app.range {
         case .day: app.day == app.today ? "Today" : "Today · \(Day.short(app.day))"
-        case .week: "Today · Week of \(Day.short(Day.monday(of: app.day)))"
+        case .year: "Today · \(app.day.prefix(4))"
         case .month: "Today · \(Day.monthsShort[Day.parts(app.day).m - 1])"
         }
     }
@@ -323,7 +337,7 @@ private struct FilePane: View {
         let shown = notes.filter { $0.date >= from && $0.date <= to && !$0.lines.isEmpty }
         VStack(alignment: .leading, spacing: Space.s12) {
             if shown.isEmpty {
-                Text("No note written \(range == .day ? (day == today ? "today" : "on \(Day.short(day))") : range == .week ? "this week" : "this month").")
+                Text("No note written \(range == .day ? (day == today ? "today" : "on \(Day.short(day))") : range == .month ? "this month" : "this year").")
                     .font(AppFont.main(14))
                     .foregroundStyle(Tokens.grey400)
             }

@@ -53,14 +53,14 @@ final class AppState {
 
 /// The span the card and list on Today cover.
 enum DayRange: String, CaseIterable, Identifiable {
-    case day, week, month
+    case day, month, year
     var id: String { rawValue }
 
     var label: String {
         switch self {
         case .day: "Daily"
-        case .week: "Weekly"
         case .month: "Monthly"
+        case .year: "Yearly"
         }
     }
 
@@ -68,8 +68,8 @@ enum DayRange: String, CaseIterable, Identifiable {
     func bounds(for day: String) -> (from: String, to: String) {
         switch self {
         case .day: (day, day)
-        case .week: (Day.monday(of: day), Day.addDays(Day.monday(of: day), 6))
         case .month: ("\(Month.of(day))-01", "\(Month.of(day))-31")
+        case .year: ("\(day.prefix(4))-01-01", "\(day.prefix(4))-12-31")
         }
     }
 }

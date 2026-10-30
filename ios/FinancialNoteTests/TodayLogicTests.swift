@@ -13,7 +13,7 @@ final class TodayLogicTests: XCTestCase {
 
     func testRangeBounds() {
         XCTAssertEqual(DayRange.day.bounds(for: "2026-10-28").from, "2026-10-28")
-        XCTAssertEqual(DayRange.week.bounds(for: "2026-10-28").to, "2026-11-01")
+        XCTAssertEqual(DayRange.year.bounds(for: "2026-10-28").to, "2026-12-31")
         XCTAssertEqual(DayRange.month.bounds(for: "2026-10-28").from, "2026-10-01")
     }
 
