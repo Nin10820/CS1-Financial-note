@@ -8,8 +8,9 @@ import SwiftUI
 /// Everything scales with Dynamic Type.
 ///
 /// Sizes come from one scale (Figma text styles). Use only these sizes — a test checks it:
-/// - Montserrat: 11 (tab), 12 (Capture), 14 (Text-body 14), 16 (Text-body 16), 18 (H6 / Text-body 18)
-/// - Bricolage: 12, 18, 20, 22, 24, 26, 32, 36, 40, 44
+/// - Montserrat: 11 (tab), 12 (Capture), 14 (Text-body 14), 16 (Text-body 16), 18 (H6 / Text-body 18),
+///   24 / 26 (the New bill heading)
+/// - Bricolage: 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 40, 44
 /// - Merriweather: 24
 enum AppFont {
     static let main = "Montserrat"

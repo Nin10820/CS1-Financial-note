@@ -31,6 +31,35 @@ enum AssetMath {
         return (total, groups)
     }
 
+    /// One asset's money: what was put in (in − out), what it is worth, and the difference.
+    struct Growth: Equatable {
+        var putIn: Int
+        var value: Int
+        var change: Int { value - putIn }
+        /// Whole percent of what was put in; nil when nothing was put in.
+        var pct: Int? { putIn > 0 ? Int((Double(change) / Double(putIn) * 100).rounded()) : nil }
+    }
+
+    /// nil when the asset has no recorded moves yet (written down before they were kept).
+    static func growth(_ asset: Asset, moves: [AssetMove]) -> Growth? {
+        let mine = moves.filter { $0.assetId == asset.id }
+        guard !mine.isEmpty else { return nil }
+        let putIn = mine.filter { $0.kind != .value }.reduce(0) { $0 + $1.amount }
+        return Growth(putIn: putIn, value: asset.amount)
+    }
+
+    /// The asset's worth after each move, oldest first, for its line.
+    static func valueLine(_ asset: Asset, moves: [AssetMove]) -> [(date: String, value: Int)] {
+        let mine = moves.filter { $0.assetId == asset.id }.sorted { $0.date < $1.date }
+        var running = 0
+        var out: [(date: String, value: Int)] = []
+        for m in mine {
+            running += m.amount
+            if let last = out.last, last.date == m.date { out[out.count - 1].value = running } else { out.append((m.date, running)) }
+        }
+        return out
+    }
+
     static func guessIcon(_ name: String, kind: AssetKind) -> AssetIcon {
         let n = name.lowercased(with: Locale(identifier: "vi"))
         func has(_ p: String) -> Bool { n.range(of: p, options: .regularExpression) != nil }

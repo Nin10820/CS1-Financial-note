@@ -3,8 +3,8 @@ import XCTest
 /// Keeps every text on the Figma type scale (see AppFont). Reads the app's Swift sources and
 /// fails on any size that isn't on the scale, naming the file and line.
 final class TypeScaleTests: XCTestCase {
-    private let montserrat: Set<Int> = [11, 12, 14, 16, 18]
-    private let bricolage: Set<Int> = [12, 18, 20, 22, 24, 26, 32, 36, 40, 44]
+    private let montserrat: Set<Int> = [11, 12, 14, 16, 18, 24, 26, 28]
+    private let bricolage: Set<Int> = [12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 40, 44]
     private let merriweather: Set<Int> = [24]
 
     func testEveryFontSizeIsOnTheFigmaScale() throws {

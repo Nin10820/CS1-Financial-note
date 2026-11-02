@@ -133,7 +133,66 @@ struct LocalStore {
     /// Adding an asset also writes its first line in the history.
     func addAsset(_ asset: Asset) {
         context.insert(asset)
-        context.insert(AssetMove(title: asset.name, icon: asset.icon, amount: asset.amount, date: asset.updatedOn))
+        context.insert(AssetMove(title: asset.name, icon: asset.icon, amount: asset.amount, date: asset.updatedOn,
+                                 assetId: asset.id, kind: .putIn))
+        recordWorth(on: asset.updatedOn)
         try? context.save()
+    }
+
+    /// Money put in, taken out, or the value now. Records a move and keeps the asset's amount right.
+    /// `amount` is what was put in or taken out, or for `.value` what the asset is worth now.
+    func move(_ asset: Asset, _ kind: AssetMoveKind, amount: Int, date: String) {
+        recordStart(asset)
+        let change: Int
+        switch kind {
+        case .putIn: change = amount
+        case .takeOut: change = -min(amount, asset.amount)
+        case .value: change = amount - asset.amount
+        }
+        guard change != 0 else { return }
+        asset.amount += change
+        if date > asset.updatedOn { asset.updatedOn = date }
+        context.insert(AssetMove(title: asset.name, icon: asset.icon, amount: change, date: date, assetId: asset.id, kind: kind))
+        recordWorth(on: date)
+        try? context.save()
+    }
+
+    /// Renames or regroups an asset; its history keeps up with the new name.
+    func editAsset(_ asset: Asset, name: String, kind: AssetKind) {
+        asset.name = name
+        asset.kind = kind
+        asset.icon = AssetMath.guessIcon(name, kind: kind)
+        for m in all(AssetMove.self) where m.assetId == asset.id {
+            m.title = name
+            m.iconRaw = asset.icon.rawValue
+        }
+        try? context.save()
+    }
+
+    /// Removes an asset and its history; the total for this month follows.
+    func removeAsset(_ asset: Asset, today: String = Day.today()) {
+        all(AssetMove.self).filter { $0.assetId == asset.id }.forEach(context.delete)
+        context.delete(asset)
+        recordWorth(on: today)
+        try? context.save()
+    }
+
+    /// An asset written down before moves were kept (or from the sample) gets its amount at
+    /// that time as a starting point, so "Put in" and growth have something to count from.
+    private func recordStart(_ asset: Asset) {
+        guard !all(AssetMove.self).contains(where: { $0.assetId == asset.id }) else { return }
+        context.insert(AssetMove(title: asset.name, icon: asset.icon, amount: asset.amount, date: asset.updatedOn,
+                                 assetId: asset.id, kind: .putIn))
+    }
+
+    /// The Total Asset line: this month's point is the total of everything now.
+    private func recordWorth(on date: String) {
+        let month = Month.of(date)
+        let total = all(Asset.self).reduce(0) { $0 + $1.amount }
+        if let p = all(WorthPoint.self).first(where: { $0.month == month }) {
+            p.value = total
+        } else {
+            context.insert(WorthPoint(month: month, value: total))
+        }
     }
 }

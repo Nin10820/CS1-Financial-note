@@ -146,7 +146,7 @@ struct ScanView: View {
             notPayment = "That code isn't a payment QR"
             return
         }
-        if qr.account != nil, qr.bankBIN.flatMap({ BankApp.codes[$0] }) != nil {
+        if qr.account != nil, qr.bankBIN != nil {
             open { app.transfer = TransferDraft(qr) }
             return
         }

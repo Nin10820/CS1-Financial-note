@@ -59,6 +59,13 @@ struct AddBillSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft = BillDraft(month: Month.of(Day.today()), today: Day.today())
     @State private var ready = false
+    @FocusState private var focus: Line?
+    /// The money line the number pad is typing into.
+    @State private var padLine: Line?
+    @State private var pickingDate: DateLine?
+    /// The line being answered now (its chips show at the bottom).
+    @State private var active: Line?
+    @Query private var profiles: [Profile]
 
     private static let kinds: [(BillKind, String, String)] = [
         (.recurring, "Recurring bill", "Electricity, water, internet — every month"),
@@ -71,7 +78,11 @@ struct AddBillSheet: View {
             Group {
                 if draft.kind == nil { kindPicker } else { form }
             }
-            .background(Tokens.bg1)
+            .background(draft.kind == nil ? Tokens.bg3 : Tokens.bg1)
+            .onChange(of: draft.kind) { _, k in
+                // Picked a kind (or said it): start typing straight away.
+                if k != nil { startTyping() }
+            }
             .navigationTitle("New bill")
             .toolbarTitleDisplayMode(.inline)
             .toolbar {
@@ -102,125 +113,325 @@ struct AddBillSheet: View {
     }
 
     private var lead: some View {
-        let label = Self.kinds.first { $0.0 == draft.kind }?.1.lowercased() ?? "kind of"
-        let kind = Text(label).foregroundStyle(draft.kind == nil ? Tokens.grey400 : Tokens.brand600)
-        return Text("Adding new \(kind)\n— tell us what you know:")
-            .font(AppFont.page)
-            .foregroundStyle(Tokens.text700)
+        AddingLead(label: Self.kinds.first { $0.0 == draft.kind }?.1.lowercased() ?? "kind of", chosen: draft.kind != nil)
     }
 
+    /// Step 1 (Figma Due 943:25329): pick the kind, or say the whole bill in one sentence.
     private var kindPicker: some View {
         VStack(alignment: .leading, spacing: 0) {
-            lead.padding(Space.s20)
-            Spacer()
-            VStack(alignment: .leading, spacing: 0) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Step 1 of 2").font(AppFont.main(12)).foregroundStyle(Tokens.grey400)
-                    Text("What kind is this?").font(AppFont.main(16, .semibold)).foregroundStyle(Tokens.text900)
-                }
-                .padding(Space.s16)
-                Divider().overlay(Tokens.bd0)
-                ForEach(Self.kinds, id: \.0) { kind, label, hint in
-                    Button {
-                        animate { draft.kind = kind }
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(label).font(AppFont.main(14, .medium)).foregroundStyle(Tokens.text900)
-                                Text(hint).font(AppFont.main(12)).foregroundStyle(Tokens.grey400)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(Tokens.grey300)
-                        }
-                        .padding(.horizontal, Space.s16)
-                        .padding(.vertical, Space.s12)
-                        .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c16))
-            .overlay(RoundedRectangle(cornerRadius: Corner.c16).strokeBorder(Tokens.bd1))
-            .padding(Space.s12)
+            lead.padding(.horizontal, Space.s20).padding(.vertical, Space.s16)
+            Spacer(minLength: 0)
+            QuickPickCard(
+                title: "What kind is this?",
+                options: Self.kinds.map { QuickPickOption(id: $0.0, title: $0.1, hint: $0.2) },
+                sayPlaceholder: "e.g. Internet 250k every month on the 5th",
+                onPick: { draft.kind = $0 },
+                onSay: { draft = BillSentence.read($0, month: month, today: app.today) })
+            .padding(.horizontal, Space.s12)
+            .padding(.top, Space.s24)
+            .padding(.bottom, Space.s16)
         }
     }
+
+    // MARK: - Step 2: the bill as sentences (Figma Due 943:25627)
+
+    /// Each line of the sentence. Typed lines open the keyboard, money lines the number pad,
+    /// lines with a few likely answers show tap-to-pick chips (above the keyboard if it's up).
+    enum Line: Hashable { case name, code, amount, principal, lender, payWith, rate, fee, due, start, payments }
 
     private var form: some View {
-        Form {
-            Section { lead.listRowBackground(Color.clear).listRowInsets(EdgeInsets()) }
-            Section {
-                TextField(draft.kind == .installment ? "iPhone 15 Pro" : "Water", text: $draft.name)
-            } header: { Text("What's it for?") }
-
-            if draft.kind == .installment {
-                Section {
-                    moneyField("Amount borrowed", value: $draft.principal, placeholder: "12,120,000")
-                    TextField("Lender / bank (optional)", text: $draft.lender)
-                    dateField("Starting from")
-                    Stepper("\(draft.payments) payments", value: $draft.payments, in: 1...120)
-                    percentField("Monthly interest", value: $draft.rate)
-                    percentField("Conversion fee", value: $draft.fee)
-                } footer: {
-                    if draft.each > 0 {
-                        Text("≈ \(Money.format(draft.each)) đ each month for \(draft.payments) months")
-                            .font(AppFont.main(12, .medium))
-                    }
-                }
-            } else {
-                Section {
-                    if draft.kind == .recurring {
-                        TextField("Bill code (optional)", text: $draft.code)
-                        Picker("Amount each time", selection: $draft.varies) {
-                            Text("Fixed").tag(false)
-                            Text("Changes").tag(true)
+        ScrollView {
+            VStack(alignment: .leading, spacing: Space.s12) {
+                lead
+                VStack(alignment: .leading, spacing: 10) {
+                    textLine("What's it for?", text: $draft.name,
+                             placeholder: draft.kind == .installment ? "e.g. iPhone 15 Pro" : "e.g. Water", line: .name)
+                    if !draft.name.trimmingCharacters(in: .whitespaces).isEmpty {
+                        switch draft.kind {
+                        case .installment: installmentLines
+                        case .oneoff: oneOffLines
+                        default: recurringLines
                         }
-                        .pickerStyle(.segmented)
-                    }
-                    moneyField(draft.kind == .recurring && draft.varies ? "Roughly how much?" : "Amount",
-                               value: $draft.amount, placeholder: "340,000")
-                    dateField("Due")
-                    TextField("Pay with (optional)", text: $draft.payWith)
-                } footer: {
-                    if draft.kind == .recurring {
-                        Text("Repeats monthly on day \(Day.parts(draft.due).d).")
                     }
                 }
+                .padding(.horizontal, Space.s12)
+                .padding(.vertical, Space.s8)
+                .overlay(alignment: .leading) { Rectangle().fill(Tokens.bd2).frame(width: 3) }
+                .animation(.snappy, value: draft.name.isEmpty)
+                .animation(.snappy, value: draft.each > 0)
             }
+            .padding(.horizontal, Space.s20)
+            .padding(.vertical, Space.s16)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .font(AppFont.main(16))
         .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 0) {
+                let picks = chips(for: active)
+                if !picks.isEmpty { chipBar(picks) }
+                if padLine != nil {
+                    AmountPad(value: moneyBinding) { go(next(after: padLine)) }
+                        .transition(.move(edge: .bottom))
+                }
+            }
+            .animation(.snappy, value: active)
+        }
+        .sheet(item: $pickingDate, onDismiss: { go(next(after: active)) }) { which in
+            BillDateSheet(date: $draft.due, title: which == .due ? "Due" : "Starting from")
+        }
+        .onAppear { startTyping() }
+        .onChange(of: focus) { _, f in
+            if let f { active = f; if padLine != nil { padLine = nil } }
+        }
     }
 
-    private func moneyField(_ label: String, value: Binding<Int?>, placeholder: String) -> some View {
-        LabeledContent(label) {
-            HStack(spacing: Space.s4) {
-                TextField(placeholder, text: Binding(
-                    get: { value.wrappedValue.map(Money.format) ?? "" },
-                    set: { value.wrappedValue = Int($0.filter(\.isNumber)) }))
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.trailing)
-                    .monospacedDigit()
-                Text("đ").foregroundStyle(Tokens.grey400)
+    @ViewBuilder
+    private var recurringLines: some View {
+        textLine("Bill code:", text: $draft.code, placeholder: "optional", line: .code, prefix: "#")
+        HStack(alignment: .firstTextBaseline, spacing: Space.s8) {
+            label("Amount each time:")
+            toggleChip("Fixed", on: !draft.varies) { draft.varies = false }
+            toggleChip("Changes", on: draft.varies) { draft.varies = true }
+        }
+        moneyLine(draft.varies ? "Roughly how much?" : "Amount:", value: draft.amount, line: .amount)
+        if (draft.amount ?? 0) > 0 {
+            pickLine("Due", value: DueText.ddmmyyyy(draft.due), line: .due)
+            textLine("Pay with", text: $draft.payWith, placeholder: "(optional)", line: .payWith)
+        }
+    }
+
+    @ViewBuilder
+    private var oneOffLines: some View {
+        moneyLine("Amount:", value: draft.amount, line: .amount)
+        if (draft.amount ?? 0) > 0 {
+            pickLine("Due", value: DueText.ddmmyyyy(draft.due), line: .due)
+            textLine("Pay with", text: $draft.payWith, placeholder: "(optional)", line: .payWith)
+        }
+    }
+
+    @ViewBuilder
+    private var installmentLines: some View {
+        moneyLine("Amount borrowed:", value: draft.principal, line: .principal)
+        if (draft.principal ?? 0) > 0 {
+            textLine("Lender / bank:", text: $draft.lender, placeholder: "optional", line: .lender)
+            pickLine("Starting from:", value: DueText.ddmmyyyy(draft.due), line: .start)
+            pickLine("Num of payments:", value: "\(draft.payments) payments", line: .payments)
+            percentLine("Monthly interest rate:", value: $draft.rate, line: .rate)
+            percentLine("Conversion fee", value: $draft.fee, line: .fee)
+            if draft.each > 0 {
+                Text("≈ \(Money.format(draft.each)) đ each month for \(draft.payments) months")
+                    .font(AppFont.body(.medium))
+                    .foregroundStyle(Tokens.grey400)
             }
         }
     }
 
-    private func percentField(_ label: String, value: Binding<Double>) -> some View {
-        LabeledContent(label) {
-            HStack(spacing: Space.s4) {
-                TextField("0", value: value, format: .number)
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                Text("%").foregroundStyle(Tokens.grey400)
-            }
+    // MARK: Moving through the lines
+
+    /// The name first, with the keyboard already up.
+    private func startTyping() {
+        guard draft.kind != nil else { return }
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            go(draft.name.isEmpty ? .name : next(after: .name))
         }
     }
 
-    private func dateField(_ label: String) -> some View {
-        DatePicker(label, selection: Binding(get: { Day.date(draft.due) }, set: { draft.due = Day.iso($0) }),
-                   displayedComponents: .date)
+    /// The line after this one that still needs something (optional lines are skipped).
+    private func next(after line: Line?) -> Line? {
+        let order: [Line] = draft.kind == .installment
+            ? [.name, .principal, .lender, .start, .payments, .rate, .fee]
+            : [.name, .amount, .due, .payWith]
+        guard let line, let i = order.firstIndex(of: line) else {
+            // From the bill code: on to the amount if it's still empty.
+            return line == .code && (draft.amount ?? 0) == 0 ? .amount : nil
+        }
+        return i + 1 < order.count ? order[i + 1] : nil
+    }
+
+    /// Opens whatever the line needs: keyboard, number pad, or just its chips.
+    private func go(_ line: Line?) {
+        active = line
+        switch line {
+        case .name, .code, .lender, .payWith, .rate, .fee:
+            padLine = nil
+            focus = line
+        case .amount, .principal:
+            focus = nil
+            withAnimation(.snappy) { padLine = line }
+        default:
+            focus = nil
+            withAnimation(.snappy) { padLine = nil }
+        }
+    }
+
+    // MARK: Quick picks
+
+    private struct Pick: Identifiable { let id: String; let action: () -> Void }
+
+    private var myBanks: [String] {
+        (profiles.first?.banks ?? []).compactMap { BankApp.named($0)?.name }
+    }
+
+    private func dayPick(_ title: String, day: Int) -> Pick {
+        Pick(id: title) {
+            let (y, m, _) = Day.parts(month + "-01")
+            draft.due = String(format: "%@-%02d", month, min(day, Day.daysIn(year: y, month: m)))
+            go(next(after: active))
+        }
+    }
+
+    private func chips(for line: Line?) -> [Pick] {
+        func set(_ items: [String], _ apply: @escaping (String) -> Void) -> [Pick] {
+            items.map { v in Pick(id: v) { apply(v); go(next(after: line)) } }
+        }
+        switch line {
+        case .name:
+            let names = switch draft.kind {
+            case .installment: ["iPhone", "Laptop", "Motorbike", "TV", "Fridge"]
+            case .oneoff: ["Insurance", "Tuition", "Repair", "Tax"]
+            default: ["Electricity", "Water", "Internet", "Rent", "Phone", "Gas", "Netflix", "Gym"]
+            }
+            return set(names) { draft.name = $0 }
+        case .due, .start:
+            return [Pick(id: "Today") { draft.due = month == Month.of(app.today) ? app.today : "\(month)-01"; go(next(after: line)) }]
+                + [5, 10, 15, 20, 25].map { dayPick("\($0)th", day: $0) }
+                + [Pick(id: "Pick a date…") { pickingDate = line == .start ? .start : .due }]
+        case .payWith:
+            return set(myBanks + ["Cash", "Card", "Transfer"]) { draft.payWith = $0 }
+        case .lender:
+            return set(myBanks + ["Home Credit", "FE Credit", "HD Saison"]) { draft.lender = $0 }
+        case .payments:
+            return set(["3", "6", "9", "12", "18", "24", "36"]) { draft.payments = Int($0) ?? 12 }
+                .map { p in Pick(id: "\(p.id) payments", action: p.action) }
+        case .rate:
+            return set(["0", "0.5", "1", "1.5", "2"]) { draft.rate = Double($0) ?? 0 }.map { Pick(id: $0.id + "%", action: $0.action) }
+        case .fee:
+            return set(["0", "1", "1.5", "2"]) { draft.fee = Double($0) ?? 0 }.map { Pick(id: $0.id + "%", action: $0.action) }
+        default:
+            return []
+        }
+    }
+
+    /// Glass chips in a row, above the keyboard when it's up.
+    private func chipBar(_ picks: [Pick]) -> some View {
+        ScrollView(.horizontal) {
+            GlassEffectContainer(spacing: Space.s8) {
+                HStack(spacing: Space.s8) {
+                    ForEach(picks) { p in
+                        Button(action: p.action) {
+                            Text(p.id)
+                                .font(AppFont.body(.medium))
+                                .foregroundStyle(Tokens.text900)
+                                .padding(.horizontal, Space.s16)
+                                .frame(minHeight: 40)
+                        }
+                        .buttonStyle(.plain)
+                        .glassEffect(.regular.interactive(), in: .capsule)
+                    }
+                }
+                .padding(.horizontal, Space.s16)
+                .padding(.vertical, Space.s8)
+            }
+        }
+        .scrollIndicators(.hidden)
+        .transition(.opacity)
+    }
+
+    // MARK: Lines
+
+    private func label(_ text: String) -> some View {
+        Text(text).font(AppFont.h6(.medium)).foregroundStyle(Tokens.text700).fixedSize()
+    }
+
+    private func textLine(_ title: String, text: Binding<String>, placeholder: String, line: Line, prefix: String? = nil) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Space.s8) {
+            label(title)
+            if let prefix { Text(prefix).font(AppFont.bodyLarge(.medium)).foregroundStyle(Tokens.grey400) }
+            TextField("", text: text, prompt: Text(placeholder).foregroundStyle(Tokens.grey300))
+                .font(AppFont.h6(.semibold))
+                .foregroundStyle(Tokens.brand600)
+                .focused($focus, equals: line)
+                .textContentType(nil)
+                .submitLabel(.next)
+                .onSubmit { go(next(after: line)) }
+        }
+    }
+
+    private func moneyLine(_ title: String, value: Int?, line: Line) -> some View {
+        Button { go(line) } label: {
+            HStack(alignment: .firstTextBaseline, spacing: Space.s8) {
+                label(title)
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(value.map(Money.format) ?? "0")
+                        .font(AppFont.h6(.semibold))
+                        .foregroundStyle(value == nil ? Tokens.grey300 : Tokens.brand600)
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                    Text("đ").font(AppFont.bodyLarge(.medium)).foregroundStyle(Tokens.text700)
+                }
+                .overlay(alignment: .bottom) {
+                    if padLine == line { Capsule().fill(Tokens.brand500).frame(height: 2).offset(y: 3) }
+                }
+                Spacer(minLength: 0)
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(title) \(value.map { "\(Money.format($0)) dong" } ?? "empty")")
+    }
+
+    /// A line answered by picking: tap it to show its chips.
+    private func pickLine(_ title: String, value: String, line: Line) -> some View {
+        Button { go(line) } label: {
+            HStack(alignment: .firstTextBaseline, spacing: Space.s8) {
+                label(title)
+                Text(value).font(AppFont.h6(.semibold)).foregroundStyle(Tokens.brand600)
+                    .overlay(alignment: .bottom) {
+                        if active == line { Capsule().fill(Tokens.brand500).frame(height: 2).offset(y: 3) }
+                    }
+                Spacer(minLength: 0)
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func toggleChip(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
+        Button { animate { action() } } label: {
+            Text(title)
+                .font(AppFont.body(.semibold))
+                .lineLimit(1)
+                .fixedSize()
+                .foregroundStyle(on ? Tokens.brand700 : Tokens.grey400)
+                .padding(.horizontal, Space.s12)
+                .frame(minHeight: 32)
+                .background(on ? Tokens.brand100 : Tokens.bg4, in: .capsule)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    private func percentLine(_ title: String, value: Binding<Double>, line: Line) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: Space.s8) {
+            label(title)
+            TextField("", text: Binding(
+                get: { value.wrappedValue == 0 ? "" : BillDetailSheet.percent(value.wrappedValue) },
+                set: { value.wrappedValue = Double($0.replacingOccurrences(of: ",", with: ".")) ?? 0 }),
+                      prompt: Text("0").foregroundStyle(Tokens.grey300))
+                .font(AppFont.h6(.semibold))
+                .foregroundStyle(Tokens.brand600)
+                .keyboardType(.decimalPad)
+                .focused($focus, equals: line)
+                .fixedSize()
+            Text("%").font(AppFont.h6(.semibold)).foregroundStyle(Tokens.brand600)
+        }
+    }
+
+    enum DateLine: Identifiable { case due, start; var id: Self { self } }
+
+    private var moneyBinding: Binding<Int?> {
+        padLine == .principal ? $draft.principal : $draft.amount
     }
 
     private func save() {
@@ -230,5 +441,30 @@ struct AddBillSheet: View {
         // Stay on this month if the new bill shows up here; otherwise jump to when it starts.
         if BillMath.dueIn(bill, month: app.dueMonth) == nil { app.dueMonth = Month.of(bill.start) }
         dismiss()
+    }
+}
+
+/// Due / starting date for a bill: any day, past or future (a calendar, then Done).
+struct BillDateSheet: View {
+    @Binding var date: String
+    var title: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            DatePicker(title, selection: Binding(get: { Day.date(date) }, set: { date = Day.iso($0) }),
+                       displayedComponents: .date)
+                .datePickerStyle(.graphical)
+                .tint(Tokens.brand500)
+                .padding(.horizontal)
+                .navigationTitle(title)
+                .toolbarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { dismiss() }.foregroundStyle(Tokens.brand700)
+                    }
+                }
+        }
+        .presentationDetents([.medium])
     }
 }

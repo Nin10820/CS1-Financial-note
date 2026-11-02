@@ -102,11 +102,11 @@ private struct AppTabBar: View {
     @State private var dragging: AppState.TabID?
     @State private var pressed = false
 
-    private let tabs: [(AppState.TabID, String, String)] = [
-        (.today, "Today", "calendar"),
-        (.due, "Due", "doc.text.fill"),
-        (.finance, "Finance", "chart.pie.fill"),
-        (.ai, "AI", "sparkles"),
+    private let tabs: [(AppState.TabID, String, Icon)] = [
+        (.today, "Today", .today),
+        (.due, "Due", .due),
+        (.finance, "Finance", .finance),
+        (.ai, "AI", .ai),
     ]
 
     private var spring: Animation? { reduceMotion ? nil : .spring(response: 0.38, dampingFraction: 0.72) }
@@ -122,9 +122,8 @@ private struct AppTabBar: View {
                         ForEach(tabs, id: \.0) { id, title, symbol in
                             let on = lit == id
                             VStack(spacing: 2) {
-                                Image(systemName: symbol)
-                                    .font(.system(size: 19, weight: .semibold))
-                                    .symbolEffect(.bounce, value: app.tab == id)
+                                AppIcon(symbol, size: 24, relativeTo: .caption2)
+                                    .scaleEffect(app.tab == id && !reduceMotion ? 1 : 0.94)
                                 if !small {
                                     Text(title).font(AppFont.main(11, .medium, relativeTo: .caption2))
                                 }
@@ -174,10 +173,14 @@ private struct AppTabBar: View {
                 .glassEffectID("bar", in: glass)
 
                 Button {
-                    withAnimation(spring) { app.actionsOpen.toggle() }
+                    // Due and Finance: + adds a bill / an asset. Today and AI: the menu.
+                    switch app.tab {
+                    case .due where !app.actionsOpen: app.addBillRequest += 1
+                    case .finance where !app.actionsOpen: app.addAssetRequest += 1
+                    default: withAnimation(spring) { app.actionsOpen.toggle() }
+                    }
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: small ? 18 : 22, weight: .semibold))
+                    AppIcon(.plus, size: small ? 20 : 24, relativeTo: .title3)
                         .foregroundStyle(.white)
                         .rotationEffect(.degrees(app.actionsOpen ? 45 : 0))
                         .frame(width: small ? 48 : 60, height: small ? 48 : 60)
@@ -185,8 +188,8 @@ private struct AppTabBar: View {
                 .buttonStyle(.plain)
                 .glassEffect(.regular.tint(Tokens.writeButton).interactive(), in: .circle)
                 .glassEffectID("plus", in: glass)
-                .accessibilityLabel(app.actionsOpen ? "Close menu" : "Add")
-                .accessibilityHint("Talk With AI, Template or Scan")
+                .accessibilityLabel(app.actionsOpen ? "Close menu" : app.tab == .due ? "Add a bill" : app.tab == .finance ? "Add an asset" : "Add")
+                .accessibilityHint(app.tab == .due || app.tab == .finance ? "" : "Talk With AI, Template or Scan")
             }
         }
         .padding(.horizontal, small ? Space.s32 : Space.s20)
@@ -220,12 +223,12 @@ private struct ActionMenu: View {
                     .accessibilityAddTraits(.isButton)
                 GlassEffectContainer(spacing: Space.s12) {
                     VStack(alignment: .trailing, spacing: Space.s12) {
-                        ActionPill(title: "Talk With AI", systemImage: "sparkles") { app.openAssistant(voice: true) }
-                        ActionPill(title: "Template", systemImage: "doc.text") {
+                        ActionPill(title: "Talk With AI", icon: .mic) { app.openAssistant(voice: true) }
+                        ActionPill(title: "Template", icon: .template) {
                             app.actionsOpen = false
                             app.templateOpen = true
                         }
-                        ActionPill(title: "Scan", systemImage: "qrcode.viewfinder") {
+                        ActionPill(title: "Scan", icon: .scan) {
                             app.actionsOpen = false
                             app.scanOpen = true
                         }
@@ -245,12 +248,12 @@ private struct ActionMenu: View {
 
 struct ActionPill: View {
     var title: String
-    var systemImage: String
+    var icon: Icon
     var action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Label(title, systemImage: systemImage)
+            Label { Text(title) } icon: { AppIcon(icon, size: 20) }
                 .font(AppFont.main(14, .semibold))
                 .foregroundStyle(Tokens.brand800)
                 .padding(.horizontal, Space.s16)

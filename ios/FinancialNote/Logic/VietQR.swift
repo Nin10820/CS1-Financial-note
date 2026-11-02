@@ -9,6 +9,8 @@ nonisolated struct VietQR: Equatable, Sendable {
     var note: String?
     var bankBIN: String?
     var account: String?
+    /// The code as scanned, to rebuild it with an amount (VietQRBuilder).
+    var raw: String = ""
 
     /// Short bank names by BIN (the six digits in the code).
     static let banks: [String: String] = [
@@ -48,6 +50,7 @@ nonisolated struct VietQR: Equatable, Sendable {
     init?(payload: String) {
         let text = payload.trimmingCharacters(in: .whitespacesAndNewlines)
         guard text.hasPrefix("000201"), let f = Self.fields(text) else { return nil }
+        raw = text
         if let a = f["54"], let v = Double(a) { amount = Int(v.rounded()) }
         name = f["59"]
         if let extra = f["62"], let inner = Self.fields(extra) { note = inner["08"] }

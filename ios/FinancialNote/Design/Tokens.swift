@@ -40,6 +40,7 @@ enum Tokens {
     static let brand600 = Color(light: 0x4C8A26, dark: 0x83C853)
     static let brand700 = Color(light: 0x3B6922, dark: 0x9CD472)
     static let brand800 = Color(light: 0x2C481F, dark: 0xC8E9AD)
+    static let brand900 = Color(light: 0x14270C, dark: 0xE2F4D3)
 
     /// Fill for prominent buttons with white text: brand-700 in both modes, so the label
     /// keeps a 6.5:1 contrast (brand-500 with white text is only 2.9:1).
@@ -47,6 +48,8 @@ enum Tokens {
     /// The round write button: brand-600 in both modes, 4.2:1 against its white icon.
     static let writeButton = Color(hex: 0x4C8A26)
     /// Today's weekday in the strip and the dot by the date (red, readable at small sizes).
+    /// "Done" (Figma text-success #079455).
+    static let success = Color(light: 0x079455, dark: 0x47CD89)
     static let todayRed = Color(light: 0xD92D20, dark: 0xF97066)
 
     /// Text on the dark green cards. Solid colours (not see-through white) so the contrast is
@@ -67,6 +70,10 @@ enum Tokens {
     static let bg3 = Color(light: 0xF3F4F6, dark: 0x0D121C) // app canvas
     static let bg4 = Color(light: 0xEAECF0, dark: 0x202939) // idle chips
     static let bgWhite = Color(light: 0xFFFFFF, dark: 0x1A1F29)
+    /// Number pad tray tint: the system keyboard's grey (#DFE1E6), dark #2B2F37.
+    static let keypadTray = Color(light: 0xDFE1E6, dark: 0x2B2F37)
+    /// Number pad keys, white like the system keyboard's.
+    static let keypadKey = Color(light: 0xFFFFFF, dark: 0x364152)
 
     // Borders
     static let bd0 = Color(light: 0xEEF2F6, dark: 0x202939) // row dividers
@@ -162,5 +169,5 @@ enum Space {
 
 enum Corner {
     static let c4: CGFloat = 4, c6: CGFloat = 6, c8: CGFloat = 8, c12: CGFloat = 12, c14: CGFloat = 14
-    static let c16: CGFloat = 16, c20: CGFloat = 20
+    static let c16: CGFloat = 16, c20: CGFloat = 20, c24: CGFloat = 24
 }

@@ -48,46 +48,71 @@ struct CategoryLabel: View {
     }
 }
 
-/// Up / down arrow tile for money out / in (Final 765:19666).
+/// Round arrow tile for money out / in (Figma __trans-item): ↗ on peach, ↘ on pale green.
 struct FlowTile: View {
     var flow: Flow
 
     var body: some View {
-        Image(systemName: flow == .out ? "arrow.up" : "arrow.down")
-            .font(.system(size: 15, weight: .semibold))
+        AppIcon(flow == .out ? .arrowUpRight : .arrowDownRight, size: 18)
             .foregroundStyle(flow == .out ? Tokens.secondary500 : Tokens.brand700)
             .frame(width: 36, height: 36)
-            .background(flow == .out ? Tokens.secondary100 : Tokens.brand100, in: .rect(cornerRadius: 10))
+            .background(flow == .out ? Tokens.secondary100 : Tokens.brand50, in: .circle)
             .accessibilityHidden(true)
     }
 }
 
-/// One saved line in a list: tile, title, category, amount.
+/// One saved line in a list (Figma __trans-item): round tile, title, "Category • 21:14:00",
+/// and the amount in Bricolage — grey for money out, green for money in.
 struct EntryRow: View {
     var entry: Entry
     var hidden: Bool
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        HStack(spacing: Space.s12) {
+        HStack(spacing: Space.s8) {
             FlowTile(flow: entry.flow)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(entry.title)
-                    .font(AppFont.main(14, .medium))
-                    .foregroundStyle(Tokens.text900)
-                    .lineLimit(typeSize.isAccessibilitySize ? 4 : 2)
-                    .multilineTextAlignment(.leading)
-                CategoryLabel(category: entry.category)
-                // Very large text: the amount goes under the name instead of squeezing it.
-                if typeSize.isAccessibilitySize { AmountText(value: entry.amount, hidden: hidden) }
+            HStack(spacing: 6) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(entry.title)
+                        .font(AppFont.body(.medium))
+                        .foregroundStyle(Tokens.text900)
+                        .lineLimit(typeSize.isAccessibilitySize ? 4 : 2)
+                        .multilineTextAlignment(.leading)
+                    HStack(spacing: Space.s8) {
+                        CategoryLabel(category: entry.category)
+                        Circle().fill(Tokens.grey300).frame(width: 4, height: 4).accessibilityHidden(true)
+                        Text(entry.createdAt.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits).second(.twoDigits)))
+                            .font(AppFont.capture())
+                            .foregroundStyle(Tokens.grey400)
+                            .monospacedDigit()
+                    }
+                    // Very large text: the amount goes under the name instead of squeezing it.
+                    if typeSize.isAccessibilitySize { amount }
+                }
+                Spacer(minLength: Space.s8)
+                if !typeSize.isAccessibilitySize { amount.fixedSize() }
             }
-            Spacer(minLength: Space.s8)
-            if !typeSize.isAccessibilitySize { AmountText(value: entry.amount, hidden: hidden).fixedSize() }
+            .padding(.horizontal, Space.s4)
+            .padding(.vertical, Space.s8)
         }
-        .padding(.vertical, Space.s12)
+        .frame(minHeight: 56)
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityHint("Opens the details")
+    }
+
+    private var amount: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 2) {
+            Text(hidden ? "••••••" : Money.format(entry.amount))
+                .font(AppFont.heading(14, .medium, relativeTo: .body))
+                .foregroundStyle(entry.flow == .in ? Tokens.brand600 : Tokens.text700)
+                .monospacedDigit()
+            Text("đ")
+                .font(AppFont.heading(14, .regular, relativeTo: .body))
+                .foregroundStyle(Tokens.grey400)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(hidden ? "Hidden amount" : "\(entry.flow == .in ? "in " : "")\(Money.format(entry.amount)) dong")
     }
 }
 

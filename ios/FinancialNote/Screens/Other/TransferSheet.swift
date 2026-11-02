@@ -1,3 +1,4 @@
+import UniformTypeIdentifiers
 import SwiftData
 import SwiftUI
 
@@ -9,24 +10,31 @@ struct TransferSheet: View {
     @State var draft: TransferDraft
     @Environment(AppState.self) private var app
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.openURL) private var openURL
     @Query private var profiles: [Profile]
     @State private var picking = false
     @State private var failed = false
+    /// After copying and saving: how to finish in the bank app, then open it.
+    @State private var guiding = false
+    @State private var savedQR = false
     @FocusState private var noteFocused: Bool
 
     var body: some View {
         NavigationStack {
             VStack(spacing: Space.s16) {
-                payee
-                amount
-                details
+                VStack(spacing: Space.s16) {
+                    payee
+                    amount
+                    details
+                }
+                .padding(.horizontal, Space.s20)
                 Spacer(minLength: 0)
-                if !noteFocused { keypad }
-                footer
+                footer.padding(.horizontal, Space.s20)
+                if !noteFocused {
+                    AmountPad(value: Binding(get: { draft.amount == 0 ? nil : draft.amount },
+                                             set: { v in withAnimation(.snappy) { draft.amount = v ?? 0 } }))
+                }
             }
-            .padding(.horizontal, Space.s20)
-            .padding(.bottom, Space.s8)
+            .padding(.bottom, noteFocused ? Space.s8 : 0)
             .background(Tokens.bg3)
             .navigationTitle("Check payment")
             .toolbarTitleDisplayMode(.inline)
@@ -42,6 +50,12 @@ struct TransferSheet: View {
                 draft.from = bank
                 remember(bank)
             }
+        }
+        .alert("Ready to pay", isPresented: $guiding) {
+            Button("Open \(draft.from?.name ?? "bank")") { launchBank() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(guide)
         }
         .alert("Couldn't open the bank app", isPresented: $failed) {
             Button("OK", role: .cancel) {}
@@ -127,26 +141,6 @@ struct TransferSheet: View {
             .accessibilityHidden(true)
     }
 
-    private var keypad: some View {
-        let keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "000", "⌫"]
-        return LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 0) {
-            ForEach(keys, id: \.self) { k in
-                Button { press(k) } label: {
-                    Group {
-                        if k == "⌫" { Image(systemName: "delete.left") } else { Text(k) }
-                    }
-                    .font(AppFont.heading(26, .regular, relativeTo: .title2))
-                    .foregroundStyle(Tokens.text900)
-                    .frame(maxWidth: .infinity, minHeight: 56)
-                    .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(k == "⌫" ? "Delete" : k == "000" ? "Three zeros" : k)
-            }
-        }
-        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
-    }
-
     private var footer: some View {
         VStack(spacing: Space.s8) {
             Text(hint)
@@ -169,48 +163,95 @@ struct TransferSheet: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Pay from, \(draft.from?.name ?? "pick a bank")")
 
+                // Same 56 pt height as the bank chip beside it.
+                let off = draft.from != nil && draft.amount == 0
                 Button(action: openBank) {
                     Text(draft.from == nil ? "Pick a bank" : "Open \(draft.from!.name)")
                         .font(AppFont.bodyLarge(.semibold))
-                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .foregroundStyle(.white.opacity(off ? 0.6 : 1))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .contentShape(.capsule)
                 }
-                .buttonStyle(.glassProminent)
-                .tint(Tokens.action)
-                .controlSize(.large)
-                .disabled(draft.from != nil && draft.amount == 0)
+                .buttonStyle(.plain)
+                .glassEffect(.regular.tint(off ? Tokens.grey400 : Tokens.action).interactive(), in: .capsule)
+                .disabled(off)
+                #if DEBUG
+                .contextMenu {
+                    ForEach(Array(tryWays.enumerated()), id: \.offset) { _, way in
+                        Button(way.0, action: way.1)
+                    }
+                }
+                #endif
             }
         }
     }
 
     private var hint: String {
         guard let b = draft.from else { return "Pick the bank you pay from. The app never moves money itself." }
-        return b.fills
-            ? "\(b.name) opens with the account and amount filled in. Confirm it there."
-            : "\(b.name) opens, but can't take the details: scan the code or type them there."
+        return b.id == "tpb"
+            ? "Copies the transfer, then opens TPBank: ChatPay → Paste fills it in."
+            : "Saves a QR with the amount to Photos and copies the details, then opens \(b.name)."
     }
 
     // MARK: - Actions
 
-    private func press(_ k: String) {
-        var v = draft.amount
-        switch k {
-        case "⌫": v /= 10
-        case "000": v *= 1000
-        default: v = v * 10 + (Int(k) ?? 0)
-        }
-        guard v < 100_000_000_000 else { return }
-        withAnimation(.snappy) { draft.amount = v }
-    }
-
+    /// Hands the transfer over every way at once, so nothing has to be typed again:
+    /// a QR with the amount in Photos (Scan QR → Photos in any bank app), the details and the
+    /// QR on the clipboard (TPBank ChatPay → Paste), and VietQR's link for the apps it fills in.
     private func openBank() {
         guard let bank = draft.from else { picking = true; return }
-        guard let url = bank.transferURL(account: draft.account, bankBIN: draft.bankBIN, amount: draft.amount,
-                                         note: draft.note, name: draft.name) else {
-            failed = true
+        // TPBank: one sentence on the clipboard for ChatPay's "Paste to Pay" — no photo.
+        if bank.id == "tpb" {
+            UIPasteboard.general.setItems([[UTType.plainText.identifier: transferText]],
+                                          options: [.localOnly: true, .expirationDate: Date.now.addingTimeInterval(600)])
+            savedQR = false
+            guiding = true
             return
         }
+        let code = VietQR.withAmount(draft.payload, amount: draft.amount, note: draft.note)
+        let image = code.flatMap {
+            TransferQRImage.make(payload: $0, payee: draft.payee,
+                                 detail: [draft.bankName, draft.account].compactMap { $0 }.joined(separator: " · "),
+                                 amount: draft.amount)
+        }
+        var item: [String: Any] = [UTType.plainText.identifier: transferText]
+        if let png = image?.pngData() { item[UTType.png.identifier] = png }
+        UIPasteboard.general.setItems([item], options: [.localOnly: true, .expirationDate: Date.now.addingTimeInterval(600)])
+        Task {
+            savedQR = if let image { await TransferQRImage.save(image) } else { false }
+            guiding = true
+        }
+    }
+
+    /// Opens the bank's own app; when the user comes back they're asked whether it went through.
+    private func launchBank() {
+        guard let bank = draft.from else { failed = true; return }
+        if bank.vietQRFills, let acc = draft.account, let bin = draft.bankBIN,
+           let link = bank.vietQRLink(account: acc, receiverBIN: bin, amount: draft.amount, note: draft.note) {
+            open(link)
+        } else if let url = bank.schemeURL {
+            open(url)
+        } else {
+            failed = true
+        }
+    }
+
+    private var guide: String {
+        let name = draft.from?.name ?? "your bank"
+        if draft.from?.id == "tpb" {
+            return "The transfer is copied. In TPBank, open ChatPay → Transfer → Paste transfer details: account, bank and \(Money.format(draft.amount)) đ fill in."
+        }
+        let photo = savedQR
+            ? "Tap Scan QR, then Photos, and pick the newest QR: account, bank and \(Money.format(draft.amount)) đ are in it."
+            : "Allow Photos for Financial Note in Settings to get the QR with the amount."
+        let paste = draft.from?.id == "tpb" ? " Or open ChatPay and paste." : " Or paste where it asks for the account."
+        return "In \(name): " + photo + paste
+    }
+
+    private func open(_ url: URL) {
         app.handedOff = draft
-        openURL(url) { ok in
+        UIApplication.shared.open(url) { ok in
             if ok {
                 dismiss()
             } else {
@@ -218,6 +259,52 @@ struct TransferSheet: View {
                 failed = true
             }
         }
+    }
+
+    /// The transfer as text for the bank app to read when pasted (TPBank ChatPay reads the account,
+    /// bank and amount from a message like this). Stays on this phone — not shared with other
+    /// devices — and clears itself after 10 minutes.
+    /// Stays on this phone (not shared with other devices) and clears itself after 10 minutes.
+    private func copy(_ text: String) {
+        UIPasteboard.general.setItems([[UTType.plainText.identifier: text]],
+                                      options: [.localOnly: true, .expirationDate: Date.now.addingTimeInterval(600)])
+    }
+
+    #if DEBUG
+    /// Ways to hand the transfer to a bank app, to find on a real phone which one fills it in.
+    /// Debug builds only — press and hold the Open button. Removed once one is known to work.
+    private var tryWays: [(String, () -> Void)] {
+        // Each copies the ChatPay sentence first, then tries a link that might land on ChatPay or
+        // Transfer instead of TPBank's home screen. Guesses — TPBank publishes none.
+        func go(_ s: String) {
+            UIPasteboard.general.setItems([[UTType.plainText.identifier: transferText]],
+                                          options: [.localOnly: true, .expirationDate: Date.now.addingTimeInterval(600)])
+            if let u = URL(string: s) { open(u) } else { failed = true }
+        }
+        let links = [
+            "hydro://chatpay", "hydro://ChatPay", "hydro://chat-pay", "hydro://chat",
+            "hydro://transfer", "hydro://pastetopay", "hydro://open?screen=chatpay",
+            "tpb://chatpay", "tpb://transfer",
+        ]
+        return links.enumerated().map { i, link in ("\(i + 1) · \(link)", { go(link) }) }
+    }
+
+    /// VietQR's deeplink as the open-source projects build it: `tn` with + for spaces, `url` not encoded.
+    private func vietQRLink(receiver: String) -> String {
+        let app = draft.from?.id ?? "tpb"
+        let note = VietQR.ascii(draft.note).replacingOccurrences(of: " ", with: "+")
+        return "https://dl.vietqr.io/pay?app=\(app)&ba=\(draft.account ?? "")@\(receiver)&am=\(draft.amount)&tn=\(note)&url=https://www.vietqr.io/deeplink"
+    }
+    #endif
+
+    /// One plain sentence, the way people send transfer details in a chat — TPBank ChatPay reads
+    /// the name, account, bank and amount out of it: "Chuyển 58.000đ đến STK 5116… TPBank - AU THIEN VY. Nội dung: …"
+    var transferText: String {
+        let amount = Money.format(draft.amount).replacingOccurrences(of: ",", with: ".")
+        var s = "Chuyển \(amount)đ đến STK \(draft.account ?? "") \(draft.bankName ?? "")"
+        if let name = draft.name { s += " - \(name.uppercased(with: Locale(identifier: "vi")))" }
+        if !draft.note.isEmpty { s += ". Nội dung: \(draft.note)" }
+        return s
     }
 
     /// The bank just used goes first in Profile's list, so it is picked next time.
@@ -260,7 +347,7 @@ struct PayFromSheet: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    Label("Fills in the account and amount", systemImage: "bolt.fill")
+                    Text("Your bank app opens; the transfer is confirmed there.")
                         .font(AppFont.capture())
                         .foregroundStyle(Tokens.grey400)
                 }
@@ -291,7 +378,6 @@ struct PayFromSheet: View {
                         VStack(alignment: .leading, spacing: 2) {
                             HStack(spacing: Space.s4) {
                                 Text(b.name).font(AppFont.body(.semibold))
-                                if b.fills { Image(systemName: "bolt.fill").font(.system(size: 11)) }
                             }
                             if !all {
                                 Text(sent == 0 || app.hidden ? (app.hidden ? "••••" : "Nothing this month")
@@ -311,7 +397,7 @@ struct PayFromSheet: View {
                     .overlay(RoundedRectangle(cornerRadius: Corner.c16).strokeBorder(on ? .clear : Tokens.bd1))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("\(b.name)\(b.fills ? ", fills in the details" : "")\(all ? "" : ", \(sent) dong sent this month")")
+                .accessibilityLabel("\(b.name)\(all ? "" : ", \(sent) dong sent this month")")
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
         }

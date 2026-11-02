@@ -207,8 +207,8 @@ private struct YourDataView: View {
             }
             Section("Sent to a server") {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Only when you open a bank app")
-                    Text("After scanning a QR, \"Open bank app\" sends the account, amount and note in a vietqr.io link so your bank app opens filled in. Notes are read on this phone.").font(AppFont.main(12)).foregroundStyle(.secondary)
+                    Text("Nothing")
+                    Text("Notes are read on this phone. Paying a scanned QR saves a QR with the amount to your Photos and copies the details on this phone (cleared after 10 minutes), then opens your bank app.").font(AppFont.main(12)).foregroundStyle(.secondary)
                 }
             }
             Section {

@@ -18,16 +18,21 @@ final class ScreenTourTests: XCTestCase {
         sleep(1)
         snap(app, "01-today")
 
-        // + → Template: a blank line filled from one typed sentence.
+        // + → Template: opens on the amount with the number pad up; then the name.
         app.buttons["Add"].tap()
         XCTAssertTrue(app.buttons["Template"].waitForExistence(timeout: 3))
         snap(app, "02-plus")
         app.buttons["Template"].tap()
-        let fillField = app.textFields["Fill from a line"].exists ? app.textFields["Fill from a line"] : app.textViews["Fill from a line"]
-        XCTAssertTrue(fillField.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Hide number pad"].waitForExistence(timeout: 5))
         sleep(1)
         snap(app, "03-template-empty")
-        fillField.typeText("trà sữa 35k · cash\n")
+        app.buttons["3"].tap()
+        app.buttons["5"].tap()
+        app.buttons["Three zeros"].tap()
+        XCTAssertEqual(app.buttons["Amount in dong"].value as? String, "35,000")
+        let name = app.textFields["Name"]
+        name.tap()
+        name.typeText("Trà sữa")
         sleep(1)
         snap(app, "04-template-filled")
         app.buttons["Add tags"].firstMatch.tap()
@@ -89,7 +94,7 @@ final class ScanFlowTests: XCTestCase {
         app.buttons["5"].tap()
         XCTAssertTrue(app.staticTexts["Amount, 650,005 dong"].exists || app.otherElements["Amount, 650,005 dong"].exists)
         app.buttons["Pay from, pick a bank"].tap()
-        let bidv = app.buttons["BIDV, fills in the details"]
+        let bidv = app.buttons["BIDV"]
         XCTAssertTrue(bidv.waitForExistence(timeout: 3))
         bidv.tap()
         XCTAssertTrue(app.buttons["Open BIDV"].waitForExistence(timeout: 3))
@@ -109,7 +114,7 @@ final class ScanFlowTests: XCTestCase {
         let name = app.textFields["Name"]
         XCTAssertTrue(name.waitForExistence(timeout: 6))
         XCTAssertEqual(name.value as? String, "Bun bo Hue")
-        XCTAssertEqual(app.textFields["Amount in dong"].value as? String, "65,000")
+        XCTAssertEqual(app.buttons["Amount in dong"].value as? String, "65,000")
         app.buttons["Save"].tap()
         XCTAssertTrue(app.staticTexts["Bun bo Hue"].waitForExistence(timeout: 5), "saved line shows on Today")
     }

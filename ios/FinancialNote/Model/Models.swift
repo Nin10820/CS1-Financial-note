@@ -189,21 +189,46 @@ final class Asset {
 @Model
 final class AssetMove {
     @Attribute(.unique) var id: String
+    /// The asset's name when it happened.
     var title: String
     var iconRaw: String
+    /// What changed, in đồng: + money put in or a rise in value, − money taken out or a fall.
     var amount: Int
     var date: String
     var sample: Bool
+    /// The asset it belongs to (older and sample moves have none).
+    var assetId: String? = nil
+    /// "in" money put in, "out" money taken out, "value" the worth changed on its own.
+    var kindRaw: String = AssetMoveKind.putIn.rawValue
 
     var icon: AssetIcon { AssetIcon(rawValue: iconRaw) ?? .cash }
+    var kind: AssetMoveKind { AssetMoveKind(rawValue: kindRaw) ?? .putIn }
 
-    init(id: String = UUID().uuidString, title: String, icon: AssetIcon, amount: Int, date: String, sample: Bool = false) {
+    init(id: String = UUID().uuidString, title: String, icon: AssetIcon, amount: Int, date: String, sample: Bool = false,
+         assetId: String? = nil, kind: AssetMoveKind = .putIn) {
         self.id = id
         self.title = title
         self.iconRaw = icon.rawValue
         self.amount = amount
         self.date = date
         self.sample = sample
+        self.assetId = assetId
+        self.kindRaw = kind.rawValue
+    }
+}
+
+nonisolated enum AssetMoveKind: String, Codable, Sendable, CaseIterable {
+    case putIn = "in"
+    case takeOut = "out"
+    case value
+
+    /// "Put in", "Took out", "Value changed" — under the asset's name in History.
+    var label: String {
+        switch self {
+        case .putIn: "Put in"
+        case .takeOut: "Took out"
+        case .value: "Value changed"
+        }
     }
 }
 

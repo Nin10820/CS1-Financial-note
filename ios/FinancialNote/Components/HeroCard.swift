@@ -63,7 +63,7 @@ struct HeroCard<Buttons: View>: View {
         }
         .padding(Space.s16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background { CardGradient().clipShape(.rect(cornerRadius: Corner.c20)) }
+        .cardSurface(cornerRadius: Corner.c24)
         .shadow(color: .black.opacity(0.16), radius: 9, y: 6)
     }
 }

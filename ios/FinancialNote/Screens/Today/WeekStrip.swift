@@ -20,6 +20,7 @@ struct WeekStrip: View {
         }
         // Seven days must fit across the phone; past this size the strip stops growing.
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+        .noPageSwipe()
         .contentShape(.rect)
         .gesture(
             DragGesture(minimumDistance: 20).onEnded { g in
@@ -164,8 +165,9 @@ struct YearStrip: View {
     }
 }
 
-/// Three cells across, the picked one held in the middle. Scrolling picks whatever lands in
-/// the middle; tapping a cell picks it too.
+/// Three slots — before | picked | after — so the picked one always sits in the middle
+/// (Figma Date-bar 1117:35943). Swipe sideways or tap a side cell to move; periods that haven't
+/// come yet show greyed out and can't be picked.
 private struct PeriodStrip: View {
     var keys: [String]
     /// The latest one that can be picked; later ones are shown but disabled.
@@ -177,82 +179,88 @@ private struct PeriodStrip: View {
     var spoken: (String) -> String
     var name: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var centred: String?
-    @State private var width: CGFloat = 0
+    @GestureState private var drag: CGFloat = 0
 
     var body: some View {
-        let cellWidth = max((width - 2 * Space.s4) / 3, 1)
-        ScrollView(.horizontal) {
-            LazyHStack(spacing: Space.s4) {
-                ForEach(keys, id: \.self) { k in
-                    cell(k).frame(width: cellWidth)
+        let idx = keys.firstIndex(of: selected) ?? max(keys.count - 1, 0)
+        let lastIdx = keys.lastIndex(where: { $0 <= last }) ?? 0
+        GeometryReader { g in
+            let slot = g.size.width / 3
+            // One long row; the picked cell is kept in the middle slot by sliding the row.
+            HStack(spacing: 0) {
+                ForEach(Array(keys.enumerated()), id: \.element) { i, k in
+                    cell(k, picked: i == idx)
+                        .frame(width: slot)
+                        .onTapGesture { move(to: i, lastIdx: lastIdx) }
                 }
             }
-            .scrollTargetLayout()
-            // Room on both sides so the first and last cell can sit in the middle.
-            .padding(.horizontal, cellWidth + Space.s4)
+            .offset(x: -CGFloat(idx - 1) * slot + drag)
+            .animation(reduceMotion ? nil : .snappy, value: idx)
+            .gesture(
+                DragGesture(minimumDistance: 10)
+                    .updating($drag) { v, s, _ in s = v.translation.width }
+                    .onEnded { v in
+                        let steps = Int((-v.translation.width / slot).rounded())
+                        move(to: idx + steps, lastIdx: lastIdx)
+                    }
+            )
         }
-        .scrollIndicators(.hidden)
-        .scrollTargetBehavior(.viewAligned)
-        .scrollPosition(id: $centred, anchor: .center)
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { w in
-            width = w
-            centred = nil
-            Task { centred = selected }
-        }
+        .padding(.horizontal, Space.s12)
+        .frame(height: 60)
+        .clipped()
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)
-        .onAppear { centred = selected }
-        .onChange(of: selected) { _, k in
-            if centred != k { withAnimation(reduceMotion ? nil : .snappy) { centred = k } }
-        }
-        .onChange(of: centred) { _, k in
-            guard let k, k != selected else { return }
-            if k > last {
-                // Scrolled onto a period that hasn't come yet: go back to the latest one.
-                withAnimation(reduceMotion ? nil : .snappy) { centred = last }
-            } else {
-                selected = k
+        .noPageSwipe()
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(name)
+        .accessibilityValue("\(spoken(selected)), \(hidden ? "amount hidden" : "\(Money.format(spent[selected] ?? 0)) dong spent")")
+        .accessibilityAdjustableAction { dir in
+            switch dir {
+            case .increment: move(to: idx + 1, lastIdx: lastIdx)
+            case .decrement: move(to: idx - 1, lastIdx: lastIdx)
+            @unknown default: break
             }
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(name)
     }
 
-    private func cell(_ k: String) -> some View {
-        let picked = selected == k
+    private func move(to i: Int, lastIdx: Int) {
+        let target = min(max(i, 0), lastIdx)
+        guard keys.indices.contains(target), keys[target] != selected else { return }
+        withAnimation(reduceMotion ? nil : .snappy) { selected = keys[target] }
+    }
+
+    private func cell(_ k: String, picked: Bool) -> some View {
         let future = k > last
         let v = spent[k] ?? 0
         let amount = future ? "—" : hidden ? "•••" : v >= 1000 ? "\(Money.format(v / 1000))K" : Money.format(v)
-        return Button {
-            withAnimation(reduceMotion ? nil : .snappy) { selected = k }
-        } label: {
-            VStack(spacing: Space.s4) {
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(amount).font(AppFont.capture(picked ? .semibold : .medium)).monospacedDigit()
-                    Text("đ").font(AppFont.main(11))
-                }
-                .foregroundStyle(picked ? Tokens.brand700 : Tokens.grey400)
-                Text(title(k))
-                    .font(AppFont.capture(.medium))
-                    .foregroundStyle(picked ? Tokens.brand700 : Tokens.text700)
+        return VStack(spacing: 2) {
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(amount)
+                    .font(AppFont.heading(16, picked ? .medium : .regular, relativeTo: .body))
+                    .foregroundStyle(picked ? Tokens.brand700 : Tokens.grey400)
+                    .monospacedDigit()
+                Text("đ")
+                    .font(AppFont.heading(12, picked ? .regular : .medium, relativeTo: .caption))
+                    .foregroundStyle(picked ? Tokens.text700 : Tokens.grey300)
             }
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, Space.s12)
-            .background {
-                if picked {
-                    RoundedRectangle(cornerRadius: Corner.c12)
-                        .fill(Tokens.brand100)
-                        .strokeBorder(Tokens.brand300, lineWidth: 1)
-                }
-            }
-            .contentShape(.rect)
+            Text(title(k))
+                .font(picked ? AppFont.body(.medium) : AppFont.capture(.medium))
+                .foregroundStyle(picked ? Tokens.brand900 : Tokens.grey300)
         }
-        .buttonStyle(.plain)
-        .disabled(future)
-        .opacity(future ? 0.4 : 1)
-        .accessibilityLabel("\(spoken(k)), \(hidden ? "amount hidden" : "\(Money.format(v)) dong spent")")
-        .accessibilityAddTraits(picked ? .isSelected : [])
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+        .padding(.horizontal, picked ? 20.5 : 14)
+        .padding(.vertical, picked ? 8.5 : 8)
+        .frame(minHeight: 60)
+        .background {
+            if picked {
+                RoundedRectangle(cornerRadius: Corner.c16, style: .continuous)
+                    .fill(Color.white.opacity(0.12))
+                    .overlay(RoundedRectangle(cornerRadius: Corner.c16, style: .continuous).fill(Tokens.brand300.opacity(0.1)))
+                    .overlay(RoundedRectangle(cornerRadius: Corner.c16, style: .continuous).strokeBorder(Tokens.brand300, lineWidth: 0.5))
+                    .shadow(color: Color(hex: 0x0D121C).opacity(0.04), radius: 4, y: 2)
+            }
+        }
+        .opacity(future ? 0.5 : 1)
+        .contentShape(.rect)
     }
 }

@@ -15,6 +15,12 @@ struct TodayView: View {
     @State private var summaryOpen = false
     @State private var scrolled = false
     @State private var laterNotice: String?
+    /// The card's All / out / in filter, applied to Recent.
+    @State private var flowFilter: FlowFilter = .all
+    @State private var deleting: Entry?
+    /// The visible height, so a swipe works on the empty part of the page too.
+    @State private var pageHeight: CGFloat = 0
+    @Environment(\.modelContext) private var context
 
     enum Pane: String, CaseIterable { case recent = "Recent", file = "File" }
 
@@ -36,7 +42,8 @@ struct TodayView: View {
                     case .year:
                         YearStrip(day: $app.day, today: app.today, entries: entries, hidden: app.hidden)
                     }
-                    if list.isEmpty && pane == .recent {
+                    // An empty day greets you; an empty month or year still shows its card (0 đ).
+                    if list.isEmpty && pane == .recent && app.range == .day {
                         EmptyDay(name: profiles.first?.name ?? "Nin", nothingNote: nothingNote) { idea in
                             switch idea {
                             case .write: app.openAssistant()
@@ -47,13 +54,16 @@ struct TodayView: View {
                         }
                         .padding(.top, Space.s32)
                     } else {
-                        if !list.isEmpty { card(list) }
+                        if !list.isEmpty || app.range != .day { card(list) }
                         listSection(list)
                     }
                 }
                 .padding(.horizontal, Space.s20)
+                .frame(minHeight: pageHeight, alignment: .top)
+                .pageSwipe(back: { step(-1) }, forward: { step(1) })
                 .padding(.bottom, Space.s24)
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pageHeight = $0 }
             .modifier(MinimizesTabBar())
             .scrollBounceBehavior(.basedOnSize)
             .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y + $0.contentInsets.top > 110 } action: { _, now in
@@ -92,7 +102,7 @@ struct TodayView: View {
             Button {
                 app.profileOpen = true
             } label: {
-                Image(systemName: "person")
+                AppIcon(.user, size: 24)
                     .foregroundStyle(Tokens.brand600)
             }
             .accessibilityLabel("Profile")
@@ -144,7 +154,7 @@ struct TodayView: View {
             } label: {
                 HStack(spacing: Space.s4) {
                     Text(app.range.label)
-                    Image(systemName: "chevron.up.chevron.down").imageScale(.small)
+                    AppIcon(.caretUpDown, size: 14, relativeTo: .caption)
                 }
                 .font(AppFont.capture(.medium))
                 .foregroundStyle(Tokens.text700)
@@ -160,16 +170,14 @@ struct TodayView: View {
         let out = list.filter { $0.flow == .out }.reduce(0) { $0 + $1.amount }
         let incoming = list.filter { $0.flow == .in }.reduce(0) { $0 + $1.amount }
         let notes = Set(list.map(\.noteId)).count
-        let updated = list.map(\.createdAt).max() ?? .now
+        let updated = list.map(\.createdAt).max().map(Day.clock) ?? "—"
         return SpendCard(
-            label: cardLabel,
             out: out,
             incoming: incoming,
-            meta: "\(notes) \(notes == 1 ? "note" : "notes") · updated \(Day.clock(updated))",
+            notes: notes,
+            updated: updated,
             hidden: $app.hidden,
-            onSummary: nil)
-            .contentShape(.rect)
-            .onTapGesture { summaryOpen = true }
+            filter: $flowFilter)
             .accessibilityAction(named: "Summary") { summaryOpen = true }
     }
 
@@ -190,7 +198,14 @@ struct TodayView: View {
                 }
             }
             switch pane {
-            case .recent: recentRows(list)
+            case .recent:
+                recentRows(list.filter { e in
+                    switch flowFilter {
+                    case .all: true
+                    case .out: e.flow == .out
+                    case .in: e.flow == .in
+                    }
+                })
             case .file: FilePane(range: app.range, day: app.day, today: app.today)
             }
         }
@@ -198,6 +213,15 @@ struct TodayView: View {
 
     private func recentRows(_ shown: [Entry]) -> some View {
         LazyVStack(alignment: .leading, spacing: 0) {
+            if shown.isEmpty {
+                // Figma Monthly: a soft grey block where the lines would be.
+                Text(nothingNote ?? "Nothing recorded yet.")
+                    .font(AppFont.body())
+                    .foregroundStyle(Tokens.grey400)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity, minHeight: 140)
+                    .background(Tokens.bg4.opacity(0.6), in: .rect(cornerRadius: Corner.c20))
+            }
             ForEach(Array(shown.enumerated()), id: \.element.id) { i, e in
                 // Weekly and Monthly cover many days: each day gets a small heading.
                 if app.range != .day && (i == 0 || shown[i - 1].date != e.date) {
@@ -207,12 +231,23 @@ struct TodayView: View {
                         .padding(.top, i == 0 ? 0 : Space.s16)
                         .padding(.bottom, Space.s4)
                         .accessibilityAddTraits(.isHeader)
-                } else if i > 0 {
-                    Divider().overlay(Tokens.bd1)
                 }
-                Button { openEntry = e } label: { EntryRow(entry: e, hidden: app.hidden) }
-                    .buttonStyle(.plain)
+                SwipeRow(onTap: { openEntry = e }, onEdit: { openEntry = e }, onDelete: { deleting = e }) {
+                    EntryRow(entry: e, hidden: app.hidden)
+                }
             }
+        }
+        .confirmationDialog("Delete “\(deleting?.title ?? "")”?",
+                            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+                            titleVisibility: .visible) {
+            Button("Yes, delete", role: .destructive) {
+                if let e = deleting {
+                    context.delete(e)
+                    try? context.save()
+                }
+                deleting = nil
+            }
+            Button("Keep it", role: .cancel) { deleting = nil }
         }
     }
 
@@ -222,6 +257,24 @@ struct TodayView: View {
             .frame(height: 320)
             .ignoresSafeArea()
             .accessibilityHidden(true)
+    }
+
+    /// Swipe: one day, month or year back or forward — never past today.
+    private func step(_ n: Int) {
+        let today = app.today
+        let next: String
+        switch app.range {
+        case .day:
+            next = Day.addDays(app.day, n)
+        case .month:
+            let m = Month.add(Month.of(app.day), n)
+            next = m == Month.of(today) ? today : "\(m)-01"
+        case .year:
+            let y = (Int(app.day.prefix(4)) ?? 0) + n
+            next = String(y) == String(today.prefix(4)) ? today : "\(y)-01-01"
+        }
+        guard next <= today else { return }
+        animate { app.day = next }
     }
 
     // MARK: - Words

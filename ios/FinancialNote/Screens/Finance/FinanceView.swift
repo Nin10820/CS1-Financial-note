@@ -16,9 +16,10 @@ struct FinanceView: View {
     @State private var view: FinanceTab = .overview
     @State private var adding = false
     @State private var path: [Route] = []
+    @State private var pageHeight: CGFloat = 0
 
     enum FinanceTab: String, CaseIterable { case overview = "Overview", total = "Total Asset", debt = "Debt" }
-    enum Route: Hashable { case family }
+    enum Route: Hashable { case family, asset(String) }
 
     var body: some View {
         @Bindable var app = app
@@ -36,8 +37,12 @@ struct FinanceView: View {
                     }
                 }
                 .padding(.horizontal, Space.s20)
+                .frame(minHeight: pageHeight, alignment: .top)
+                .pageSwipe(back: { turn(-1) }, forward: { turn(1) })
                 .padding(.bottom, Space.s24)
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pageHeight = $0 }
+            .onChange(of: app.addAssetRequest) { _, _ in adding = true }
             .modifier(MinimizesTabBar())
             .background(Tokens.bg3)
             .navigationTitle("Finance")
@@ -57,11 +62,21 @@ struct FinanceView: View {
                         .accessibilityLabel("Add an asset")
                 }
             }
-            .navigationDestination(for: Route.self) { _ in
-                FamilyView(care: care, birthYear: profiles.first?.birthYear)
+            .navigationDestination(for: Route.self) { route in
+                switch route {
+                case .family: FamilyView(care: care, birthYear: profiles.first?.birthYear)
+                case .asset(let id): AssetDetailView(assetId: id)
+                }
             }
             .sheet(isPresented: $adding) { AddAssetSheet() }
         }
+    }
+
+    /// Swipe between Overview, Total Asset and Debt, like tapping the segments.
+    private func turn(_ n: Int) {
+        let all = FinanceTab.allCases
+        guard let i = all.firstIndex(of: view), all.indices.contains(i + n) else { return }
+        animate { view = all[i + n] }
     }
 
     // MARK: - Overview
@@ -253,6 +268,7 @@ private struct WorthChart: View {
                 .symbolSize(14)
         }
         .chartXSelection(value: $selected)
+        .noPageSwipe()
         .chartYAxis {
             AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
                 AxisGridLine().foregroundStyle(Tokens.bd0)
@@ -294,8 +310,11 @@ struct MoneyRow: View {
     var title: String
     var sub: String
     var amount: Int
+    var sign: String = ""
     var icon: AssetIcon?
     var hidden: Bool
+    /// Opens something (the asset) when tapped.
+    var chevron = false
 
     var body: some View {
         HStack(spacing: Space.s12) {
@@ -305,9 +324,16 @@ struct MoneyRow: View {
                 Text(sub).font(AppFont.main(12)).foregroundStyle(Tokens.grey400)
             }
             Spacer()
-            AmountText(value: amount, hidden: hidden)
+            AmountText(value: amount, sign: sign, hidden: hidden)
+            if chevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Tokens.grey300)
+                    .accessibilityHidden(true)
+            }
         }
         .padding(.vertical, Space.s8)
+        .contentShape(.rect)
         .accessibilityElement(children: .combine)
     }
 }
@@ -334,7 +360,15 @@ private struct MovesCard: View {
                 }
                 ForEach(Array((all ? moves : Array(moves.prefix(3))).enumerated()), id: \.element.id) { i, m in
                     if i > 0 { Divider().overlay(Tokens.bd0) }
-                    MoneyRow(title: m.title, sub: FinanceText.dayLabel(m.date), amount: m.amount, icon: m.icon, hidden: hidden)
+                    let row = MoneyRow(title: m.title,
+                                       sub: (m.assetId == nil ? "" : "\(m.kind.label) · ") + FinanceText.dayLabel(m.date),
+                                       amount: abs(m.amount), sign: m.amount < 0 ? "-" : "", icon: m.icon, hidden: hidden,
+                                       chevron: m.assetId != nil)
+                    if let id = m.assetId {
+                        NavigationLink(value: FinanceView.Route.asset(id)) { row }.buttonStyle(.plain)
+                    } else {
+                        row
+                    }
                 }
             }
             .padding(Space.s16)
@@ -370,7 +404,12 @@ private struct TotalAssetsSection: View {
                     }
                     ForEach(list) { a in
                         Divider().overlay(Tokens.bd0)
-                        MoneyRow(title: a.name, sub: "Updated \(FinanceText.dayLabel(a.updatedOn))", amount: a.amount, icon: a.icon, hidden: hidden)
+                        NavigationLink(value: FinanceView.Route.asset(a.id)) {
+                            MoneyRow(title: a.name, sub: "Updated \(FinanceText.dayLabel(a.updatedOn))", amount: a.amount,
+                                     icon: a.icon, hidden: hidden, chevron: true)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Opens what you put in, growth and history")
                     }
                 }
                 .padding(Space.s16)
@@ -438,20 +477,85 @@ private struct DebtSection: View {
 
 // MARK: - Add asset
 
+/// New asset, or (with `editing`) its name and group. A change of worth goes through
+/// Add money / Take out / Update value on the asset, so its history stays right.
 struct AddAssetSheet: View {
+    var editing: Asset? = nil
     @Environment(AppState.self) private var app
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var amount: Int?
     @State private var kind: AssetKind = .available
+    /// New asset starts on the quick pick (Figma-style step 1); editing goes straight to the form.
+    @State private var picked = false
 
     var body: some View {
         NavigationStack {
+            Group {
+                if editing == nil && !picked { groupPicker } else { form }
+            }
+            .background(editing == nil && !picked ? Tokens.bg3 : Color.clear)
+            .navigationTitle(editing == nil ? "New asset" : "Edit asset")
+            .toolbarTitleDisplayMode(.inline)
+            .toolbar {
+                if editing == nil && picked {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Change group", systemImage: "chevron.left") { animate { picked = false } }
+                    }
+                } else {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close", systemImage: "xmark") { dismiss() }
+                    }
+                }
+                if editing != nil || picked {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save", systemImage: "checkmark", action: save)
+                            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || (editing == nil && (amount ?? 0) <= 0))
+                    }
+                }
+            }
+        }
+        .onAppear {
+            if let a = editing {
+                name = a.name
+                kind = a.kind
+            }
+        }
+    }
+
+    /// Step 1: "Adding new [kind of] — tell us what you know:", the four groups, or one sentence.
+    private var groupPicker: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            AddingLead(label: "kind of", chosen: false)
+                .padding(.horizontal, Space.s20).padding(.vertical, Space.s16)
+            Spacer(minLength: 0)
+            QuickPickCard(
+                title: "Which group?",
+                options: AssetKind.allCases.map {
+                    QuickPickOption(id: $0, title: $0.label, hint: FinanceText.hint($0), mark: Tokens.assetKind($0))
+                },
+                sayPlaceholder: "e.g. vàng SJC 15tr, tiết kiệm TPBank 50tr",
+                onPick: { kind = $0; picked = true },
+                onSay: { text in
+                    let read = AssetSentence.read(text, today: app.today)
+                    name = read.name
+                    amount = read.amount
+                    kind = read.kind
+                    picked = true
+                })
+            .padding(.horizontal, Space.s12)
+            .padding(.top, Space.s24)
+            .padding(.bottom, Space.s16)
+        }
+    }
+
+    private var form: some View {
             Form {
                 Section("What is it?") {
                     TextField("Gold, Saving - TP Bank, Fund…", text: $name)
                 }
+                if editing == nil {
                 Section("How much is it worth now?") {
                     HStack {
                         TextField("0", text: Binding(
@@ -461,6 +565,7 @@ struct AddAssetSheet: View {
                             .monospacedDigit()
                         Text("đ").foregroundStyle(Tokens.grey400)
                     }
+                }
                 }
                 Section {
                     Picker("Which group?", selection: $kind) {
@@ -481,20 +586,15 @@ struct AddAssetSheet: View {
                 }
             }
             .font(AppFont.main(16))
-            .navigationTitle("New asset")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", systemImage: "checkmark", action: save)
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || (amount ?? 0) <= 0)
-                }
-            }
-        }
     }
 
     private func save() {
         let n = name.trimmingCharacters(in: .whitespaces)
+        if let a = editing {
+            LocalStore(context: context).editAsset(a, name: n, kind: kind)
+            dismiss()
+            return
+        }
         LocalStore(context: context).addAsset(
             Asset(name: n, kind: kind, icon: AssetMath.guessIcon(n, kind: kind), amount: amount ?? 0, updated: app.today))
         dismiss()

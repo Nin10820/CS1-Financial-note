@@ -51,28 +51,31 @@ final class VietQRTests: XCTestCase {
         XCTAssertEqual(d.map(\.amount), [35_000, 5_000])
     }
 
-    func testBankLinkCarriesTheTransfer() throws {
-        let bidv = try XCTUnwrap(BankApp.named("bidv"))
-        let url = try XCTUnwrap(bidv.transferURL(account: "51166878888", bankBIN: "970423", amount: 50000,
-                                                 note: "Bun bo Hue", name: "Au Thien Vy"))
-        let c = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
-        XCTAssertEqual(c.host, "dl.vietqr.io")
-        XCTAssertEqual(c.path, "/pay")
-        let q = Dictionary(uniqueKeysWithValues: (c.queryItems ?? []).map { ($0.name, $0.value ?? "") })
-        XCTAssertEqual(q["app"], "bidv")
-        XCTAssertEqual(q["ba"], "51166878888@tpb")
-        XCTAssertEqual(q["am"], "50000")
-        XCTAssertEqual(q["tn"], "Bun bo Hue")
-        XCTAssertEqual(q["bn"], "Au Thien Vy")
-        XCTAssertEqual(q["url"], "financialnote://paid")
+    func testRebuiltCodeHasTheAmountAndSameAccount() throws {
+        let scanned = code(amount: nil, note: nil)
+        let rebuilt = try XCTUnwrap(VietQR.withAmount(scanned, amount: 50000, note: "Bún bò Huế"))
+        XCTAssertTrue(VietQR.crcIsValid(rebuilt))
+        let qr = try XCTUnwrap(VietQR(payload: rebuilt))
+        XCTAssertEqual(qr.amount, 50000)
+        XCTAssertEqual(qr.note, "Bun bo Hue")
+        XCTAssertEqual(qr.bankBIN, "970436")
+        XCTAssertEqual(qr.account, "1234567890123")
+        XCTAssertTrue(rebuilt.contains("010212"), "dynamic code, since it has an amount")
     }
 
-    func testNoLinkWithoutAnAccount() {
-        XCTAssertNil(BankApp.named("mb")?.transferURL(account: nil, bankBIN: "970423", amount: 1, note: "", name: nil))
-        XCTAssertNil(BankApp.named("mb")?.transferURL(account: "1", bankBIN: "999999", amount: 1, note: "", name: nil))
+    func testRebuildReplacesAnAmountAlreadyThere() throws {
+        let rebuilt = try XCTUnwrap(VietQR.withAmount(code(amount: "12000"), amount: 65000, note: ""))
+        XCTAssertEqual(VietQR(payload: rebuilt)?.amount, 65000)
+        XCTAssertEqual(VietQR(payload: rebuilt)?.note, "Com trua", "an empty note keeps the scanned one")
+        XCTAssertTrue(VietQR.crcIsValid(rebuilt))
     }
 
-    func testOnlyFiveBanksFillIn() {
-        XCTAssertEqual(Set(BankApp.all.filter(\.fills).map(\.id)), ["bidv", "mb", "icb", "acb", "ocb"])
+    func testCRCMatchesTheEMVCoCheckValue() {
+        // CRC-16/CCITT-FALSE of "123456789" is 29B1.
+        XCTAssertEqual(VietQR.crc16("123456789"), "29B1")
+    }
+
+    func testNotesBecomePlainLetters() {
+        XCTAssertEqual(VietQR.ascii("Cà phê sữa đá!"), "Ca phe sua da")
     }
 }

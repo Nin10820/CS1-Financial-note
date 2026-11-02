@@ -10,8 +10,8 @@ enum EntryKind: String, CaseIterable, Identifiable {
 
 /// Entry sheet — Figma Quick-note (1072:18481): Amount on top, Name with its category, then
 /// Date, Kind of, Currency, From; Category tags with Suggest tag; Comment; delete in the corner.
-/// Opened on a saved line it edits it; opened with `nil` (Template) it starts blank and has a
-/// composer at the bottom that fills the form from one typed line. The green check saves.
+/// Opened on a saved line it edits it; opened with `nil` (Template) it starts blank on the
+/// amount, with the number pad up. The green check saves.
 struct EntrySheet: View {
     var entry: Entry?
     /// A new line already filled in (from a scanned QR code).
@@ -29,11 +29,11 @@ struct EntrySheet: View {
     @State private var pickingDate = false
     @State private var dateSet = true
     @State private var commenting = false
-    @State private var line = ""
-    @State private var lineHint: String?
     @FocusState private var focus: Field?
+    /// The number pad for the amount is up (instead of the system keyboard).
+    @State private var padOpen = false
 
-    enum Field { case amount, name, comment, line }
+    enum Field { case name, comment }
 
     private var isNew: Bool { entry == nil }
 
@@ -60,7 +60,19 @@ struct EntrySheet: View {
             .scrollDismissesKeyboard(.interactively)
             // Grey sheet so the white cards stand out, as in Figma (bg-3 #F3F4F6).
             .background(Tokens.bg3)
-            .safeAreaInset(edge: .bottom) { isNew ? AnyView(composer) : AnyView(footer) }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                VStack(spacing: 0) {
+                    if !isNew && !padOpen {
+                        footer
+                    }
+                    if padOpen {
+                        AmountPad(value: $d.amount) { animate { padOpen = false } }
+                            .transition(.move(edge: .bottom))
+                    }
+                }
+            }
+            // Typing in a text field swaps the number pad for the keyboard.
+            .onChange(of: focus) { _, f in if f != nil { animate { padOpen = false } } }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close", systemImage: "xmark") { dismiss() }
@@ -86,12 +98,13 @@ struct EntrySheet: View {
             } else if let prefill {
                 d = prefill
                 dateSet = true
-                focus = prefill.amount == nil ? .amount : nil
+                padOpen = prefill.amount == nil
             } else {
                 d = EntryEdit()
                 d.date = app.day
                 dateSet = false
-                focus = .line
+                // Template starts on the amount, with the number pad up.
+                padOpen = true
             }
             start = d
         }
@@ -105,16 +118,27 @@ struct EntrySheet: View {
                 .font(AppFont.body(.medium))
                 .foregroundStyle(Tokens.grey400)
             HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
-                TextField("0", text: Binding(
-                    get: { d.amount.map(Money.format) ?? "" },
-                    set: { d.amount = Int($0.filter(\.isNumber)) }))
-                    .font(AppFont.amount(44))
-                    .monospacedDigit()
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.center)
-                    .fixedSize()
-                    .focused($focus, equals: .amount)
-                    .accessibilityLabel("Amount in dong")
+                Button {
+                    focus = nil
+                    animate { padOpen = true }
+                } label: {
+                    Text(d.amount.map(Money.format) ?? "0")
+                        .font(AppFont.amount(44))
+                        .monospacedDigit()
+                        .foregroundStyle(d.amount == nil ? Tokens.grey300 : Tokens.text900)
+                        .contentTransition(.numericText())
+                        .padding(.horizontal, Space.s4)
+                        // A green underline while the number pad is typing here.
+                        .overlay(alignment: .bottom) {
+                            if padOpen {
+                                Capsule().fill(Tokens.brand500).frame(height: 2).offset(y: 2)
+                            }
+                        }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Amount in dong")
+                .accessibilityValue(d.amount.map(Money.format) ?? "empty")
+                .accessibilityHint("Opens the number pad")
                 Text("đ")
                     .font(AppFont.currency(for: 44))
                     .foregroundStyle(Tokens.grey400)
@@ -330,38 +354,6 @@ struct EntrySheet: View {
         .padding(.bottom, Space.s8)
     }
 
-    /// Template: type one line ("cơm tấm 35k · cash") and the form fills itself.
-    private var composer: some View {
-        VStack(alignment: .leading, spacing: Space.s8) {
-            if let lineHint {
-                Text(lineHint).font(AppFont.main(12)).foregroundStyle(Tokens.grey400).padding(.horizontal, Space.s4)
-            }
-            HStack(alignment: .bottom, spacing: Space.s12) {
-                TextField("e.g. coffee 24k, breakfast 35k…", text: $line, axis: .vertical)
-                    .font(AppFont.main(16))
-                    .lineLimit(1...3)
-                    .focused($focus, equals: .line)
-                    .submitLabel(.done)
-                    .accessibilityLabel("Fill from a line")
-                    .padding(.vertical, Space.s12)
-                    .onChange(of: line) { _, new in
-                        if new.hasSuffix("\n") {
-                            line = String(new.dropLast())
-                            fill()
-                        }
-                    }
-                SendButton(enabled: !line.trimmingCharacters(in: .whitespaces).isEmpty, action: fill)
-                    .accessibilityLabel("Fill the form")
-            }
-            .padding(.leading, Space.s20)
-            .padding(.trailing, Space.s12)
-            .padding(.vertical, Space.s8)
-            .composerGlass()
-        }
-        .padding(.horizontal, Space.s12)
-        .padding(.bottom, Space.s8)
-    }
-
     // MARK: - Helpers
 
     private func row<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
@@ -433,29 +425,6 @@ struct EntrySheet: View {
             if c == .received { d.setKind(.receive) } else if d.kind == .receive { d.setKind(.expense) }
             if c == .bills && d.kind == .expense { d.kind = .bill }
         })
-    }
-
-    private func fill() {
-        let text = line.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-        let drafts = NoteParser.parse(text, day: d.date)
-        guard let first = drafts.first else { return }
-        animate {
-            d.title = first.title
-            if let a = first.amount { d.amount = a }
-            d.category = first.category
-            d.setKind(first.flow == .in ? .receive : first.category == .bills ? .bill : .expense)
-            d.date = first.date
-            dateSet = true
-            if let p = first.paidFrom { d.paidFrom = p }
-            if d.tags.isEmpty, let t = Tags.suggest(title: first.title, category: first.category) { d.tags = [t] }
-            d.source = text
-        }
-        lineHint = drafts.count > 1
-            ? "Filled from the first line. For several lines at once, use Talk With AI."
-            : first.amount == nil ? "No amount in that line — type it above." : nil
-        line = ""
-        focus = nil
     }
 
     private func save() {

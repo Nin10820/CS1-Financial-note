@@ -29,6 +29,9 @@ final class AppState {
     /// What a scanned QR code filled in, for the Template sheet.
     var templatePrefill: EntryEdit?
     var scanOpen = false
+    /// The + on Due / Finance asks those tabs to open their own "add" form.
+    var addBillRequest = 0
+    var addAssetRequest = 0
     /// A scanned payment QR, open on the check screen.
     var transfer: TransferDraft?
     /// "Open bank app" was tapped; becomes `sentToBank` once the app goes to the background.

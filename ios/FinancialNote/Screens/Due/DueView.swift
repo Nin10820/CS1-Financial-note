@@ -30,6 +30,7 @@ struct DueView: View {
     @State private var showDone = true
     @State private var path: [DueRoute] = []
     @State private var ticks = 0
+    @State private var pageHeight: CGFloat = 0
 
     enum DueRoute: Hashable { case installments }
 
@@ -74,13 +75,18 @@ struct DueView: View {
                                 }
                             }
                         }
-                        .padding(Space.s16)
-                        .background(Tokens.bg2, in: .rect(cornerRadius: Corner.c20))
+                        // No frame around the groups: the cards sit straight on the page.
+                        .padding(.top, Space.s8)
                     }
                 }
                 .padding(.horizontal, Space.s20)
+                .frame(minHeight: pageHeight, alignment: .top)
+                .pageSwipe(back: { animate { app.dueMonth = Month.add(app.dueMonth, -1) } },
+                           forward: { animate { app.dueMonth = Month.add(app.dueMonth, 1) } })
                 .padding(.bottom, Space.s24)
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pageHeight = $0 }
+            .onChange(of: app.addBillRequest) { _, _ in sheet = .add(nil) }
             .modifier(MinimizesTabBar())
             .background(alignment: .top) {
                 LinearGradient(colors: [Tokens.brand100, Tokens.bg3], startPoint: .top, endPoint: .bottom)
