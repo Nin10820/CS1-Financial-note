@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyLists/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Bundled OFL fonts from Google Fonts (licences sit next to the files). -->
+	<key>UIAppFonts</key>
+	<array>
+		<string>Montserrat-Variable.ttf</string>
+		<string>Merriweather-Variable.ttf</string>
+		<string>BricolageGrotesque-Variable.ttf</string>
+	</array>
+	<!-- financialnote://paid — bank apps send the user back here after a transfer. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>studio.phamnguyen.financialnote</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>financialnote</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
