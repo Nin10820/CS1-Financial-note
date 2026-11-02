@@ -59,7 +59,7 @@ export function IconButton({
   icon: IconName
   label: string
   variant?: IconButtonVariant
-  size?: 32 | 36 | 40 | 48
+  size?: 32 | 36 | 40 | 44 | 48
   iconSize?: number
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
   return (

@@ -1,0 +1,171 @@
+/* AI tab — from the iOS AIHome. Basic surfaces, no blur. */
+.ai {
+  --page-bg: var(--bg-3);
+  background: var(--bg-3);
+}
+.ai__title {
+  margin: 0;
+  color: var(--text-900);
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-weight: var(--weight-m);
+}
+.ai__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-24, 24px);
+  padding: var(--sp-8) var(--sp-20) calc(200px + env(safe-area-inset-bottom));
+}
+.ai__hello {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-8);
+}
+.ai__hello h2 {
+  margin: var(--sp-8) 0 0;
+  color: var(--text-900);
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: var(--weight-m);
+}
+.ai__hello p {
+  margin: 0;
+  color: var(--grey-400);
+  font-size: 14px;
+}
+.ai__label {
+  margin: 0 0 var(--sp-8);
+  color: var(--grey-400);
+  font-size: 12px;
+  font-weight: var(--weight-s);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ai__shortcuts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-8);
+}
+.ai__shortcut {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-12);
+  min-height: 104px;
+  padding: var(--sp-12);
+  border: 0;
+  border-radius: var(--corner-16);
+  background: var(--bg-white);
+  box-shadow: 0 0 0 0.5px var(--dark-6), 0 1px 8px var(--dark-4);
+  color: var(--brand-600);
+  text-align: left;
+  transition: transform 0.2s var(--spring);
+}
+.ai__shortcut span {
+  color: var(--text-900);
+  font-size: 13px;
+  font-weight: var(--weight-s);
+  line-height: 1.3;
+}
+.ai__shortcut.is-main {
+  background: var(--brand-600);
+  color: var(--text-white);
+}
+.ai__shortcut.is-main span {
+  color: var(--text-white);
+}
+.ai__shortcut:active {
+  transform: scale(0.96);
+}
+.ai__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+}
+.ai__chip {
+  min-height: 40px;
+  padding: 0 var(--sp-12);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--rounded);
+  background: var(--bg-white);
+  color: var(--text-700);
+  font-size: 13px;
+  font-weight: var(--weight-m);
+}
+.ai__chip:active {
+  background: var(--bg-4);
+}
+.ai__none {
+  margin: 0;
+  color: var(--grey-400);
+  font-size: 14px;
+}
+.ai__recents {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--corner-16);
+  background: var(--bg-white);
+  box-shadow: 0 0 0 0.5px var(--dark-6);
+  list-style: none;
+}
+.ai__recents li + li {
+  border-top: 0.5px solid var(--bd-1);
+}
+.ai__recent {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-12);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--sp-8) var(--sp-16);
+  border: 0;
+  background: none;
+  text-align: left;
+}
+.ai__recent:active {
+  background: var(--bg-4);
+}
+.ai__recent-text {
+  flex: 1;
+  overflow: hidden;
+  color: var(--text-900);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ai__recent-meta {
+  flex-shrink: 0;
+  color: var(--grey-400);
+  font-size: 12px;
+}
+/* The composer sits just above the tab bar. */
+.ai__composer {
+  position: fixed;
+  right: 0;
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  left: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  width: min(100%, var(--app-width, 480px));
+  margin: 0 auto;
+  padding: 0 var(--sp-20);
+}
+.ai__field {
+  flex: 1;
+  min-height: 48px;
+  padding: 0 var(--sp-16);
+  border: 0;
+  border-radius: var(--rounded);
+  background: var(--bg-white);
+  box-shadow: 0 0 0 0.5px var(--dark-6), 0 1px 8px var(--dark-4);
+  color: var(--grey-400);
+  font-size: 15px;
+  text-align: left;
+}

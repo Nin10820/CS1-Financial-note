@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
 import { Amount, Button, IconButton, Sheet, GlassGroup } from "../components/ui"
-import TabBar, { type Tab } from "../components/TabBar"
 import StickyHeader from "../components/StickyHeader"
+import { usePageSwipe } from "../lib/pageSwipe"
 import { Icon } from "../components/Icon"
 import { money, today } from "../lib/format"
 import { TILE, addMonths, monthSummary, ym, type Bill } from "../lib/bills"
@@ -19,6 +19,7 @@ export const dueLabel = (iso: string) => `${SHORT[Number(iso.slice(5, 7)) - 1]} 
 
 /** Figma Final › Due (765:20114): month, what's left to pay, then STILL / DONE bills. */
 export default function Due({
+  onProfile,
   month,
   onMonthChange,
   bills,
@@ -31,9 +32,8 @@ export default function Due({
   onComingUp,
   onHistory,
   onInstallments,
-  onOpenAssistant,
-  onTab,
 }: {
+  onProfile: () => void
   month: string
   onMonthChange: (m: string) => void
   bills: Bill[]
@@ -46,8 +46,6 @@ export default function Due({
   onComingUp: () => void
   onHistory: () => void
   onInstallments: () => void
-  onOpenAssistant: () => void
-  onTab: (t: Tab) => void
 }) {
   const s = monthSummary(bills, month)
   const [open, setOpen] = useState({ still: true, done: true })
@@ -69,17 +67,20 @@ export default function Due({
     }
   }, [menu])
 
+  // Swipe the page for the previous / next month.
+  const swipe = usePageSwipe((n) => onMonthChange(addMonths(month, n)))
+
   return (
-    <div className="screen">
+    <div className="screen" {...swipe}>
       <span className="screen__glow" aria-hidden="true" />
       <StickyHeader
         title={monthLabel(month)}
         left={
           <>
             <div className="due-head__left">
-          <span className="avatar" aria-label={`Signed in as ${name}`}>
+          <button type="button" className="avatar" aria-label={`Profile, signed in as ${name}`} onClick={onProfile}>
             {name.slice(0, 2).toUpperCase()}
-          </span>
+          </button>
           <IconButton icon="calendar" label="This month" variant="glass" onClick={() => onMonthChange(ym(today()))} style={{ color: "var(--grey-500)" }} />
         </div>
           </>
@@ -177,10 +178,6 @@ export default function Due({
           </>
         )}
       </Sheet>
-
-      <div className="screen__bottom">
-        <TabBar active="due" onTab={onTab} onQuickNote={onOpenAssistant} />
-      </div>
     </div>
   )
 }

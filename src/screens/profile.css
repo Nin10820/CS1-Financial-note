@@ -311,3 +311,23 @@
   font-size: 12px;
   text-align: center;
 }
+
+/* Profile opens over the current tab (from the person button), so it sits above the tab bar. */
+.prof--page {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: prof-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes prof-in {
+  from {
+    transform: translateY(24px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prof--page {
+    animation: none;
+  }
+}

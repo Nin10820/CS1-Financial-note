@@ -87,3 +87,215 @@
 .scan .fn-btn {
   border-radius: var(--rounded);
 }
+
+/* ── Scan (iOS ScanView): dark full screen with the camera ── */
+.scan2 {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, var(--app-width, 480px));
+  margin: 0 auto;
+  background: #0d121c;
+  color: var(--text-white);
+  animation: prof-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.scan2__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--sp-12) + env(safe-area-inset-top)) var(--sp-16) var(--sp-12);
+}
+.scan2__modes {
+  display: flex;
+  padding: 4px;
+  border-radius: var(--rounded);
+  background: rgb(255 255 255 / 12%);
+}
+.scan2__mode {
+  min-width: 88px;
+  min-height: 36px;
+  padding: 0 var(--sp-12);
+  border: 0;
+  border-radius: var(--rounded);
+  background: none;
+  color: rgb(255 255 255 / 72%);
+  font-size: 14px;
+  font-weight: var(--weight-s);
+}
+.scan2__mode.is-on {
+  background: var(--text-white);
+  color: var(--text-900);
+}
+.scan2__qr {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-16);
+  padding: var(--sp-16) var(--sp-20) calc(var(--sp-24) + env(safe-area-inset-bottom));
+}
+.scan2__view {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--corner-24, 24px);
+  background: #1d2433;
+}
+.scan2__view video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.scan2__frame {
+  width: 62%;
+  height: 62%;
+  margin: 0;
+}
+.scan2__frame i {
+  border-color: var(--text-white);
+}
+.scan2__blocked {
+  position: absolute;
+  inset: auto var(--sp-16) var(--sp-16);
+  margin: 0;
+  color: rgb(255 255 255 / 80%);
+  font-size: 13px;
+  text-align: center;
+}
+.scan2__hint {
+  margin: 0;
+  color: rgb(255 255 255 / 80%);
+  font-size: 14px;
+  text-align: center;
+}
+.scan2__photo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-8);
+  min-height: 44px;
+  padding: 0 var(--sp-16);
+  border-radius: var(--rounded);
+  background: rgb(255 255 255 / 12%);
+  font-size: 14px;
+  font-weight: var(--weight-s);
+}
+.scan2__photo input {
+  display: none;
+}
+.scan2__note {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-12);
+  padding: var(--sp-24);
+  color: rgb(255 255 255 / 64%);
+  text-align: center;
+}
+.scan2__note h2 {
+  margin: 0;
+  color: var(--text-white);
+  font-size: 22px;
+  font-weight: var(--weight-s);
+}
+.scan2__note p {
+  max-width: 300px;
+  margin: 0 0 var(--sp-8);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Transfer sheet */
+.transfer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+  padding: var(--sp-8) var(--sp-20) calc(var(--sp-24) + env(safe-area-inset-bottom));
+  color: var(--text-900);
+}
+.transfer__to {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.transfer__name {
+  font-size: 18px;
+  font-weight: var(--weight-s);
+}
+.transfer__acct,
+.transfer__note {
+  color: var(--grey-400);
+  font-size: 13px;
+}
+.transfer__amount {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-8);
+  padding: var(--sp-12) var(--sp-16);
+  border-radius: var(--corner-16);
+  background: var(--bg-white);
+  box-shadow: 0 0 0 0.5px var(--dark-6);
+}
+.transfer__amount span {
+  color: var(--grey-400);
+  font-size: 13px;
+}
+.transfer__amount input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text-900);
+  font-family: var(--font-heading);
+  font-size: 28px;
+  text-align: right;
+}
+.transfer__amount small {
+  color: var(--grey-400);
+  font-size: 18px;
+}
+.transfer__label {
+  margin: 0;
+  color: var(--grey-400);
+  font-size: 12px;
+  font-weight: var(--weight-s);
+  text-transform: uppercase;
+}
+.transfer__banks {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-8);
+}
+.transfer__bank {
+  min-height: 48px;
+  border: 0;
+  border-radius: var(--corner-12);
+  background: var(--bg-white);
+  box-shadow: 0 0 0 0.5px var(--dark-6);
+  color: var(--text-900);
+  font-size: 14px;
+  font-weight: var(--weight-m);
+}
+.transfer__bank.is-more {
+  color: var(--brand-700);
+}
+.transfer__ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+}
+.transfer__ask p {
+  margin: 0 0 var(--sp-8);
+  font-size: 16px;
+  font-weight: var(--weight-m);
+  text-align: center;
+}

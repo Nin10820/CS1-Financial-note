@@ -24,6 +24,10 @@ export type AssetMove = {
   amount: number
   date: string
   sample?: boolean
+  /** The asset it belongs to (older and sample moves have none). */
+  assetId?: string
+  /** "in" money put in, "out" taken out, "value" the worth changed on its own. */
+  kind?: "in" | "out" | "value"
 }
 
 /** Money given to family — counted as "Taken care of", never as spending. */

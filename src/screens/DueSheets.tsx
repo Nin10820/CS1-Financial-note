@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { Amount, Button, IconButton, MonthCard, SegmentedTabs, GlassGroup } from "../components/ui"
-import TabBar, { type Tab } from "../components/TabBar"
 import StickyHeader from "../components/StickyHeader"
 import { Icon } from "../components/Icon"
 import { money, today } from "../lib/format"
@@ -155,8 +154,6 @@ export function Installments({
   onComingUp,
   onHistory,
   onAdd,
-  onOpenAssistant,
-  onTab,
 }: {
   bills: Bill[]
   month: string
@@ -166,8 +163,6 @@ export function Installments({
   onComingUp: () => void
   onHistory: () => void
   onAdd: () => void
-  onOpenAssistant: () => void
-  onTab: (t: Tab) => void
 }) {
   const list = bills.filter((b) => b.kind === "installment")
   const thisMonth = list.filter((b) => dueIn(b, month))
@@ -249,9 +244,6 @@ export function Installments({
           )
         })}
       </section>
-      <div className="screen__bottom">
-        <TabBar active="due" onTab={onTab} onQuickNote={onOpenAssistant} />
-      </div>
     </div>
   )
 }

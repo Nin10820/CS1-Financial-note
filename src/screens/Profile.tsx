@@ -2,7 +2,6 @@ import { useState, type ReactNode } from "react"
 import { Button, IconButton, Switch } from "../components/ui"
 import { Icon } from "../components/Icon"
 import StickyHeader from "../components/StickyHeader"
-import TabBar, { type Tab } from "../components/TabBar"
 import { today } from "../lib/format"
 import type { Store } from "../lib/store"
 import "./profile.css"
@@ -40,7 +39,7 @@ function download(store: Store) {
  * There is no account in this version, so sign-in, password, Face ID and log-out are left out
  * rather than shown as switches that do nothing.
  */
-export default function Profile({ store, onTab, onQuickNote }: { store: Store; onTab: (t: Tab) => void; onQuickNote: () => void }) {
+export default function Profile({ store, onClose }: { store: Store; onClose: () => void }) {
   const [page, setPage] = useState<Page>("menu")
   const go = (p: Page) => {
     setPage(p)
@@ -62,10 +61,14 @@ export default function Profile({ store, onTab, onQuickNote }: { store: Store; o
   }
 
   return (
-    <div className="screen prof">
+    <div className="screen prof prof--page">
       <span className="screen__glow screen__glow--soft" aria-hidden="true" />
       {page === "menu" ? (
-        <StickyHeader title="Profile" left={<h1 className="day-head__title">Profile</h1>} />
+        <StickyHeader
+          title="Profile"
+          left={<h1 className="day-head__title">Profile</h1>}
+          right={<IconButton icon="close" label="Close" variant="glass" onClick={onClose} />}
+        />
       ) : (
         <StickyHeader
           title={titles[page]}
@@ -212,10 +215,6 @@ export default function Profile({ store, onTab, onQuickNote }: { store: Store; o
             <p className="prof-credit">WUD Design Challenge 2026 · Nin Nguyễn · Pham Nguyen Studio</p>
           </>
         )}
-      </div>
-
-      <div className="screen__bottom">
-        <TabBar active="profile" onTab={onTab} onQuickNote={onQuickNote} />
       </div>
     </div>
   )

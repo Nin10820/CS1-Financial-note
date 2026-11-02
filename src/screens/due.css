@@ -6,6 +6,7 @@
   gap: var(--sp-8);
 }
 .avatar {
+  padding: 0;
   display: grid;
   place-items: center;
   width: 40px;

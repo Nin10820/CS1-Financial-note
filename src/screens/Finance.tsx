@@ -1,8 +1,7 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Amount, Button, GlassGroup, IconButton } from "../components/ui"
 import { Icon } from "../components/Icon"
 import StickyHeader from "../components/StickyHeader"
-import TabBar, { type Tab } from "../components/TabBar"
 import { ASSET_TILE, KINDS, guessAssetIcon, shares, type Asset, type AssetIcon, type AssetKind, type AssetMove, type CareGift, type WorthPoint } from "../lib/assets"
 import type { Bill } from "../lib/bills"
 import { addDays, money, today } from "../lib/format"
@@ -25,6 +24,7 @@ const short = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(3).rep
  * Everything here is what the user wrote down; the app never connects to a bank.
  */
 export default function Finance({
+  onProfile,
   name,
   assets,
   moves,
@@ -36,10 +36,10 @@ export default function Finance({
   hidden,
   onToggleHidden,
   onAddAsset,
-  onTab,
-  onQuickNote,
+  addRequest,
   onTalk,
 }: {
+  onProfile: () => void
   name: string
   assets: Asset[]
   moves: AssetMove[]
@@ -51,13 +51,17 @@ export default function Finance({
   hidden: boolean
   onToggleHidden: () => void
   onAddAsset: (a: Asset) => void
-  onTab: (t: Tab) => void
-  onQuickNote: () => void
+  /** Goes up by one each time the tab bar's + asks to add an asset. */
+  addRequest: number
   onTalk: () => void
 }) {
   const [view, setView] = useState<View>("overview")
   const [family, setFamily] = useState(false)
   const [adding, setAdding] = useState(false)
+  // The tab bar's + on Finance adds an asset.
+  useEffect(() => {
+    if (addRequest) setAdding(true)
+  }, [addRequest])
   const [menu, setMenu] = useState(false)
   const mask = (v: string) => (hidden ? "•••" : v)
 
@@ -68,9 +72,9 @@ export default function Finance({
         family ? (
           <IconButton icon="arrow-left" label="Back to Finance" variant="glass" onClick={() => setFamily(false)} />
         ) : (
-          <span className="avatar" aria-label={`Signed in as ${name}`}>
+          <button type="button" className="avatar" aria-label={`Profile, signed in as ${name}`} onClick={onProfile}>
             {name.slice(0, 2).toUpperCase()}
-          </span>
+          </button>
         )
       }
       right={
@@ -126,10 +130,6 @@ export default function Finance({
           {view === "debt" && <Debt bills={bills} mask={mask} />}
         </>
       )}
-
-      <div className="screen__bottom">
-        <TabBar active="finance" onTab={onTab} onQuickNote={onQuickNote} />
-      </div>
       {adding && <AddAsset onClose={() => setAdding(false)} onSave={onAddAsset} />}
     </div>
   )

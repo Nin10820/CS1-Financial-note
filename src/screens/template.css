@@ -1,0 +1,308 @@
+/* Template / edit sheet — from the iOS EntrySheet. Grey page, white cards. */
+.tpl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  padding: var(--sp-8) var(--sp-20) var(--sp-24);
+}
+.tpl__save {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--brand-600);
+  color: var(--text-white);
+}
+.tpl__save:disabled {
+  background: var(--grey-300);
+}
+.tpl__amount {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--sp-4);
+  padding: var(--sp-16) 0 var(--sp-8);
+  border: 0;
+  background: none;
+  color: var(--text-900);
+  font-family: var(--font-heading);
+  font-size: 44px;
+  font-weight: var(--weight-m);
+}
+.tpl__amount small {
+  color: var(--grey-400);
+  font-size: 28px;
+}
+.tpl__amount.is-on span::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 0.9em;
+  margin-left: 2px;
+  background: var(--brand-600);
+  vertical-align: -0.1em;
+  animation: tpl-caret 1s steps(2) infinite;
+}
+@keyframes tpl-caret {
+  50% {
+    opacity: 0;
+  }
+}
+.tpl__card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-8);
+  padding: var(--sp-4) var(--sp-4) var(--sp-4) var(--sp-16);
+  border-radius: var(--corner-16);
+  background: var(--bg-white);
+  box-shadow: 0 0 0 0.5px var(--dark-6);
+}
+.tpl__name {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text-900);
+  font-size: 16px;
+  font-weight: var(--weight-m);
+}
+.tpl__cat {
+  position: relative;
+}
+.tpl__cat-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-height: 40px;
+  padding: 0 var(--sp-12);
+  border: 0;
+  border-radius: var(--rounded);
+  background: var(--bg-4);
+  color: var(--text-700);
+  font-size: 13px;
+  font-weight: var(--weight-m);
+}
+.tpl__menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  padding: var(--sp-4);
+  border-radius: var(--corner-12);
+  background: var(--bg-white);
+  box-shadow: 0 0 0 0.5px var(--dark-6), 0 8px 24px rgb(0 0 0 / 12%);
+}
+.tpl__menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 var(--sp-12);
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-900);
+  font-size: 14px;
+  text-align: left;
+}
+.tpl__menu button:active {
+  background: var(--bg-4);
+}
+.tpl__rows {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0 var(--sp-16);
+}
+.tpl__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  color: var(--text-900);
+  font-size: 14px;
+}
+.tpl__row + .tpl__row {
+  border-top: 0.5px solid var(--bd-1);
+}
+.tpl__value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-4);
+  color: var(--grey-400);
+}
+.tpl__row input,
+.tpl__row select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  font-size: 16px;
+}
+.tpl__hint {
+  margin: 0;
+  color: var(--grey-400);
+  font-size: 12px;
+}
+.tpl__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  padding-top: var(--sp-8);
+}
+.tpl__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--grey-400);
+  font-size: 12px;
+  font-weight: var(--weight-s);
+  text-transform: uppercase;
+}
+.tpl__link {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand-700);
+  font-size: 13px;
+  font-weight: var(--weight-s);
+  text-transform: none;
+}
+.tpl__label {
+  margin: var(--sp-8) 0 0;
+  color: var(--grey-400);
+  font-size: 12px;
+  font-weight: var(--weight-s);
+  text-transform: uppercase;
+}
+.tpl__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+}
+.tag-chip,
+.tpl__suggest {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-6);
+  min-height: 36px;
+  padding: 0 var(--sp-12);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--rounded);
+  background: var(--bg-white);
+  color: var(--text-700);
+  font-size: 13px;
+  font-weight: var(--weight-m);
+}
+.tag-chip.is-on {
+  border-color: transparent;
+  color: var(--text-900);
+}
+.tpl__suggest {
+  border-style: dashed;
+  color: var(--brand-700);
+}
+.tpl__comment {
+  width: 100%;
+  padding: var(--sp-12) var(--sp-16);
+  border: 0;
+  border-radius: var(--corner-16);
+  outline: none;
+  background: var(--bg-white);
+  box-shadow: 0 0 0 0.5px var(--dark-6);
+  color: var(--text-900);
+  font: inherit;
+  font-size: 16px;
+  resize: none;
+}
+.tpl__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-8);
+  min-height: 48px;
+  margin-top: var(--sp-8);
+  border: 0;
+  border-radius: var(--rounded);
+  background: rgb(217 45 32 / 8%);
+  color: #d92d20;
+  font-size: 15px;
+  font-weight: var(--weight-s);
+}
+
+/* Keypad: 1–9, 000, 0, ⌫ */
+.tpl__pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-6);
+  padding: var(--sp-8) var(--sp-12) calc(var(--sp-8) + env(safe-area-inset-bottom));
+  background: var(--bg-4);
+}
+.tpl__key {
+  min-height: 48px;
+  border: 0;
+  border-radius: var(--corner-12);
+  background: var(--bg-white);
+  box-shadow: 0 1px 0 rgb(0 0 0 / 8%);
+  color: var(--text-900);
+  font-family: var(--font-heading);
+  font-size: 22px;
+}
+.tpl__key:active {
+  background: var(--grey-200, #e4e7ec);
+}
+.tpl__done {
+  grid-column: 1 / -1;
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--corner-12);
+  background: var(--brand-600);
+  color: var(--text-white);
+  font-size: 15px;
+  font-weight: var(--weight-s);
+}
+
+/* Tag picker */
+.tags-pick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  padding: 0 var(--sp-20) calc(var(--sp-24) + env(safe-area-inset-bottom));
+}
+.tags-pick__new {
+  display: flex;
+  gap: var(--sp-8);
+  margin-top: var(--sp-12);
+}
+.tags-pick__new input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--sp-16);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--rounded);
+  outline: none;
+  font-size: 16px;
+}
+.tags-pick__new button {
+  min-width: 72px;
+  border: 0;
+  border-radius: var(--rounded);
+  background: var(--brand-600);
+  color: var(--text-white);
+  font-weight: var(--weight-s);
+}
+.tags-pick__new button:disabled {
+  background: var(--grey-300);
+}

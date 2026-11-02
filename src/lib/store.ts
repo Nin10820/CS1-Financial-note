@@ -21,6 +21,12 @@ export type Entry = {
   billId?: string
   /** Part of the sample data (removable in one tap). */
   sample?: boolean
+  /** Tags picked in the entry sheet ("Food", "Drinks", or the user's own). */
+  tags?: string[]
+  /** The user's own words about this line. */
+  comment?: string
+  /** Where the money came from or went to: "Cash", "Card", "Transfer" or an asset's name. */
+  paidFrom?: string
 }
 
 /** The free-form note for a day (the "Note" screen): lines as the user wrote them. */
@@ -48,6 +54,10 @@ export type Prefs = {
   /** "YYYY-MM-DD" — first time the app was opened on this device. */
   joined: string
   birthYear?: number
+  /** Tags the user made with "New tag". */
+  customTags?: string[]
+  /** Bank apps the user pays from (VietQR app ids), picked after scanning a QR. */
+  banks?: string[]
 }
 
 type Saved = {

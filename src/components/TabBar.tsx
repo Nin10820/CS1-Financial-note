@@ -3,33 +3,30 @@ import "./tabbar.css"
 import { Icon } from "./Icon"
 
 /** "expense" is the Today tab (its key predates the rename). */
-export type Tab = "expense" | "due" | "scan" | "finance" | "profile"
+export type Tab = "expense" | "due" | "finance" | "ai"
 
 const TABS: { tab: Tab; label: string }[] = [
   { tab: "expense", label: "Today" },
   { tab: "due", label: "Due" },
-  { tab: "scan", label: "Scan" },
   { tab: "finance", label: "Finance" },
-  { tab: "profile", label: "Profile" },
+  { tab: "ai", label: "AI" },
 ]
 
-/* Each screen mounts its own bar; remembering where the selection was lets the new bar
-   start there and slide to the new tab, so switching tabs feels like one continuous control. */
+/* Remembering where the selection was lets a remounted bar slide from there. */
 let lastIndex = 0
 
-/* Tab icons from Figma Navigation Bar Ver 2: calendar-01, bill, scan, chart-rose, user (solid). */
 function TabIcon({ tab, size }: { tab: Tab; size: number }) {
+  if (tab === "ai") return <Icon name="ai" size={size} />
   return <Icon name={`tab-${tab}`} size={size} />
 }
 
-/** The five tabs with a glass selection "lens" that springs between tabs and can be dragged. */
+/** The four tabs in one capsule with a lens that slides to the picked tab and can be dragged. */
 function Tabs({ active, onTab }: { active: Tab; onTab: (t: Tab) => void }) {
   const activeIndex = TABS.findIndex((t) => t.tab === active)
-  // Start where the previous screen's bar was, then slide to this screen's tab.
   const [shown, setShown] = useState(lastIndex)
   const [pressing, setPressing] = useState(false)
   const nav = useRef<HTMLElement>(null)
-  const drag = useRef<{ id: number; start: number; moved: boolean } | null>(null)
+  const drag = useRef<{ id: number } | null>(null)
 
   useLayoutEffect(() => {
     if (shown === activeIndex) return
@@ -42,12 +39,12 @@ function Tabs({ active, onTab }: { active: Tab; onTab: (t: Tab) => void }) {
 
   const indexAt = (x: number) => {
     const r = nav.current!.getBoundingClientRect()
-    const inner = r.width - 24 // 12px padding each side
-    return Math.max(0, Math.min(TABS.length - 1, Math.floor(((x - r.left - 12) / inner) * TABS.length)))
+    const inner = r.width - 8
+    return Math.max(0, Math.min(TABS.length - 1, Math.floor(((x - r.left - 4) / inner) * TABS.length)))
   }
   const onDown = (e: PointerEvent<HTMLElement>) => {
     if (e.button !== 0) return
-    drag.current = { id: e.pointerId, start: indexAt(e.clientX), moved: false }
+    drag.current = { id: e.pointerId }
     setPressing(true)
     setShown(indexAt(e.clientX))
     try {
@@ -57,24 +54,17 @@ function Tabs({ active, onTab }: { active: Tab; onTab: (t: Tab) => void }) {
     }
   }
   const onMove = (e: PointerEvent<HTMLElement>) => {
-    const d = drag.current
-    if (!d || d.id !== e.pointerId) return
-    const i = indexAt(e.clientX)
-    if (i !== d.start) d.moved = true
-    setShown(i)
+    if (drag.current?.id !== e.pointerId) return
+    setShown(indexAt(e.clientX))
   }
   const onUp = (e: PointerEvent<HTMLElement>) => {
-    const d = drag.current
-    if (!d || d.id !== e.pointerId) return
+    if (drag.current?.id !== e.pointerId) return
     drag.current = null
     setPressing(false)
+    if (e.type === "pointercancel") return setShown(activeIndex)
     const i = indexAt(e.clientX)
-    if (e.type === "pointercancel") setShown(activeIndex)
-    else {
-      setShown(i)
-      // Tapping the tab you're on goes back to its first screen, like iOS.
-      onTab(TABS[i].tab)
-    }
+    setShown(i)
+    onTab(TABS[i].tab)
   }
 
   return (
@@ -87,12 +77,12 @@ function Tabs({ active, onTab }: { active: Tab; onTab: (t: Tab) => void }) {
       onPointerUp={onUp}
       onPointerCancel={onUp}
     >
-      <span className="tabbar__lens lg-rim" aria-hidden="true" style={{ ["--i" as string]: shown }} />
+      <span className="tabbar__lens" aria-hidden="true" style={{ ["--i" as string]: shown }} />
       {TABS.map(({ tab, label }, i) => (
         <button
           key={tab}
           type="button"
-          className={`tabbar__tab${i === shown ? " is-lit" : ""}${tab === active ? " is-active" : ""}`}
+          className={`tabbar__tab${i === shown ? " is-lit" : ""}`}
           aria-current={tab === active ? "page" : undefined}
           onClick={(e) => {
             // Keyboard / assistive-tech activation (pointer taps are handled on release).
@@ -108,35 +98,73 @@ function Tabs({ active, onTab }: { active: Tab; onTab: (t: Tab) => void }) {
 }
 
 /**
- * Bottom navigation — Figma Navigation Bar, Ver 2 (961:31747): the round green write button
- * floats above the right end, and the five tabs sit in one glass capsule underneath.
+ * Navigation Bar (Figma 2026-10-30, as built in the iOS app): Today, Due, Finance, AI in one
+ * capsule and the round green + beside it. On Due the + adds a bill, on Finance an asset; on Today
+ * and AI it opens the menu (Talk With AI, Template, Scan) and turns into ×.
  */
 export default function TabBar({
   active,
   onTab,
-  onQuickNote,
-  action,
+  onPlus,
+  plusLabel,
+  menuOpen,
 }: {
   active: Tab
   onTab: (t: Tab) => void
-  /** What the green button does when the screen gives no action of its own. */
-  onQuickNote: () => void
-  /** Screen-specific green button (e.g. the Note screen's "New" menu). */
-  action?: { label: string; onClick: () => void; expanded?: boolean }
+  onPlus: () => void
+  plusLabel: string
+  menuOpen: boolean
 }) {
   return (
     <div className="tabbar">
+      <Tabs active={active} onTab={onTab} />
       <button
         type="button"
-        className="tabbar__write lg-press"
-        aria-label={action?.label ?? "Write a note"}
-        aria-expanded={action?.expanded}
-        aria-haspopup={action?.expanded === undefined ? undefined : "menu"}
-        onClick={action?.onClick ?? onQuickNote}
+        className={`tabbar__plus${menuOpen ? " is-open" : ""}`}
+        aria-label={menuOpen ? "Close menu" : plusLabel}
+        aria-expanded={active === "due" || active === "finance" ? undefined : menuOpen}
+        onClick={onPlus}
       >
-        <Icon name="file-edit" size={24} />
+        <Icon name="plus" size={24} />
       </button>
-      <Tabs active={active} onTab={onTab} />
+    </div>
+  )
+}
+
+/** The three pills above the + (Figma Today 1073:18526); they grow out of the button. */
+export function ActionMenu({
+  onClose,
+  onTalk,
+  onTemplate,
+  onScan,
+}: {
+  onClose: () => void
+  onTalk: () => void
+  onTemplate: () => void
+  onScan: () => void
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [onClose])
+  return (
+    <div className="action-menu">
+      <div className="action-menu__dim" onClick={onClose} aria-hidden="true" />
+      <div className="action-menu__pills" role="menu" aria-label="Add">
+        <button type="button" role="menuitem" className="action-pill" onClick={onTalk}>
+          <Icon name="mic" size={20} />
+          Talk With AI
+        </button>
+        <button type="button" role="menuitem" className="action-pill" onClick={onTemplate}>
+          <Icon name="template" size={20} />
+          Template
+        </button>
+        <button type="button" role="menuitem" className="action-pill" onClick={onScan}>
+          <Icon name="tab-scan" size={20} />
+          Scan
+        </button>
+      </div>
     </div>
   )
 }

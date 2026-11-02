@@ -8,7 +8,10 @@ const url = (name: string) => FILES[`../assets/icons/${name}.svg`]
 
 export type IconName =
   | "align-left"
+  | "ai"
   | "arrow-left"
+  | "arrow-down-right"
+  | "arrow-up-right"
   | "bell"
   | "calendar"
   | "calendar-blank"
@@ -55,6 +58,11 @@ export type IconName =
   | "trash"
   | "trend-up"
   | "user"
+  | "mic"
+  | "minus-circle"
+  | "pencil"
+  | "plus-circle"
+  | "template"
   | "wallet"
   | "waveform"
 
