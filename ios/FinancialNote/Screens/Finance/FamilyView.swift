@@ -116,23 +116,22 @@ struct FamilyView: View {
                 }
                 .padding(.horizontal, Space.s16)
                 .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
+                // At the end of the page, not pinned to the bottom: there the app's tab bar sits on top of it.
+                Button { talkLater = true } label: {
+                    Label("Talk with Monez", systemImage: "sparkles")
+                        .font(AppFont.main(16, .medium))
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.glass)
+                .controlSize(.large)
+                .padding(.top, Space.s8)
             }
             .padding(.horizontal, Space.s20)
-            .padding(.bottom, Space.s24)
+            // Room for the floating tab bar, so the end of the page can scroll clear of it.
+            .padding(.bottom, 96)
             }
         }
         .background(Tokens.canvas)
-        .safeAreaInset(edge: .bottom) {
-            Button { talkLater = true } label: {
-                Label("Talk with Monez", systemImage: "sparkles")
-                    .font(AppFont.main(16, .medium))
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.glass)
-            .controlSize(.large)
-            .padding(.horizontal, Space.s20)
-            .padding(.bottom, Space.s8)
-        }
         .navigationTitle("Your family")
         .toolbarTitleDisplayMode(.inline)
         .alert("Comes later", isPresented: $talkLater) {

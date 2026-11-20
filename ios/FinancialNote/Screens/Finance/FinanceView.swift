@@ -25,6 +25,8 @@ struct FinanceView: View {
     @State private var overviewGroup: AssetKind?
     /// How far back the Total Asset line goes.
     @State private var worthRange: WorthRange = .sixMonths
+    /// The monthly saving goal from Today (0: use the suggestion).
+    @AppStorage("savingGoal") private var savingGoal = 0
 
     enum FinanceTab: String, CaseIterable { case overview = "Overview", total = "Total Asset", debt = "Debt" }
     enum Route: Hashable { case family, yourself, asset(String) }
@@ -116,13 +118,18 @@ struct FinanceView: View {
             let shares = AssetMath.shares(assets)
             let growth = FinanceText.growth(worth.map { ($0.month, $0.value) })
             let owed = BillMath.monthSummary(bills, month: Month.of(app.today)).totalRemaining + LoanMath.owed(loans, today: app.today)
-            let picked = worth.first { $0.month == pickedMonth }
+            let series = WorthChart.series(worth)
+            let picked = series.first { $0.month == pickedMonth }
+            // Money put in, by month: a dot on the line's bar for each month you added some.
+            let deposits = Dictionary(grouping: moves.filter { $0.kind == .putIn }) { Month.of($0.date) }
+                .mapValues { $0.reduce(0) { $0 + $1.amount } }
             // No card: the amount sits on the page and the line runs edge to edge, like View Analysis.
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .center) {
                     // Total assets as a story over time: touch a month on the line to read it here.
                     TotalBlock(total: picked?.value ?? shares.total, month: picked.map { FinanceText.monthLabel($0.month) },
-                               growth: picked == nil ? growth : nil, hidden: app.assetsHidden)
+                               growth: picked == nil ? growth : nil, putIn: picked.flatMap { deposits[$0.month] },
+                               hidden: app.assetsHidden)
                     Spacer(minLength: Space.s8)
                     Menu {
                         Picker("Show", selection: $worthRange) {
@@ -141,8 +148,8 @@ struct FinanceView: View {
                     .accessibilityLabel("Show \(worthRange.label)")
                     .onChange(of: worthRange) { _, _ in pickedMonth = nil }
                 }
-                if worth.count > 1 {
-                    WorthChart(points: worth, months: worthRange.months, growth: growth, hidden: app.assetsHidden,
+                if series.count > 1 {
+                    WorthChart(points: series, deposits: deposits, months: worthRange.months, hidden: app.assetsHidden,
                                picked: $pickedMonth)
                         .padding(.horizontal, -Space.s20)
                         .padding(.top, Space.s8)
@@ -157,6 +164,16 @@ struct FinanceView: View {
                 NetWorthBar(assets: shares.total, owed: owed, hidden: app.assetsHidden)
                     .padding(Space.s16)
                     .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
+            }
+
+            // Every month money went in, year by year.
+            if moves.contains(where: { $0.kind == .putIn }) {
+                // The plan is the saving goal set on Today (or its suggestion).
+                DepositDots(moves: moves, today: app.today,
+                            plan: savingGoal > 0 ? savingGoal
+                                : SavingPlan(month: Month.of(app.today), today: app.today, entries: entries, goalSetting: 0).suggested,
+                            hidden: app.assetsHidden)
+                    .padding(.top, Space.s8)
             }
 
             // What you own by group, and who you owe. The lists live on Total Asset and Debt.
@@ -196,6 +213,8 @@ private struct TotalBlock: View {
     /// The month touched on the line, or nil for now.
     var month: String?
     var growth: Int?
+    /// Money put in during the touched month, shown where the growth badge sits.
+    var putIn: Int? = nil
     var hidden: Bool
 
     var body: some View {
@@ -217,6 +236,15 @@ private struct TotalBlock: View {
             .accessibilityElement(children: .combine)
             // On its own line under the amount.
             if let growth, !hidden { GrowthBadge(pct: growth) }
+            if let putIn {
+                Label(hidden ? "Put in" : "Put in " + AnalyticsView.compact(putIn) + "đ", systemImage: "plus")
+                    .font(AppFont.main(12, .semibold))
+                    .foregroundStyle(Tokens.brand700)
+                    .padding(.horizontal, Space.s6)
+                    .padding(.vertical, 2)
+                    .background(Tokens.brand100, in: .rect(cornerRadius: Corner.c6))
+                    .accessibilityLabel(hidden ? "Money put in this month" : "Put in \(Money.format(putIn)) dong this month")
+            }
         }
     }
 }
@@ -324,29 +352,58 @@ enum WorthRange: CaseIterable {
 }
 
 private struct WorthChart: View {
-    var points: [WorthPoint]
+    struct Point: Hashable { var month: String; var value: Int }
+    var points: [Point]
+    /// Money put in by month ("2021-03": 5,000,000): each one is a dot on the bar under the line.
+    var deposits: [String: Int]
     var months: Int?
-    var growth: Int?
     var hidden: Bool
     /// The touched month, shared with the amount above (nil: the latest).
     @Binding var picked: String?
 
-    var body: some View {
+    /// Every month from the first point to the last; a month nobody wrote down keeps the one before,
+    /// so 2020 to now reads as real time, not as the few months that have a point.
+    static func series(_ points: [WorthPoint]) -> [Point] {
         let sorted = points.sorted { $0.month < $1.month }
-        let shown = Array(sorted.suffix(max(months ?? sorted.count, 2)))
-        // Up to a year: the month. Up to three years: "Apr 25". Longer: just the year.
+        guard let first = sorted.first, let last = sorted.last else { return [] }
+        var out: [Point] = []
+        var i = 0, month = first.month, value = first.value
+        while month <= last.month {
+            while i < sorted.count && sorted[i].month <= month { value = sorted[i].value; i += 1 }
+            out.append(Point(month: month, value: value))
+            month = Month.add(month, 1)
+        }
+        return out
+    }
+
+    var body: some View {
+        let shown = Array(points.suffix(max(months ?? points.count, 2)))
+        // Up to a year: the month. Up to three years: "Apr 25". Longer: just the year, on its January.
         let long = shown.count > 12, veryLong = shown.count > 36
+        let year = { (m: String) in Day.parts(m + "-01").0 }
         let label = { (m: String) -> String in
             let (y, mm, _) = Day.parts(m + "-01")
             if veryLong { return String(y) }
             return Day.monthsShort[mm - 1] + (long ? " " + String(String(y).suffix(2)) : "")
         }
         // A few labels along the bottom (every month up to seven, else at most five), always the last.
+        // All time: each year once (every other year past eight), the first one too if it starts early in the year.
+        let years = Set(shown.map { year($0.month) }).count
+        let yearStep = years > 8 ? 2 : 1
+        let firstYear = shown.first.map { year($0.month) } ?? 0
         let step = shown.count <= 7 ? 1 : max(1, Int((Double(shown.count) / 5).rounded(.up)))
-        let tick = { (i: Int) in (shown.count - 1 - i) % step == 0 }
+        let tick = { (i: Int) -> Bool in
+            guard veryLong else { return (shown.count - 1 - i) % step == 0 }
+            let m = shown[i].month, y = year(m)
+            guard (y - firstYear) % yearStep == 0 else { return false }
+            return m.hasSuffix("-01") || (i == 0 && Day.parts(m + "-01").1 <= 6)
+        }
         let focus = shown.first { $0.month == picked } ?? shown.last!
         let lo = shown.map(\.value).min() ?? 0, hi = shown.map(\.value).max() ?? 1
         let pad = max((hi - lo) / 3, hi / 40, 1)
+        // The bottom of the chart never goes under 0đ, so a month at 0đ sits on the floor.
+        let base = lo >= 0 ? max(lo - pad, 0) : lo - pad
+        let dots = shown.filter { deposits[$0.month] != nil }.count
         VStack(spacing: Space.s12) {
             Chart {
                 // Light column behind the picked month.
@@ -354,7 +411,7 @@ private struct WorthChart: View {
                     .foregroundStyle(LinearGradient(colors: [Tokens.brand500.opacity(0), Tokens.brand500.opacity(0.22)],
                                                     startPoint: .top, endPoint: .bottom))
                 ForEach(shown, id: \.month) { p in
-                    AreaMark(x: .value("Month", p.month), yStart: .value("Base", lo - pad), yEnd: .value("Worth", p.value))
+                    AreaMark(x: .value("Month", p.month), yStart: .value("Base", base), yEnd: .value("Worth", p.value))
                         .foregroundStyle(LinearGradient(colors: [Tokens.brand500.opacity(0.22), Tokens.brand500.opacity(0)],
                                                         startPoint: .top, endPoint: .bottom))
                         .interpolationMethod(.catmullRom)
@@ -379,7 +436,8 @@ private struct WorthChart: View {
                         }
                     }
             }
-            .chartYScale(domain: (lo - pad)...(hi + pad))
+            // Just a little room over the highest month: the 44 pt on top already holds the amount pill.
+            .chartYScale(domain: base...(hi + max((hi - base) / 20, 1)))
             // Months in order (the picked month's column is drawn first, and would lead otherwise).
             .chartXScale(domain: shown.map(\.month), range: .plotDimension(padding: 8))
             .chartYAxis(.hidden)
@@ -398,15 +456,39 @@ private struct WorthChart: View {
             .chartPlotStyle { $0.padding(.top, 44) }
             .frame(height: 190)
             .noPageSwipe()
-            // Months along the bottom; the picked one in green.
+            // The bar under the line: a dot for every month you put money in; the picked one rings.
+            if dots > 0 {
+                ZStack {
+                    Capsule().fill(Tokens.bd1).frame(height: 2)
+                    HStack(spacing: 0) {
+                        ForEach(shown, id: \.month) { p in
+                            ZStack {
+                                if deposits[p.month] != nil {
+                                    let on = p.month == focus.month
+                                    Circle().fill(Tokens.brand500)
+                                        .frame(width: on ? 10 : 6, height: on ? 10 : 6)
+                                        .overlay { if on { Circle().strokeBorder(Tokens.canvas, lineWidth: 2) } }
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                }
+                .frame(height: 10)
+                .padding(.horizontal, Space.s8)
+                // The bar's line sits right on the chart's floor (cancels the stack's gap and half the bar).
+                .padding(.top, -(Space.s12 + 5))
+                .accessibilityHidden(true)
+            }
+            // Months along the bottom; the picked one in green (all time: the picked month's year).
             HStack(spacing: 0) {
                 ForEach(Array(shown.enumerated()), id: \.element.month) { i, p in
-                    // Every few months; the picked one turns green when it has a label.
+                    let on = veryLong ? year(p.month) == year(focus.month) : p.month == focus.month
                     Text(tick(i) ? label(p.month) : "")
-                        .font(AppFont.main(12, p.month == focus.month ? .semibold : .medium))
-                        .foregroundStyle(p.month == focus.month ? Tokens.brand600 : Tokens.text700)
+                        .font(AppFont.main(12, on ? .semibold : .medium))
+                        .foregroundStyle(on ? Tokens.brand600 : Tokens.text700)
                         .lineLimit(1).fixedSize()
-                        .frame(maxWidth: .infinity, alignment: i == shown.count - 1 ? .trailing : .center)
+                        .frame(maxWidth: .infinity, alignment: !veryLong && i == shown.count - 1 ? .trailing : .center)
                 }
             }
             .padding(.horizontal, Space.s8)
@@ -414,7 +496,7 @@ private struct WorthChart: View {
         }
         .accessibilityElement(children: .ignore)
         .animation(.snappy, value: shown.count)
-        .accessibilityLabel("Total assets over the last \(shown.count) months")
+        .accessibilityLabel("Total assets over the last \(shown.count) months, money put in during \(dots) of them")
         .accessibilityValue(hidden ? "Hidden" : "\(FinanceText.monthLabel(focus.month)), \(Money.format(focus.value)) dong")
     }
 }
@@ -964,6 +1046,8 @@ struct AddAssetSheet: View {
     @State private var name = ""
     @State private var amount: Int?
     @State private var kind: AssetKind = .available
+    /// When the money went in: today, or back when you started (it shows on the line from then).
+    @State private var since = Date.now
     /// New asset starts on the quick pick (Figma-style step 1); editing goes straight to the form.
     @State private var picked = false
 
@@ -1034,7 +1118,8 @@ struct AddAssetSheet: View {
                 }
                 .listRowBackground(Tokens.card)
                 if editing == nil {
-                Section("How much is it worth now?") {
+                let past = Day.iso(since) < app.today
+                Section {
                     HStack {
                         TextField("0", text: Binding(
                             get: { amount.map(Money.format) ?? "" },
@@ -1042,6 +1127,14 @@ struct AddAssetSheet: View {
                             .keyboardType(.numberPad)
                             .monospacedDigit()
                         Text("đ").foregroundStyle(Tokens.grey400)
+                    }
+                    DatePicker("Put in on", selection: $since, in: ...Date.now, displayedComponents: .date)
+                        .tint(Tokens.brand600)
+                } header: {
+                    Text(past ? "How much did you put in then?" : "How much is it worth now?")
+                } footer: {
+                    if past {
+                        Text("Add later deposits with Add money on the asset, each on its own day, then Update value for what it's worth now.")
                     }
                 }
                 .listRowBackground(Tokens.card)
@@ -1077,7 +1170,7 @@ struct AddAssetSheet: View {
             return
         }
         LocalStore(context: context).addAsset(
-            Asset(name: n, kind: kind, icon: AssetMath.guessIcon(n, kind: kind), amount: amount ?? 0, updated: app.today))
+            Asset(name: n, kind: kind, icon: AssetMath.guessIcon(n, kind: kind), amount: amount ?? 0, updated: min(Day.iso(since), app.today)))
         dismiss()
     }
 }

@@ -58,7 +58,8 @@ struct LocalStore {
         all(Entry.self).filter { $0.sample || ($0.billId?.hasPrefix("sample-") ?? false) }.forEach(context.delete)
         all(Bill.self).filter(\.sample).forEach(context.delete)
         all(Asset.self).filter(\.sample).forEach(context.delete)
-        all(AssetMove.self).filter(\.sample).forEach(context.delete)
+        // Money added to a sample asset goes with it too.
+        all(AssetMove.self).filter { $0.sample || ($0.assetId?.hasPrefix("sample-") ?? false) }.forEach(context.delete)
         all(CareGift.self).filter(\.sample).forEach(context.delete)
         all(FamilyLoan.self).filter(\.sample).forEach(context.delete)
         all(DayNote.self).filter(\.sample).forEach(context.delete)
@@ -139,7 +140,7 @@ struct LocalStore {
         context.insert(asset)
         context.insert(AssetMove(title: asset.name, icon: asset.icon, amount: asset.amount, date: asset.updatedOn,
                                  assetId: asset.id, kind: .putIn))
-        recordWorth(on: asset.updatedOn)
+        shiftWorth(by: asset.amount, from: asset.updatedOn)
         try? context.save()
     }
 
@@ -157,7 +158,7 @@ struct LocalStore {
         asset.amount += change
         if date > asset.updatedOn { asset.updatedOn = date }
         context.insert(AssetMove(title: asset.name, icon: asset.icon, amount: change, date: date, assetId: asset.id, kind: kind))
-        recordWorth(on: date)
+        shiftWorth(by: change, from: date)
         try? context.save()
     }
 
@@ -236,6 +237,22 @@ struct LocalStore {
         guard !all(AssetMove.self).contains(where: { $0.assetId == asset.id }) else { return }
         context.insert(AssetMove(title: asset.name, icon: asset.icon, amount: asset.amount, date: asset.updatedOn,
                                  assetId: asset.id, kind: .putIn))
+    }
+
+    /// A change written down for an earlier day moves the Total Asset line from that month on, so
+    /// money put in back in 2020 shows from 2020. This month's point is always the total now.
+    private func shiftWorth(by change: Int, from date: String, today: String = Day.today()) {
+        let month = Month.of(date), now = Month.of(today)
+        if month < now {
+            let points = all(WorthPoint.self)
+            for p in points where p.month >= month && p.month < now { p.value = max(0, p.value + change) }
+            if !points.contains(where: { $0.month == month }) {
+                // Starts from the month before (0 if nothing was written down yet).
+                let before = points.filter { $0.month < month }.max { $0.month < $1.month }?.value ?? 0
+                context.insert(WorthPoint(month: month, value: max(0, before + change)))
+            }
+        }
+        recordWorth(on: today)
     }
 
     /// The Total Asset line: this month's point is the total of everything now.

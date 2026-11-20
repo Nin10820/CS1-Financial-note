@@ -192,29 +192,63 @@ enum SampleData {
             bill.paid = records
         }
 
-        // Assets like a real sheet: what was put in over the last months, then what each is worth
-        // now (gold and the fund up, stocks down, cash and savings as they were). Each one keeps
-        // its moves, so Total Asset can show put in, now and the gain or loss.
-        let holdings: [(key: String, name: String, kind: AssetKind, icon: AssetIcon, ins: [(Int, Int)], now: Int)] = [
-            ("vnd", "VND", .available, .cash, [(4_000_000, -20)], 4_000_000),
-            ("usd", "USD", .available, .usd, [(20_100_000, -75)], 20_000_000),
-            ("saving", "Saving", .aside, .bank, [(1_000_000, -88)], 1_000_000),
-            ("gold", "Gold", .growing, .gold, [(18_000_000, -88), (12_000_000, -40)], 65_000_000),
-            ("fund", "Fund", .growing, .fund, [(50_000_000, -88), (20_000_000, -60), (17_750_000, -30)], 110_000_000),
-            ("stock", "Stock", .growing, .stock, [(60_000_000, -85), (48_300_000, -45)], 75_000_000),
-            ("coin", "Coin", .growing, .coin, [(200_000, -10)], 200_000),
-            ("lent", "Lent to Minh", .owed, .lent, [(12_265_000, -40)], 12_265_000),
+        // Assets from Nin's Investment Diary: every time money went in (or came out), on its real
+        // day, from the first fund in Oct 2021. Then what each is worth now (gold and the fund up,
+        // stocks down, cash and savings as they were). Each one keeps its moves, so Total Asset can
+        // show put in, now and the gain or loss, and the line has a dot for every deposit.
+        let d = { (ago: Int) in Day.addDays(today, ago) }
+        let fundIns: [(Int, String)] = [
+            (5_300_000, "2021-10-21"), (4_000_000, "2021-10-22"), (5_000_000, "2021-11-23"), (5_200_000, "2021-11-26"),
+            (5_000_000, "2021-12-22"), (10_000_000, "2021-12-24"),
+            (5_000_000, "2022-01-20"), (2_000_000, "2022-01-21"), (2_000_000, "2022-02-22"),
+            (750_000, "2023-01-30"), (3_000_000, "2023-02-23"), (100_000, "2023-11-24"),
+            (2_000_000, "2024-01-23"), (4_000_000, "2024-02-22"), (2_000_000, "2024-02-22"), (500_000, "2024-02-22"),
+            (1_000_000, "2024-03-04"), (2_000_000, "2024-03-21"), (2_000_000, "2024-03-21"), (500_000, "2024-04-23"),
+            (1_000_000, "2024-05-23"), (2_000_000, "2024-05-23"), (3_000_000, "2024-06-21"), (2_500_000, "2024-08-08"),
+            (200_000, "2024-08-29"), (3_000_000, "2024-09-05"), (500_000, "2024-09-24"), (1_500_000, "2024-11-21"),
+            (2_000_000, "2024-12-12"),
+            (5_000_000, "2025-03-21"), (1_000_000, "2025-04-14"), (1_000_000, "2025-04-23"), (1_500_000, "2025-05-19"),
+            (700_000, "2025-06-22"), (500_000, "2025-07-22"), (1_000_000, "2025-07-30"),
         ]
+        // Stock, with money from Mom and Grandma put straight in, and one 60M taken out.
+        let stockIns: [(Int, String)] = [
+            (5_500_000, "2025-04-08"), (4_500_000, "2025-04-11"), (10_000_000, "2025-04-22"), (3_000_000, "2025-05-13"),
+            (5_000_000, "2025-05-16"), (2_000_000, "2025-06-19"), (6_500_000, "2025-07-18"), (6_300_000, "2025-07-29"),
+            (1_300_000, "2025-09-19"), (20_000_000, "2025-09-20"), (10_000_000, "2025-10-11"), (-60_000_000, "2025-10-28"),
+            (10_000_000, "2025-11-11"), (25_000_000, "2026-01-12"), (8_000_000, "2026-01-14"), (10_000_000, "2026-01-31"),
+            (5_000_000, "2026-02-01"), (10_000_000, "2026-02-06"), (20_000_000, "2026-03-05"), (5_000_000, "2026-03-10"),
+            (1_200_000, "2026-09-20"),
+        ]
+        typealias Holding = (key: String, name: String, kind: AssetKind, icon: AssetIcon, ins: [(Int, String)], now: Int)
+        let goldIns: [(Int, String)] = Array(repeating: (5_575_000, "2022-08-10"), count: 4) + [(7_700_000, "2024-08-10")]
+        let vndIns: [(Int, String)] = [(1_000_000, "2023-05-01"), (2_000_000, "2025-05-25"), (1_000_000, "2026-02-17")]
+        let usdIns: [(Int, String)] = [(2_600_000, "2023-08-10"), (4_500_000, "2025-04-10"), (13_000_000, "2026-02-26")]
+        let saveIns: [(Int, String)] = [(1_000_000, d(-88))]
+        let coinIns: [(Int, String)] = [(200_000, "2026-02-20")]
+        let lentIns: [(Int, String)] = [(12_265_000, d(-40))]
+        var holdings: [Holding] = []
+        holdings.append(("vnd", "VND", .available, .cash, vndIns, 4_000_000))
+        holdings.append(("usd", "USD", .available, .usd, usdIns, 20_000_000))
+        holdings.append(("saving", "Saving", .aside, .bank, saveIns, 1_000_000))
+        holdings.append(("gold", "Gold", .growing, .gold, goldIns, 65_000_000))
+        holdings.append(("fund", "Fund", .growing, .fund, fundIns, 110_000_000))
+        holdings.append(("stock", "Stock", .growing, .stock, stockIns, 75_000_000))
+        holdings.append(("coin", "Coin", .growing, .coin, coinIns, 200_000))
+        holdings.append(("lent", "Lent to Minh", .owed, .lent, lentIns, 12_265_000))
+        // Only what has happened by today, oldest first.
+        for i in holdings.indices {
+            holdings[i].ins = holdings[i].ins.filter { $0.1 <= today }.sorted { $0.1 < $1.1 }
+        }
         var assets: [Asset] = []
         var moves: [AssetMove] = []
         for h in holdings {
             let assetId = id(h.key)
             let put = h.ins.reduce(0) { $0 + $1.0 }
-            let valued = h.now != put ? Day.addDays(today, -3) : Day.addDays(today, h.ins.map(\.1).max() ?? 0)
+            let valued = h.now != put ? d(-3) : (h.ins.map(\.1).max() ?? today)
             assets.append(Asset(id: assetId, name: h.name, kind: h.kind, icon: h.icon, amount: h.now, updated: valued, sample: true))
-            for (k, (amount, ago)) in h.ins.enumerated() {
+            for (k, (amount, day)) in h.ins.enumerated() {
                 moves.append(AssetMove(id: id("m-\(h.key)-\(k)"), title: h.name, icon: h.icon, amount: amount,
-                                       date: Day.addDays(today, ago), sample: true, assetId: assetId, kind: .putIn))
+                                       date: day, sample: true, assetId: assetId, kind: amount < 0 ? .takeOut : .putIn))
             }
             if h.now != put {
                 moves.append(AssetMove(id: id("m-\(h.key)-value"), title: h.name, icon: h.icon, amount: h.now - put,
@@ -239,26 +273,36 @@ enum SampleData {
         care.append(CareGift(id: id("med"), who: "Parents", title: "Medical costs", amount: 4_034_000,
                              date: addMonthsIso(today, -9), sample: true))
 
-        // Net worth by month since Jan 2020: slow growth with some wobble, ending at today's total.
+        // Total assets month by month, from 0đ the month before the first deposit: what was put in
+        // so far, with each asset's gain or loss growing in step until it reaches today's worth.
         let total = assets.reduce(0) { $0 + $1.amount }
-        let (ty, tm, _) = Day.parts(today)
-        let months = (ty - 2020) * 12 + tm
-        let worth: [WorthPoint] = (0..<months).map { k in
-            let t = Double(k) / Double(months - 1)
-            let wobble = sin(Double(k) * 0.9) * 0.05 + sin(Double(k) * 0.37) * 0.07
-            let value = (Double(total) * (0.18 + 0.82 * pow(t, 1.6)) * (1 + wobble * (1 - t * 0.6))).rounded()
-            let month = String(format: "%04d-%02d", 2020 + k / 12, k % 12 + 1)
-            return WorthPoint(month: month, value: k == months - 1 ? total : Int(value), sample: true)
+        let (ty, _, _) = Day.parts(today)
+        let nowMonth = Month.of(today)
+        let firstMonth = Month.add(Month.of(holdings.flatMap(\.ins).map(\.1).min() ?? today), -1)
+        var worth: [WorthPoint] = []
+        var month = firstMonth
+        while month <= nowMonth {
+            var value = 0.0
+            for h in holdings {
+                let put = h.ins.filter { Month.of($0.1) <= month }.reduce(0) { $0 + $1.0 }
+                let all = h.ins.reduce(0) { $0 + $1.0 }
+                guard put > 0, all > 0, let first = h.ins.first.map({ Month.of($0.1) }) else { continue }
+                let span = max(Month.between(first, nowMonth), 1)
+                let f = min(max(Double(Month.between(first, month)) / Double(span), 0), 1)
+                value += Double(put) * (1 + (Double(h.now) / Double(all) - 1) * f)
+            }
+            worth.append(WorthPoint(month: month, value: month == nowMonth ? total : Int(value.rounded()), sample: true))
+            month = Month.add(month, 1)
         }
 
         // Family loans at 6% a year: money from Mom and Grandma, and interest paid to Mom.
         let loans: [FamilyLoan] = [
-            ("Mom", "Mẹ gửi", LoanMove.received, 20_000_000, -425), ("Grand", "Bà Ngoại gửi", .received, 25_000_000, -311),
-            ("Grand", "Bà Ngoại - Feb", .received, 5_000_000, -291), ("Mom", "Mẹ gửi - Feb", .received, 10_000_000, -286),
-            ("Mom", "Mẹ gửi - Mar", .received, 10_000_000, -259), ("Grand", "Bà Ngoại gửi", .received, 5_000_000, -254),
-            ("Mom", "Lãi cho Mom", .interest, 1_200_000, -60),
-        ].enumerated().map { k, l in
-            FamilyLoan(id: id("loan-\(k)"), who: l.0, title: l.1, kind: l.2, amount: l.3, date: Day.addDays(today, l.4), sample: true)
+            ("Mom", "Mẹ gửi", LoanMove.received, 20_000_000, "2025-09-20"), ("Grand", "Bà Ngoại gửi", .received, 25_000_000, "2026-01-12"),
+            ("Grand", "Bà Ngoại - Feb", .received, 5_000_000, "2026-02-01"), ("Mom", "Mẹ gửi - Feb", .received, 10_000_000, "2026-02-06"),
+            ("Mom", "Mẹ gửi - Mar", .received, 20_000_000, "2026-03-05"), ("Grand", "Bà Ngoại gửi", .received, 5_000_000, "2026-03-10"),
+            ("Mom", "Lãi cho Mom", .interest, 1_200_000, "2026-09-20"),
+        ].filter { $0.4 <= today }.enumerated().map { k, l in
+            FamilyLoan(id: id("loan-\(k)"), who: l.0, title: l.1, kind: l.2, amount: l.3, date: l.4, sample: true)
         }
 
         return Bundle(entries: entries, notes: notes, bills: bills, assets: assets, moves: moves, care: care, loans: loans,

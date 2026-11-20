@@ -142,7 +142,8 @@ struct AssetDetailView: View {
                 .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
             }
             .padding(.horizontal, Space.s20)
-            .padding(.bottom, Space.s24)
+            // Room for the floating tab bar, so the end of the page can scroll clear of it.
+            .padding(.bottom, 96)
         }
         .background(Tokens.canvas)
         .navigationTitle(asset.name)
