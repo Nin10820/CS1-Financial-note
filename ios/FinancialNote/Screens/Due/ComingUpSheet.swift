@@ -24,7 +24,7 @@ struct ComingUpSheet: View {
                 }
                 .padding(Space.s20)
             }
-            .background(Tokens.bg1)
+            .background(Tokens.canvas)
             .navigationTitle("Coming up")
             .toolbarTitleDisplayMode(.inline)
             .toolbar {

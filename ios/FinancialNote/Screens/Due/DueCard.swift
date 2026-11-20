@@ -26,7 +26,7 @@ struct DueCard: View {
             HStack(alignment: .center) {
                 HStack(alignment: .firstTextBaseline, spacing: Space.s4) {
                     Text(hidden ? "••••••" : Money.format(remaining))
-                        .font(AppFont.heading(40, .medium, relativeTo: .largeTitle))
+                        .font(AppFont.amount(36))
                         .monospacedDigit()
                         .foregroundStyle(LinearGradient(
                             stops: [.init(color: .white, location: 0.3), .init(color: .white.opacity(0.24), location: 1)],
@@ -35,7 +35,7 @@ struct DueCard: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                     Text("đ")
-                        .font(AppFont.heading(28, .regular, relativeTo: .title))
+                        .font(AppFont.currency(for: 36))
                         .foregroundStyle(.white.opacity(0.48))
                 }
                 .accessibilityElement(children: .ignore)
@@ -146,32 +146,28 @@ struct BillRow: View {
         HStack(spacing: Space.s8) {
             Button(action: onOpen) {
                 HStack(spacing: Space.s12) {
-                    // Round and soft, like the tiles in Today's Recent.
+                    // Same row as Finance's lists: a solid round tile, name and date, amount.
                     Image(systemName: bill.icon.symbol)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(Tokens.billTileSoft(bill.icon).ink)
-                        .frame(width: 36, height: 36)
-                        .background(Tokens.billTileSoft(bill.icon).bg, in: .circle)
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 40, height: 40)
+                        .background(Tokens.billTile(bill.icon), in: .circle)
+                        .opacity(paid ? 0.6 : 1)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(bill.name)
-                            .font(AppFont.body(.medium))
+                            .font(AppFont.table(15, .semibold))
                             .foregroundStyle(paid ? Tokens.grey400 : Tokens.text900)
                             .lineLimit(1)
                         Text(DueText.listDate(date, paid: paid, today: today))
-                            .font(AppFont.capture())
+                            .font(AppFont.table(12))
                             .foregroundStyle(Tokens.grey400)
                     }
                     Spacer(minLength: Space.s8)
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text((!paid && bill.varies ? "~" : "") + (hidden ? "••••••" : Money.format(amount)))
-                            .font(AppFont.heading(14, .medium, relativeTo: .body))
-                            .foregroundStyle(paid ? Tokens.grey400 : Tokens.text700)
-                            .monospacedDigit()
-                        Text("đ")
-                            .font(AppFont.heading(14, .regular, relativeTo: .body))
-                            .foregroundStyle(Tokens.grey400)
-                    }
+                    Text((!paid && bill.varies ? "~" : "") + (hidden ? "•••" : Money.format(amount) + "đ"))
+                        .font(AppFont.heading(16, .semibold))
+                        .foregroundStyle(paid ? Tokens.grey400 : Tokens.text900)
+                        .monospacedDigit()
                     .fixedSize()
                 }
                 .contentShape(.rect)
@@ -191,8 +187,7 @@ struct BillRow: View {
             .accessibilityLabel(paid ? "Mark \(bill.name) as not paid" : "Mark \(bill.name) as paid")
             .accessibilityAddTraits(paid ? .isSelected : [])
         }
-        .padding(.leading, Space.s4)
-        .padding(.vertical, Space.s4)
-        .frame(minHeight: 60)
+        .padding(.vertical, Space.s8)
+        .frame(minHeight: 64)
     }
 }

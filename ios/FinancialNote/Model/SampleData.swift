@@ -197,12 +197,12 @@ enum SampleData {
         // its moves, so Total Asset can show put in, now and the gain or loss.
         let holdings: [(key: String, name: String, kind: AssetKind, icon: AssetIcon, ins: [(Int, Int)], now: Int)] = [
             ("vnd", "VND", .available, .cash, [(4_000_000, -20)], 4_000_000),
-            ("usd", "USD", .available, .cash, [(20_100_000, -75)], 20_000_000),
+            ("usd", "USD", .available, .usd, [(20_100_000, -75)], 20_000_000),
             ("saving", "Saving", .aside, .bank, [(1_000_000, -88)], 1_000_000),
             ("gold", "Gold", .growing, .gold, [(18_000_000, -88), (12_000_000, -40)], 65_000_000),
             ("fund", "Fund", .growing, .fund, [(50_000_000, -88), (20_000_000, -60), (17_750_000, -30)], 110_000_000),
-            ("stock", "Stock", .growing, .fund, [(60_000_000, -85), (48_300_000, -45)], 75_000_000),
-            ("coin", "Coin", .growing, .fund, [(200_000, -10)], 200_000),
+            ("stock", "Stock", .growing, .stock, [(60_000_000, -85), (48_300_000, -45)], 75_000_000),
+            ("coin", "Coin", .growing, .coin, [(200_000, -10)], 200_000),
             ("lent", "Lent to Minh", .owed, .lent, [(12_265_000, -40)], 12_265_000),
         ]
         var assets: [Asset] = []

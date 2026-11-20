@@ -24,6 +24,7 @@ struct LocalStore {
     /// First launch on this phone: make the profile and start with the sample so every screen
     /// has something to show.
     func prepareOnLaunch(today: String = Day.today()) {
+        refreshAssetIcons()
         guard profile == nil else { return }
         context.insert(Profile(joined: today))
         loadSample(today: today)
@@ -173,7 +174,7 @@ struct LocalStore {
         if let a = all(Asset.self).first(where: { $0.id == Self.savingsId }) {
             savings = a
         } else {
-            savings = Asset(id: Self.savingsId, name: "Savings", kind: .aside, icon: .bank, amount: 0, updated: date)
+            savings = Asset(id: Self.savingsId, name: "Savings", kind: .aside, icon: .piggy, amount: 0, updated: date)
             context.insert(savings)
         }
         savings.amount += amount
@@ -192,6 +193,21 @@ struct LocalStore {
         moves.forEach(context.delete)
         recordWorth(on: date)
         try? context.save()
+    }
+
+    /// Icons are picked from the name; assets saved before there were USD, stock and coin icons
+    /// get the clearer one. The saving goal's asset is the piggy bank.
+    func refreshAssetIcons() {
+        let moves = all(AssetMove.self)
+        var changed = false
+        for a in all(Asset.self) {
+            let icon = a.id == Self.savingsId ? .piggy : AssetMath.guessIcon(a.name, kind: a.kind)
+            guard icon != a.icon else { continue }
+            a.icon = icon
+            for m in moves where m.assetId == a.id { m.iconRaw = icon.rawValue }
+            changed = true
+        }
+        if changed { try? context.save() }
     }
 
     /// Renames or regroups an asset; its history keeps up with the new name.

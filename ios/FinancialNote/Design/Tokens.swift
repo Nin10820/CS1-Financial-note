@@ -163,6 +163,10 @@ enum Tokens {
         case .bank: Color(hex: 0x6927DA)
         case .cash: Color(hex: 0x4C8A26)
         case .lent: Color(hex: 0xE5562A)
+        case .usd: Color(hex: 0x12805C)
+        case .stock: Color(hex: 0x0E9384)
+        case .coin: Color(hex: 0xF79009)
+        case .piggy: Color(hex: 0xDD2590)
         }
     }
 }

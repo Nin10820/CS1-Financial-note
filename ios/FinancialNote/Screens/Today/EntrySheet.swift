@@ -59,7 +59,7 @@ struct EntrySheet: View {
             }
             .scrollDismissesKeyboard(.interactively)
             // Grey sheet so the white cards stand out, as in Figma (bg-3 #F3F4F6).
-            .background(Tokens.bg3)
+            .background(Tokens.canvas)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 0) {
                     if !isNew && !padOpen {
@@ -86,8 +86,9 @@ struct EntrySheet: View {
             }
             .sheet(isPresented: $pickingTags) {
                 TagPickerSheet(selected: $d.tags, suggestion: Tags.suggest(title: d.title, category: d.category))
+                    .sheetSurface()
             }
-            .sheet(isPresented: $pickingDate) { EntryDateSheet(date: $d.date) { dateSet = true } }
+            .sheet(isPresented: $pickingDate) { EntryDateSheet(date: $d.date) { dateSet = true }.sheetSurface() }
         }
         .presentationDetents([.large])
         .onAppear {
@@ -598,11 +599,13 @@ struct EntryForm: View {
             Section("What it was") {
                 TextField("Name", text: $draft.title)
             }
+            .listRowBackground(Tokens.card)
             Section("Amount (đ)") {
                 TextField("0", text: amountText)
                     .keyboardType(.numberPad)
                     .monospacedDigit()
             }
+            .listRowBackground(Tokens.card)
             Section {
                 Picker("Type", selection: flowBinding) {
                     Text("Expense").tag(Flow.out)
@@ -618,7 +621,9 @@ struct EntryForm: View {
                     in: ...Date.now,
                     displayedComponents: .date)
             }
+            .listRowBackground(Tokens.card)
         }
+        .appListSurface()
         .font(AppFont.main(16))
         .scrollDismissesKeyboard(.interactively)
     }

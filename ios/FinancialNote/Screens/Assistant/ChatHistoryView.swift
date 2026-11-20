@@ -75,7 +75,7 @@ struct ChatHistoryView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .background(Tokens.bg1)
+        .background(Tokens.canvas)
         .navigationTitle("Chat History")
         .toolbarTitleDisplayMode(.large)
         .toolbar {
@@ -107,14 +107,18 @@ struct NoteDetailView: View {
             } header: {
                 Text("You wrote · \(Day.long(note.date))")
             }
+            .listRowBackground(Tokens.card)
             Section("Saved as") {
                 ForEach(lines) { e in EntryRow(entry: e, hidden: app.hidden) }
             }
+            .listRowBackground(Tokens.card)
             Section {
                 Button("View on Today", systemImage: "list.bullet") { onView(note.date) }
                 Button("Remove this note", systemImage: "trash", role: .destructive) { confirmDelete = true }
             }
+            .listRowBackground(Tokens.card)
         }
+        .appListSurface()
         .font(AppFont.main(16))
         .navigationTitle(Day.short(note.date))
         .toolbarTitleDisplayMode(.inline)

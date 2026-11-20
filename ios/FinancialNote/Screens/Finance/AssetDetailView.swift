@@ -144,7 +144,7 @@ struct AssetDetailView: View {
             .padding(.horizontal, Space.s20)
             .padding(.bottom, Space.s24)
         }
-        .background(Tokens.bg3)
+        .background(Tokens.canvas)
         .navigationTitle(asset.name)
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
@@ -158,8 +158,8 @@ struct AssetDetailView: View {
                 .accessibilityLabel("More")
             }
         }
-        .sheet(item: $moving) { kind in AssetMoveSheet(asset: asset, kind: kind) }
-        .sheet(isPresented: $editing) { AddAssetSheet(editing: asset) }
+        .sheet(item: $moving) { kind in AssetMoveSheet(asset: asset, kind: kind).sheetSurface() }
+        .sheet(isPresented: $editing) { AddAssetSheet(editing: asset).sheetSurface() }
         .confirmationDialog("Delete “\(asset.name)”?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete asset", role: .destructive) {
                 LocalStore(context: context).removeAsset(asset, today: app.today)
@@ -183,10 +183,14 @@ struct AssetDetailView: View {
 
     private func action(_ title: String, _ symbol: String, _ kind: AssetMoveKind) -> some View {
         Button { moving = kind } label: {
-            VStack(spacing: Space.s4) {
-                Image(systemName: symbol).font(.system(size: 17, weight: .semibold))
+            // Every icon sits in the same box, so the icons and the labels line up across buttons.
+            VStack(spacing: Space.s6) {
+                Image(systemName: symbol).font(.system(size: 18, weight: .semibold))
+                    .frame(width: 24, height: 24)
                 Text(title).font(AppFont.capture(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
+                    .frame(height: 18)
             }
+            .frame(maxHeight: .infinity, alignment: .center)
             .foregroundStyle(Tokens.brand700)
             .frame(maxWidth: .infinity, minHeight: 64)
             .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c16))
@@ -231,11 +235,14 @@ struct AssetMoveSheet: View {
                 } footer: {
                     Text(footer)
                 }
+                .listRowBackground(Tokens.card)
                 Section {
                     DatePicker("Day", selection: $date, in: ...Date.now, displayedComponents: .date)
                         .tint(Tokens.brand600)
                 }
+                .listRowBackground(Tokens.card)
             }
+            .appListSurface()
             .font(AppFont.bodyLarge())
             .navigationTitle(title)
             .toolbarTitleDisplayMode(.inline)

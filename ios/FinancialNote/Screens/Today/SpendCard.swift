@@ -29,7 +29,7 @@ struct SpendCard: View {
             HStack(alignment: .center) {
                 HStack(alignment: .firstTextBaseline, spacing: Space.s4) {
                     Text(hidden ? "••••••" : (net < 0 ? "-" : "") + Money.format(abs(net)))
-                        .font(AppFont.heading(40, .medium, relativeTo: .largeTitle))
+                        .font(AppFont.amount(36))
                         .monospacedDigit()
                         // White fading to 24% at the foot of the digits, as in Figma.
                         .foregroundStyle(LinearGradient(
@@ -39,7 +39,7 @@ struct SpendCard: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
                     Text("đ")
-                        .font(AppFont.heading(28, .regular, relativeTo: .title))
+                        .font(AppFont.currency(for: 36))
                         .foregroundStyle(.white.opacity(0.48))
                 }
                 .accessibilityElement(children: .ignore)

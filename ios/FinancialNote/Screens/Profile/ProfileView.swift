@@ -6,6 +6,7 @@ import SwiftUI
 /// rather than shown as switches that do nothing.
 struct ProfileView: View {
     @Environment(\.modelContext) private var context
+    @AppStorage("appearance") private var appearance = "system"
     @Query private var profiles: [Profile]
     @Query private var entries: [Entry]
     @Query private var assets: [Asset]
@@ -31,38 +32,65 @@ struct ProfileView: View {
                             }
                         }
                     }
+                    .listRowBackground(Tokens.card)
 
                     Section("Account") {
                         NavigationLink("Profile") { ProfileDetail(profile: p) }
                         LabeledContent("Currency", value: "VND")
                     }
+                    .listRowBackground(Tokens.card)
 
-                    Section("Data & privacy") {
+                    Section("Display") {
+                        // A dropdown: Auto follows the phone.
+                        HStack {
+                            Text("Appearance")
+                            Spacer()
+                            Menu {
+                                Picker("Appearance", selection: $appearance) {
+                                    Label("Auto", systemImage: "circle.lefthalf.filled").tag("system")
+                                    Label("Light", systemImage: "sun.max.fill").tag("light")
+                                    Label("Dark", systemImage: "moon.fill").tag("dark")
+                                }
+                            } label: {
+                                HStack(spacing: Space.s4) {
+                                    Text(appearance == "light" ? "Light" : appearance == "dark" ? "Dark" : "Auto")
+                                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 12, weight: .semibold))
+                                }
+                                .foregroundStyle(Tokens.grey400)
+                                .frame(minHeight: 44)
+                                .contentShape(.rect)
+                            }
+                        }
+                        Toggle("Hide amounts when the app opens", isOn: Binding(get: { p.hideOnOpen }, set: { p.hideOnOpen = $0; save() }))
+                        NavigationLink("Display") { DisplayView(profile: p) }
+                    }
+                    .listRowBackground(Tokens.card)
+
+                    Section("Help") {
+                        NavigationLink("Report a problem") { ReportView() }
+                        NavigationLink { AboutView() } label: { LabeledContent("About the app", value: Self.version) }
+                    }
+                    .listRowBackground(Tokens.card)
+
+                    Section {
                         NavigationLink { YourDataView() } label: { row("Your data", "See what the app keeps") }
                         NavigationLink { AIInfoView() } label: { row("What the AI does with notes", "Only reads what you write") }
                         ExportLink(label: "Download your data")
                         Toggle(isOn: sampleBinding) {
                             row("Sample data", hasSample ? "Showing made-up notes, bills and assets" : "Fill every screen with made-up data")
                         }
-                    }
-
-                    Section("Display") {
-                        Toggle("Hide amounts when the app opens", isOn: Binding(get: { p.hideOnOpen }, set: { p.hideOnOpen = $0; save() }))
-                        NavigationLink("Display") { DisplayView(profile: p) }
-                    }
-
-                    Section {
-                        NavigationLink("Report a problem") { ReportView() }
-                        NavigationLink { AboutView() } label: { LabeledContent("About the app", value: Self.version) }
                     } header: {
-                        Text("Help")
+                        Text("Data & privacy")
                     } footer: {
                         Text("No account, no server: everything you write stays on this phone.")
                             .padding(.top, Space.s8)
                     }
+                    .listRowBackground(Tokens.card)
+
                 }
             }
-            .font(AppFont.main(16))
+            .appListSurface()
+            .font(AppFont.main(14, .medium))
             .navigationTitle("Profile")
             .tint(Tokens.brand600)
         }
@@ -155,11 +183,13 @@ private struct ProfileDetail: View {
             } footer: {
                 Text("The app doesn't ask for your income, your job or your money goals — it doesn't need them to work.")
             }
+            .listRowBackground(Tokens.card)
         }
+        .appListSurface()
         .font(AppFont.main(16))
         .navigationTitle("Profile")
         .toolbarTitleDisplayMode(.inline)
-        .sheet(isPresented: $editing) {
+        .sheet(isPresented: $editing) { Group {
             NavigationStack {
                 Form {
                     Section {
@@ -168,7 +198,9 @@ private struct ProfileDetail: View {
                     } footer: {
                         Text("This is the name in “Good morning, …”. It stays on this phone.")
                     }
+                    .listRowBackground(Tokens.card)
                 }
+                .appListSurface()
                 .navigationTitle("Edit profile")
                 .toolbarTitleDisplayMode(.inline)
                 .toolbar {
@@ -184,7 +216,7 @@ private struct ProfileDetail: View {
                 }
             }
             .presentationDetents([.medium])
-        }
+        }.sheetSurface() }
     }
 }
 
@@ -200,17 +232,20 @@ private struct YourDataView: View {
             Section {
                 intro("What the app keeps", "The full list. Nothing hidden.")
             }
+            .listRowBackground(Tokens.card)
             Section("On your phone") {
                 LabeledContent("Spending notes", value: "\(entries.count) \(entries.count == 1 ? "line" : "lines")")
                 LabeledContent("Assets", value: "\(assets.count)")
                 LabeledContent("Bills", value: "\(bills.count)")
             }
+            .listRowBackground(Tokens.card)
             Section("Sent to a server") {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Nothing")
                     Text("Notes are read on this phone. Paying a scanned QR saves a QR with the amount to your Photos and copies the details on this phone (cleared after 10 minutes), then opens your bank app.").font(AppFont.main(12)).foregroundStyle(.secondary)
                 }
             }
+            .listRowBackground(Tokens.card)
             Section {
                 Text("Bank accounts")
                 Text("Location")
@@ -220,13 +255,16 @@ private struct YourDataView: View {
             } footer: {
                 Text("The app doesn't connect to a bank and never moves money: transfers are confirmed in your bank's own app.")
             }
+            .listRowBackground(Tokens.card)
             Section {
                 ExportLink(label: "Download everything")
                 NavigationLink { DeleteAllView() } label: {
                     Text("Delete everything").foregroundStyle(Tokens.text900)
                 }
             }
+            .listRowBackground(Tokens.card)
         }
+        .appListSurface()
         .font(AppFont.main(16))
         .navigationTitle("Your data")
         .toolbarTitleDisplayMode(.inline)
@@ -237,6 +275,7 @@ private struct AIInfoView: View {
     var body: some View {
         List {
             Section { intro("The note reader does one thing", "The app still works if you type everything yourself.") }
+            .listRowBackground(Tokens.card)
             Section("On") {
                 LabeledContent {
                     Text("On").foregroundStyle(Tokens.brand700)
@@ -255,6 +294,7 @@ private struct AIInfoView: View {
                     }
                 }
             }
+            .listRowBackground(Tokens.card)
             Section {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Investment tips")
@@ -268,7 +308,9 @@ private struct AIInfoView: View {
             } footer: {
                 Text("These four were cut, not postponed: in our survey 38% refused investment tips, 31% refused being judged on their spending, and 63% didn't want an app touching their money.\n\nIn this version the note reader runs on your phone — no note leaves it.")
             }
+            .listRowBackground(Tokens.card)
         }
+        .appListSurface()
         .font(AppFont.main(16))
         .navigationTitle("What the AI does")
         .toolbarTitleDisplayMode(.inline)
@@ -299,16 +341,19 @@ struct DeleteAllView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .listRowBackground(Tokens.card)
             Section {
                 ExportLink(label: "Download a copy first")
             } footer: {
                 Text("Saves a file you keep, before anything is removed.")
             }
+            .listRowBackground(Tokens.card)
             Section("Type DELETE to confirm") {
                 TextField("DELETE", text: $typed)
                     .textInputAutocapitalization(.characters)
                     .autocorrectionDisabled()
             }
+            .listRowBackground(Tokens.card)
             Section {
                 Button("Delete everything", role: .destructive) {
                     LocalStore(context: context).clearAll()
@@ -317,7 +362,9 @@ struct DeleteAllView: View {
                 .disabled(!Self.confirms(typed))
                 Button("No, keep it") { dismiss() }
             }
+            .listRowBackground(Tokens.card)
         }
+        .appListSurface()
         .font(AppFont.main(16))
         .navigationTitle("Delete data")
         .toolbarTitleDisplayMode(.inline)
@@ -338,6 +385,7 @@ private struct DisplayView: View {
     var body: some View {
         List {
             Section { intro("You choose when to look", "No number jumps out at you.") }
+            .listRowBackground(Tokens.card)
             Section("When the app opens") {
                 Toggle(isOn: Binding(get: { profile.hideOnOpen }, set: { profile.hideOnOpen = $0; try? context.save() })) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -352,8 +400,11 @@ private struct DisplayView: View {
                     }
                 }
             }
+            .listRowBackground(Tokens.card)
             Section("Numbers") { LabeledContent("Currency", value: "VND") }
+            .listRowBackground(Tokens.card)
         }
+        .appListSurface()
         .font(AppFont.main(16))
         .navigationTitle("Display")
         .toolbarTitleDisplayMode(.inline)
@@ -369,25 +420,30 @@ private struct ReportView: View {
     var body: some View {
         Form {
             Section { intro("What went wrong?", "Write it any way you like.") }
+            .listRowBackground(Tokens.card)
             Section("Topic") {
                 Picker("Topic", selection: $topic) {
                     ForEach(Self.topics, id: \.self) { Text($0).tag($0) }
                 }
                 .pickerStyle(.menu)
             }
+            .listRowBackground(Tokens.card)
             Section {
                 TextField("I typed “cà phê 24k” and it read 240k…", text: $text, axis: .vertical)
                     .lineLimit(5...10)
             } footer: {
                 Text("Only the app version and your iOS version go with it. No amounts, no notes.")
             }
+            .listRowBackground(Tokens.card)
             Section {
                 Button("Send by email", systemImage: "envelope") {
                     if let url = ReportView.mailURL(topic: topic, text: text) { openURL(url) }
                 }
                 .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
+            .listRowBackground(Tokens.card)
         }
+        .appListSurface()
         .font(AppFont.main(16))
         .navigationTitle("Report a problem")
         .toolbarTitleDisplayMode(.inline)
@@ -424,6 +480,7 @@ private struct AboutView: View {
                 sub("Comment on how you spend", "31% refused")
                 sub("Read your bank account", "78% worry an app knows too much")
             }
+            .listRowBackground(Tokens.card)
             Section {
                 LabeledContent("Version", value: ProfileView.version)
             } footer: {
@@ -431,7 +488,9 @@ private struct AboutView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top, Space.s16)
             }
+            .listRowBackground(Tokens.card)
         }
+        .appListSurface()
         .font(AppFont.main(16))
         .navigationTitle("About the app")
         .toolbarTitleDisplayMode(.inline)

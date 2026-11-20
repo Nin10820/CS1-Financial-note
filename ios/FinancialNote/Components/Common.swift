@@ -25,11 +25,11 @@ struct AmountText: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 2) {
             Text(hidden ? "••••••" : sign + (value.map(Money.format) ?? "—"))
-                .font(size >= 24 ? AppFont.amount(size >= 28 ? 32 : size) : AppFont.main(size, .medium))
+                .font(size >= 24 ? AppFont.amount(size) : AppFont.main(size, .medium))
                 .foregroundStyle(color)
                 .monospacedDigit()
             Text("đ")
-                .font(size >= 24 ? AppFont.currency(for: 32) : AppFont.main(12, .medium))
+                .font(size >= 24 ? AppFont.currency(for: size) : AppFont.main(12, .medium))
                 .foregroundStyle(currencyColor)
         }
         .accessibilityElement(children: .ignore)

@@ -7,6 +7,8 @@ struct RootView: View {
     @State private var app = AppState()
     @Query private var profiles: [Profile]
     @State private var didApplyPrefs = false
+    /// "system", "light" or "dark", picked in Profile → Display.
+    @AppStorage("appearance") private var appearance = "system"
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var context
 
@@ -27,18 +29,20 @@ struct RootView: View {
             }
         }
         .tint(Tokens.brand600)
+        .preferredColorScheme(appearance == "light" ? .light : appearance == "dark" ? .dark : nil)
         .overlay(alignment: .bottom) {
             // The AI tab has its own composer at the bottom; the bar steps aside while chatting.
             if app.tab != .ai || !app.aiChatting { AppTabBar() }
         }
         .overlay { ActionMenu() }
-        .sheet(isPresented: $app.dayNoteOpen) { DayNoteEditor() }
+        .sheet(isPresented: $app.dayNoteOpen) { DayNoteEditor().sheetSurface() }
         .sheet(isPresented: $app.templateOpen, onDismiss: { app.templatePrefill = nil }) {
             EntrySheet(entry: nil, prefill: app.templatePrefill)
+                .sheetSurface()
         }
-        .sheet(isPresented: $app.profileOpen) { ProfileView() }
-        .fullScreenCover(isPresented: $app.scanOpen) { ScanView() }
-        .fullScreenCover(item: $app.transfer) { TransferSheet(draft: $0) }
+        .sheet(isPresented: $app.profileOpen) { ProfileView().sheetSurface() }
+        .fullScreenCover(isPresented: $app.scanOpen) { ScanView().sheetSurface() }
+        .fullScreenCover(item: $app.transfer) { TransferSheet(draft: $0).sheetSurface() }
         .alert(sentTitle, isPresented: Binding(
             get: { app.sentToBank != nil && scenePhase == .active && app.transfer == nil },
             set: { if !$0 { app.sentToBank = nil } })

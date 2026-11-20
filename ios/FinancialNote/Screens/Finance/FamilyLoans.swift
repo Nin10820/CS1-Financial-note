@@ -31,6 +31,7 @@ struct LoanPersonSheet: View {
                     }
                     .padding(.vertical, Space.s4)
                 }
+                .listRowBackground(Tokens.card)
                 Section("History") {
                     ForEach(loans.sorted { $0.date > $1.date }) { l in
                         HStack {
@@ -51,7 +52,9 @@ struct LoanPersonSheet: View {
                         }
                     }
                 }
+                .listRowBackground(Tokens.card)
             }
+            .appListSurface()
             .navigationTitle(who)
             .toolbarTitleDisplayMode(.inline)
             .toolbar {
@@ -60,7 +63,7 @@ struct LoanPersonSheet: View {
                     Button("Add", systemImage: "plus") { adding = true }
                 }
             }
-            .sheet(isPresented: $adding) { AddLoanSheet(people: [who], who: who, today: today) }
+            .sheet(isPresented: $adding) { AddLoanSheet(people: [who], who: who, today: today).sheetSurface() }
         }
     }
 

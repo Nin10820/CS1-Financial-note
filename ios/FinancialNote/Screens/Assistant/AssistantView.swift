@@ -71,7 +71,7 @@ struct AssistantView: View {
                     if let last = turns.last { animate { proxy.scrollTo(last.id, anchor: .bottom) } }
                 }
             }
-            .background(Tokens.bg1)
+            .background(Tokens.canvas)
             .navigationTitle("AI")
             .toolbarTitleDisplayMode(.inline)
             .safeAreaInset(edge: .bottom) { bottom }
@@ -92,14 +92,14 @@ struct AssistantView: View {
             }
         }
         .overlay { if drawer { historyDrawer } }
-        .sheet(isPresented: $picking) { DayPickerSheet(day: $date) }
-        .fullScreenCover(isPresented: $voiceOpen) {
+        .sheet(isPresented: $picking) { DayPickerSheet(day: $date).sheetSurface() }
+        .fullScreenCover(isPresented: $voiceOpen) { Group {
             VoiceNoteView { said in
                 text = said
                 send()
             }
-        }
-        .sheet(item: $fixing) { target in DraftFixSheet(draft: draftBinding(target)) }
+        }.sheetSurface() }
+        .sheet(item: $fixing) { target in DraftFixSheet(draft: draftBinding(target)).sheetSurface() }
         .alert("Comes later", isPresented: Binding(get: { later != nil }, set: { if !$0 { later = nil } })) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -203,7 +203,7 @@ struct AssistantView: View {
                 }
             }
             .frame(width: 310)
-            .background(Tokens.bg1)
+            .background(Tokens.canvas)
             .clipShape(UnevenRoundedRectangle(bottomTrailingRadius: Corner.c20, topTrailingRadius: Corner.c20))
             .ignoresSafeArea(edges: .vertical)
             .transition(UIAccessibility.isReduceMotionEnabled ? .opacity : .move(edge: .leading))

@@ -11,7 +11,7 @@ struct StatCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s8) {
             Text(label).font(AppFont.body(.medium)).foregroundStyle(Tokens.text700)
-            AmountText(value: abs(amount), size: 32, sign: amount < 0 ? "-" : "", hidden: hidden)
+            AmountText(value: abs(amount), size: 36, sign: amount < 0 ? "-" : "", hidden: hidden)
             // Three in a row; four as two by two.
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Space.s12, alignment: .topLeading),
                                      count: stats.count == 4 ? 2 : max(stats.count, 1)),
@@ -32,6 +32,32 @@ struct StatCard: View {
         }
         .padding(Space.s16)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// Two parts in one card, split by a faint dashed line: the headline figures on top, the chart
+/// that breaks them down underneath.
+struct JoinedCard<Top: View, Bottom: View>: View {
+    @ViewBuilder var top: Top
+    @ViewBuilder var bottom: Bottom
+
+    var body: some View {
+        VStack(spacing: 0) {
+            top
+            GeometryReader { g in
+                Path { p in
+                    p.move(to: CGPoint(x: 0, y: 0.5))
+                    p.addLine(to: CGPoint(x: g.size.width, y: 0.5))
+                }
+                .stroke(Tokens.bd1, style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+            }
+            .frame(height: 1)
+            .padding(.horizontal, Space.s16)
+            .accessibilityHidden(true)
+            bottom
+        }
         .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
+        // A hairline edge, like iOS grouped cards: there, not standing out.
+        .overlay(RoundedRectangle(cornerRadius: Corner.c20).strokeBorder(Tokens.bd1, lineWidth: 0.5))
     }
 }

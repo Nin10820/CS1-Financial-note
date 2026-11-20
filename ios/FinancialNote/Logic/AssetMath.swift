@@ -63,10 +63,13 @@ enum AssetMath {
     static func guessIcon(_ name: String, kind: AssetKind) -> AssetIcon {
         let n = name.lowercased(with: Locale(identifier: "vi"))
         func has(_ p: String) -> Bool { n.range(of: p, options: .regularExpression) != nil }
-        if has("gold|vàng|vang|sjc|pnj") { return .gold }
-        if has("fund|quỹ|quy|fmarket|stock|cổ phiếu|etf|vn30") { return .fund }
-        if has("bank|tiết kiệm|tiet kiem|saving|tp|vcb|techcom|mb|acb") { return .bank }
         if kind == .owed { return .lent }
+        if has("gold|vàng|vang|sjc|pnj|doji") { return .gold }
+        if has("usd|dollar|đô|\\$") { return .usd }
+        if has("coin|btc|bitcoin|eth|crypto|usdt") { return .coin }
+        if has("stock|cổ phiếu|co phieu|vn30|vnindex|chứng khoán") { return .stock }
+        if has("fund|quỹ|quy|fmarket|etf|dcds|vesaf") { return .fund }
+        if has("bank|tiết kiệm|tiet kiem|saving|tp|vcb|techcom|mb|acb|gửi") { return .bank }
         return .cash
     }
 }

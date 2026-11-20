@@ -89,14 +89,14 @@ struct DueView: View {
                 LinearGradient(colors: [Tokens.brand100, Tokens.bg3], startPoint: .top, endPoint: .bottom)
                     .frame(height: 320).ignoresSafeArea().accessibilityHidden(true)
             }
-            .background(Tokens.bg3)
+            .background(Tokens.canvas)
             .navigationTitle("Due")
             .toolbarTitleDisplayMode(.inline)
             .toolbar { toolbar(hasInstallments: bills.contains { $0.kind == .installment }) }
             .navigationDestination(for: DueRoute.self) { _ in
                 InstallmentsView(sheet: $sheet)
             }
-            .sheet(item: $sheet) { which in
+            .sheet(item: $sheet) { which in Group {
                 switch which {
                 case .bill(let id):
                     if let bill = bills.first(where: { $0.id == id }) {
@@ -112,7 +112,7 @@ struct DueView: View {
                         sheet = .bill(id)
                     }
                 }
-            }
+            }.sheetSurface() }
             .sensoryFeedback(.success, trigger: ticks)
         }
         // On the whole stack, not the scroll view, so it sits above the tab bar.
@@ -151,13 +151,9 @@ struct DueView: View {
                 Image(systemName: "ellipsis")
             }
             .accessibilityLabel("More")
-            Button {
-                sheet = .add(nil)
-            } label: {
-                Image(systemName: "plus")
-            }
-            .accessibilityLabel("Add a bill")
         }
+        ToolbarSpacer(.fixed, placement: .topBarTrailing)
+        ToolbarItem(placement: .topBarTrailing) { ProfileButton() }
     }
 
     /// "Nov 2026" large, like Today's date; a red dot when it's this month.
@@ -194,14 +190,16 @@ struct DueView: View {
                 .accessibilityAddTraits(.isHeader)
             VStack(spacing: 0) {
                 ForEach(Array(items.enumerated()), id: \.element.bill.id) { i, item in
-                    if i > 0 { Divider().overlay(Tokens.bd0).padding(.leading, 52) }
+                    if i > 0 { Divider().overlay(Tokens.bd0).padding(.leading, 52).padding(.trailing, Space.s12) }
                     BillRow(bill: item.bill, date: item.date, month: app.dueMonth, today: app.today, hidden: app.hidden,
                             onTick: { tick(item.bill) }, onOpen: { sheet = .bill(item.bill.id) })
                 }
             }
-            .padding(.horizontal, Space.s12)
-            .padding(.vertical, Space.s6)
-            .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
+            // Finance's list padding; the tick's own 44 pt target makes the right edge.
+            .padding(.leading, Space.s16)
+            .padding(.trailing, Space.s4)
+            .padding(.vertical, Space.s4)
+            .background(Tokens.card, in: .rect(cornerRadius: Corner.c20))
         }
     }
 

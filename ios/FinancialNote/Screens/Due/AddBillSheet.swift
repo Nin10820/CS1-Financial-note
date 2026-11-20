@@ -178,6 +178,7 @@ struct AddBillSheet: View {
         }
         .sheet(item: $pickingDate, onDismiss: { go(next(after: active)) }) { which in
             BillDateSheet(date: $draft.due, title: which == .due ? "Due" : "Starting from")
+                .sheetSurface()
         }
         .onAppear { startTyping() }
         .onChange(of: focus) { _, f in

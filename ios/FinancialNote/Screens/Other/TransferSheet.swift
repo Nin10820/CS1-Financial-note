@@ -35,7 +35,7 @@ struct TransferSheet: View {
                 }
             }
             .padding(.bottom, noteFocused ? Space.s8 : 0)
-            .background(Tokens.bg3)
+            .background(Tokens.canvas)
             .navigationTitle("Check payment")
             .toolbarTitleDisplayMode(.inline)
             .toolbar {
@@ -45,12 +45,12 @@ struct TransferSheet: View {
                 }
             }
         }
-        .sheet(isPresented: $picking) {
+        .sheet(isPresented: $picking) { Group {
             PayFromSheet(selected: draft.from) { bank in
                 draft.from = bank
                 remember(bank)
             }
-        }
+        }.sheetSurface() }
         .alert("Ready to pay", isPresented: $guiding) {
             Button("Open \(draft.from?.name ?? "bank")") { launchBank() }
             Button("Cancel", role: .cancel) {}
@@ -353,7 +353,7 @@ struct PayFromSheet: View {
                 }
                 .padding(Space.s20)
             }
-            .background(Tokens.bg3)
+            .background(Tokens.canvas)
             .navigationTitle("Pay from")
             .toolbarTitleDisplayMode(.inline)
         }

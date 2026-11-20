@@ -58,6 +58,6 @@ enum AppFont {
     static var greeting: Font { title(24, .bold) }
 
     /// A big amount and its "đ", both Bricolage like Figma (đ lighter and smaller).
-    static func amount(_ size: CGFloat) -> Font { heading(size, size >= 40 ? .medium : .semibold, relativeTo: .largeTitle) }
+    static func amount(_ size: CGFloat) -> Font { heading(size, size >= 36 ? .medium : .semibold, relativeTo: .largeTitle) }
     static func currency(for amountSize: CGFloat) -> Font { heading(amountSize * 0.8, .regular, relativeTo: .title) }
 }

@@ -131,7 +131,7 @@ struct TagPickerSheet: View {
                 }
                 .padding(Space.s20)
             }
-            .background(Tokens.bg1)
+            .background(Tokens.canvas)
             .navigationTitle("Select tag")
             .toolbarTitleDisplayMode(.inline)
             .toolbar {

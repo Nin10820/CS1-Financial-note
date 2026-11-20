@@ -49,7 +49,7 @@ struct DayNoteEditor: View {
                     .foregroundStyle(Tokens.grey400)
             }
             .padding(Space.s20)
-            .background(Tokens.bg1)
+            .background(Tokens.canvas)
             .navigationTitle("Notes of the day")
             .toolbarTitleDisplayMode(.inline)
             .toolbar {
@@ -61,7 +61,7 @@ struct DayNoteEditor: View {
                         .disabled(lines.isEmpty)
                 }
             }
-            .sheet(isPresented: $picking) { DayPickerSheet(day: $date) }
+            .sheet(isPresented: $picking) { DayPickerSheet(day: $date).sheetSurface() }
             .onChange(of: date) { _, d in text = existing(d) }
         }
         .onAppear {

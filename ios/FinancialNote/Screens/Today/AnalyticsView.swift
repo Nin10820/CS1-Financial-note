@@ -138,17 +138,17 @@ struct AnalyticsView: View {
             case .all: break
             }
         }
-        .sheet(isPresented: $savingCustom) {
+        .sheet(isPresented: $savingCustom) { Group {
             SaveSheet(value: $saveDraft, left: todayLeft) { v in
                 LocalStore(context: context).putAside(v ?? 0, date: today)
             }
-        }
-        .sheet(isPresented: $settingGoal) {
+        }.sheetSurface() }
+        .sheet(isPresented: $settingGoal) { Group {
             GoalSheet(value: $goalDraft,
                       suggested: SavingPlan(month: month, today: today, entries: entries, goalSetting: 0).suggested) { v in
                 savingGoal = v ?? 0
             }
-        }
+        }.sheetSurface() }
     }
 
     // MARK: - Top chart (View Analysis)

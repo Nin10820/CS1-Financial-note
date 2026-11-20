@@ -40,7 +40,7 @@ struct BillDetailSheet: View {
                 .padding(.bottom, Space.s24)
             }
             .background(alignment: .top) { glow }
-            .background(Tokens.bg3)
+            .background(Tokens.canvas)
             .safeAreaInset(edge: .bottom, spacing: 0) { footer(due: due, record: record) }
             .navigationTitle(bill.kind == .installment ? "Installment" : "Bill")
             .toolbarTitleDisplayMode(.inline)
@@ -411,6 +411,7 @@ struct PaidHistorySheet: View {
                     Text("Bills you check off will show up here.")
                         .font(AppFont.main(14))
                         .foregroundStyle(Tokens.grey400)
+                        .listRowBackground(Tokens.card)
                 }
                 ForEach(rows) { row in
                     Button {
@@ -428,7 +429,9 @@ struct PaidHistorySheet: View {
                     }
                     .accessibilityElement(children: .combine)
                 }
+                .listRowBackground(Tokens.card)
             }
+            .appListSurface()
             .navigationTitle("History")
             .toolbarTitleDisplayMode(.inline)
             .toolbar {

@@ -75,19 +75,19 @@ struct TodayView: View {
                 scrolled = now
             }
             .background(alignment: .top) { glow }
-            .background(Tokens.bg3)
+            .background(Tokens.canvas)
             .toolbar { toolbar }
             .navigationTitle(scrolled ? scrolledTitle : "")
             .toolbarTitleDisplayMode(.inline)
-            .sheet(isPresented: $picking) { DayPickerSheet(day: $app.day) }
-            .sheet(item: $openEntry) { EntrySheet(entry: $0) }
-            .sheet(isPresented: $summaryOpen) {
+            .sheet(isPresented: $picking) { DayPickerSheet(day: $app.day).sheetSurface() }
+            .sheet(item: $openEntry) { EntrySheet(entry: $0).sheetSurface() }
+            .sheet(isPresented: $summaryOpen) { Group {
                 AnalyticsView(entries: entries, anchor: app.day, today: app.today, hidden: app.hidden) {
                     // Expand: close the sheet, then show the same view as a page here.
                     summaryOpen = false
                     Task { try? await Task.sleep(for: .milliseconds(350)); analysisPushed = true }
                 }
-            }
+            }.sheetSurface() }
             .navigationDestination(isPresented: $analysisPushed) {
                 AnalyticsView(entries: entries, anchor: app.day, today: app.today, hidden: app.hidden,
                               pushed: true, onAdd: { app.actionsOpen = true })
@@ -113,15 +113,7 @@ struct TodayView: View {
             .accessibilityLabel("Go to today")
         }
         ToolbarSpacer(.fixed, placement: .topBarTrailing)
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                app.profileOpen = true
-            } label: {
-                AppIcon(.user, size: 24)
-                    .foregroundStyle(Tokens.brand600)
-            }
-            .accessibilityLabel("Profile")
-        }
+        ToolbarItem(placement: .topBarTrailing) { ProfileButton() }
     }
 
     /// Left: "28• Oct 2026" (Daily, Weekly) or "2026•" (Monthly); the red dot marks now.
@@ -288,7 +280,7 @@ struct TodayView: View {
 
     /// Soft green light at the top of the screen (page glow from tokens.css).
     private var glow: some View {
-        LinearGradient(colors: [Tokens.brand100, Tokens.bg3], startPoint: .top, endPoint: .bottom)
+        LinearGradient(colors: [Tokens.brand100, Tokens.canvas], startPoint: .top, endPoint: .bottom)
             .frame(height: 320)
             .ignoresSafeArea()
             .accessibilityHidden(true)

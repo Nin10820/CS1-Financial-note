@@ -61,7 +61,7 @@ struct ScanView: View {
             .padding(.horizontal, Space.s20)
             .padding(.bottom, Space.s8)
         }
-        .background(Tokens.bg3)
+        .background(Tokens.canvas)
         .task {
             #if DEBUG
             // UI tests: feed a code as if the camera had read it.

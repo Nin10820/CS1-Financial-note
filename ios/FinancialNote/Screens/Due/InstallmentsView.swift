@@ -52,7 +52,7 @@ struct InstallmentsView: View {
             .padding(.horizontal, Space.s20)
             .padding(.bottom, Space.s24)
         }
-        .background(Tokens.bg3)
+        .background(Tokens.canvas)
         .navigationTitle("Installments")
         .toolbarTitleDisplayMode(.inline)
         .toolbar {

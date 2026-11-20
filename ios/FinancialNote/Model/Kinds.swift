@@ -81,8 +81,28 @@ nonisolated enum AssetIcon: String, Codable, Sendable, CaseIterable {
     case bank
     case cash
     case lent
+    case usd
+    case stock
+    case coin
+    case piggy
 
-    /// Short mark drawn on the history tile.
+    /// The SF Symbol drawn on the tile, so you can tell the asset at a glance.
+    /// Gold keeps its "Au" mark: there's no gold bar symbol.
+    var symbol: String? {
+        switch self {
+        case .gold: nil
+        case .fund: "chart.pie.fill"
+        case .bank: "building.columns.fill"
+        case .cash: "dongsign"
+        case .lent: "arrow.up.right"
+        case .usd: "dollarsign"
+        case .stock: "chart.line.uptrend.xyaxis"
+        case .coin: "bitcoinsign"
+        case .piggy: nil
+        }
+    }
+
+    /// Short mark used when there's no symbol, and in tests.
     var mark: String {
         switch self {
         case .gold: "Au"
@@ -90,6 +110,10 @@ nonisolated enum AssetIcon: String, Codable, Sendable, CaseIterable {
         case .bank: "TP"
         case .cash: "₫"
         case .lent: "→"
+        case .usd: "$"
+        case .stock: "↗"
+        case .coin: "₿"
+        case .piggy: "S"
         }
     }
 }

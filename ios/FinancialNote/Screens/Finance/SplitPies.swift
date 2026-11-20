@@ -2,7 +2,7 @@ import Charts
 import SwiftUI
 
 /// What you own by group, as a ring with the biggest share in the middle, the legend beside it.
-/// Money others owe you (Owed) sits under the legend, greyed: it isn't counted. Tap a group to
+/// Money others owe you (Owed) counts like any other group. Tap a group to
 /// show only its assets in the list below; tap it again for all.
 struct AssetsPie: View {
     var assets: [Asset]
@@ -10,12 +10,11 @@ struct AssetsPie: View {
     @Binding var picked: AssetKind?
 
     var body: some View {
-        let shares = AssetMath.shares(assets.filter { $0.kind != .owed })
-        let owned = shares.groups.filter { $0.sum > 0 && $0.kind != .owed }
+        let shares = AssetMath.shares(assets)
+        let owned = shares.groups.filter { $0.sum > 0 }
         let top = owned.max { $0.sum < $1.sum }
         let shown = picked.flatMap { p in owned.first { $0.kind == p } } ?? top
-        let lent = assets.filter { $0.kind == .owed }.reduce(0) { $0 + $1.amount }
-        PieCard(title: "By group") {
+        PieCard(title: "Where your money is") {
             ZStack {
                 Chart(owned, id: \.kind) { g in
                     SectorMark(angle: .value("Share", g.sum), innerRadius: .ratio(0.78), angularInset: 3)
@@ -33,12 +32,8 @@ struct AssetsPie: View {
                 }
             }
         } legend: {
-            ForEach(shares.groups.filter { $0.kind != .owed }, id: \.kind) { g in
+            ForEach(shares.groups, id: \.kind) { g in
                 row(g.kind, amount: g.sum, pct: "\(g.pct)%")
-            }
-            if lent > 0 {
-                row(.owed, amount: lent, pct: "—", muted: true)
-                Text("Owed to you isn't counted").font(AppFont.main(11)).foregroundStyle(Tokens.grey400)
             }
         }
     }
@@ -47,7 +42,7 @@ struct AssetsPie: View {
         Button {
             withAnimation(.snappy) { picked = picked == kind ? nil : kind }
         } label: {
-            PieLegend(color: Tokens.assetKind(kind), name: kind == .owed ? "Owed to you" : kind.label,
+            PieLegend(color: Tokens.assetKind(kind), name: kind.label,
                       amount: hidden ? "•••" : AnalyticsView.compact(amount), pct: pct, muted: muted)
                 .padding(.horizontal, Space.s6)
                 .frame(minHeight: 32)
@@ -72,7 +67,7 @@ struct DebtPie: View {
     var body: some View {
         let debts = Self.debts(bills: bills, loans: loans, today: today)
         let total = max(debts.reduce(0) { $0 + $1.sum }, 1)
-        PieCard(title: "Who you owe") {
+        PieCard(title: "Who you still owe") {
             if debts.isEmpty {
                 Circle().fill(Tokens.bg4).padding(Space.s12)
                     .overlay(Text("None").font(AppFont.main(12)).foregroundStyle(Tokens.grey400))
@@ -89,6 +84,7 @@ struct DebtPie: View {
                 let pct = Int((Double(debts[i].sum) / Double(total) * 100).rounded())
                 PieLegend(color: debts[i].color, name: debts[i].name,
                           amount: hidden ? "•••" : AnalyticsView.compact(debts[i].sum), pct: pct == 0 ? "<1%" : "\(pct)%")
+                    .frame(minHeight: 32)
             }
         }
     }
@@ -114,12 +110,11 @@ private struct PieCard<ChartView: View, Legend: View>: View {
             Text(title).font(AppFont.main(14, .semibold)).foregroundStyle(Tokens.text900)
             HStack(alignment: .center, spacing: Space.s20) {
                 chart.frame(width: 140, height: 140)
-                VStack(alignment: .leading, spacing: Space.s8) { legend }
+                VStack(alignment: .leading, spacing: 0) { legend }
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(Space.s16)
-        .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
         .accessibilityElement(children: .contain)
     }
 }
@@ -135,8 +130,8 @@ private struct PieLegend: View {
     var body: some View {
         HStack(spacing: Space.s6) {
             Circle().fill(color).frame(width: 10, height: 10)
-            Text(name).font(AppFont.table(13)).foregroundStyle(muted ? Tokens.grey400 : Tokens.text700)
-                .lineLimit(1).minimumScaleFactor(0.8)
+            Text(name).font(AppFont.table(13, .medium)).foregroundStyle(muted ? Tokens.grey400 : Tokens.text900)
+                .lineLimit(1).truncationMode(.tail)
             Spacer(minLength: Space.s4)
             Text(amount).font(AppFont.table(12)).foregroundStyle(Tokens.grey400).monospacedDigit()
             Text(pct).font(AppFont.table(muted ? 11 : 13, muted ? .regular : .semibold))

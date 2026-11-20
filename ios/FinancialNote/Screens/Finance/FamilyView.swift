@@ -14,27 +14,28 @@ struct CareCard<Footer: View>: View {
         VStack(alignment: .leading, spacing: Space.s8) {
             Text("Taken care of")
                 .font(AppFont.main(16, .medium))
-                .foregroundStyle(Color(hex: 0xC6F36A))
+                .foregroundStyle(LifeTint.family.accent)
             HStack(alignment: .firstTextBaseline, spacing: Space.s4) {
                 Text(hidden ? "••••••" : Money.format(total))
                     .font(AppFont.amount(40))
                     .monospacedDigit()
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Tokens.text900)
                     .minimumScaleFactor(0.7)
                     .lineLimit(1)
-                Text("đ").font(AppFont.currency(for: 40)).foregroundStyle(Tokens.onDark)
+                Text("đ").font(AppFont.currency(for: 40)).foregroundStyle(Tokens.grey400)
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(hidden ? "Taken care of, hidden" : "Taken care of, \(Money.format(total)) dong")
             Text(FinanceText.since(careDates: care.map(\.date), birthYear: birthYear, today: today))
                 .font(AppFont.main(14))
-                .foregroundStyle(Tokens.onDark)
-            Divider().overlay(.white.opacity(0.16)).padding(.vertical, Space.s4)
+                .foregroundStyle(Tokens.text700)
+            Divider().overlay(LifeTint.family.accent.opacity(0.2)).padding(.vertical, Space.s4)
             footer
         }
         .padding(Space.s16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .cardSurface(cornerRadius: Corner.c24)
+        .background(LifeTint.family.gradient, in: .rect(cornerRadius: Corner.c20))
+        .overlay(RoundedRectangle(cornerRadius: Corner.c20).strokeBorder(LifeTint.family.accent.opacity(0.25), lineWidth: 0.5))
     }
 }
 
@@ -70,12 +71,12 @@ struct FamilyView: View {
                     VStack(spacing: Space.s8) {
                         ForEach(groups, id: \.who) { g in
                             HStack(spacing: Space.s8) {
-                                Circle().fill(Color(hex: 0x83C853)).frame(width: 8, height: 8)
-                                Text(g.who).font(AppFont.main(14, .medium)).foregroundStyle(.white)
+                                Circle().fill(LifeTint.family.accent).frame(width: 8, height: 8)
+                                Text(g.who).font(AppFont.main(14, .medium)).foregroundStyle(Tokens.text900)
                                 Spacer()
                                 Text(FinanceText.cadence(who: g.who, firstTitle: g.list.last?.title ?? "", count: g.list.count))
                                     .font(AppFont.main(12))
-                                    .foregroundStyle(Tokens.onDark)
+                                    .foregroundStyle(Tokens.text700)
                             }
                             .accessibilityElement(children: .combine)
                         }
@@ -89,13 +90,13 @@ struct FamilyView: View {
                     if let share, !app.assetsHidden {
                         Text("About \(share)% of what you earned in the last 30 days")
                             .font(AppFont.main(12, .medium))
-                            .foregroundStyle(Tokens.brand600)
+                            .foregroundStyle(LifeTint.family.accent)
                     }
                 }
                 .padding(Space.s16)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Tokens.brand50, in: .rect(cornerRadius: Corner.c16))
-                .overlay(RoundedRectangle(cornerRadius: Corner.c16).strokeBorder(Tokens.brand200))
+                .background(LifeTint.family.accent.opacity(0.08), in: .rect(cornerRadius: Corner.c16))
+                .overlay(RoundedRectangle(cornerRadius: Corner.c16).strokeBorder(LifeTint.family.accent.opacity(0.25)))
 
                 Text("History")
                     .font(AppFont.main(18, .semibold, relativeTo: .headline))
@@ -109,7 +110,7 @@ struct FamilyView: View {
                     if rows.count > 6 {
                         Button(showAll ? "Show less" : "Show all \(rows.count)") { animate { showAll.toggle() } }
                             .font(AppFont.main(14, .medium))
-                            .foregroundStyle(Tokens.brand700)
+                            .foregroundStyle(LifeTint.family.accent)
                             .frame(minHeight: 44)
                     }
                 }
@@ -120,7 +121,7 @@ struct FamilyView: View {
             .padding(.bottom, Space.s24)
             }
         }
-        .background(Tokens.bg3)
+        .background(Tokens.canvas)
         .safeAreaInset(edge: .bottom) {
             Button { talkLater = true } label: {
                 Label("Talk with Monez", systemImage: "sparkles")
@@ -132,7 +133,7 @@ struct FamilyView: View {
             .padding(.horizontal, Space.s20)
             .padding(.bottom, Space.s8)
         }
-        .navigationTitle("Taken care of")
+        .navigationTitle("Your family")
         .toolbarTitleDisplayMode(.inline)
         .alert("Comes later", isPresented: $talkLater) {
             Button("OK", role: .cancel) {}
