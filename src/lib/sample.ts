@@ -1,6 +1,6 @@
 /** Made-up data that fills every screen for demos and first launch. Every item carries `sample: true`
     so it can be removed in one tap without touching anything the user wrote. */
-import type { Asset, AssetMove, CareGift, WorthPoint } from "./assets"
+import type { Asset, AssetIcon, AssetKind, AssetMove, CareGift, FamilyLoan, WorthPoint } from "./assets"
 import type { Bill } from "./bills"
 import { addDays } from "./format"
 import type { CategoryName, DayNote, Entry } from "./store"
@@ -98,22 +98,41 @@ export function makeSample(today: string) {
     { id: id("course"), kind: "installment", name: "English Course", icon: "student", amount: 367_000, varies: false, start: addMonthsIso(`${thisMonth}-18`, -5), lender: "Home Credit", principal: 2_200_000, payments: 6, rate: 0, fee: 0, paid: paidMonths(1, 5, 367_000), createdAt: now, sample: true },
   ]
 
-  // 122,647,000 đ split 40 / 30 / 20 / 10 like the Figma overview.
-  const assets: Asset[] = [
-    { id: id("cash"), name: "Cash & bank account", kind: "available", icon: "cash", amount: 49_059_000, updated: today, sample: true },
-    { id: id("gold"), name: "Gold", kind: "growing", icon: "gold", amount: 14_500_000, updated: addDays(today, -66), sample: true },
-    { id: id("fund"), name: "Fund - Fmarket", kind: "growing", icon: "fund", amount: 22_294_000, updated: addDays(today, -95), sample: true },
-    { id: id("saving"), name: "Saving - TP Bank", kind: "aside", icon: "bank", amount: 24_529_000, updated: addDays(today, -280), sample: true },
-    { id: id("lent"), name: "Lent to Minh", kind: "owed", icon: "lent", amount: 12_265_000, updated: addDays(today, -40), sample: true },
+  // Assets like a real sheet: what was put in over the last months, then what each is worth now
+  // (gold and the fund up, stocks down, cash and savings as they were). Each keeps its moves.
+  const holdings: [string, string, AssetKind, AssetIcon, [number, number][], number][] = [
+    ["vnd", "VND", "available", "cash", [[4_000_000, -20]], 4_000_000],
+    ["usd", "USD", "available", "usd", [[20_100_000, -75]], 20_000_000],
+    ["saving", "Saving", "aside", "bank", [[1_000_000, -88]], 1_000_000],
+    ["gold", "Gold", "growing", "gold", [[18_000_000, -88], [12_000_000, -40]], 65_000_000],
+    ["fund", "Fund", "growing", "fund", [[50_000_000, -88], [20_000_000, -60], [17_750_000, -30]], 110_000_000],
+    ["stock", "Stock", "growing", "stock", [[60_000_000, -85], [48_300_000, -45]], 75_000_000],
+    ["coin", "Coin", "growing", "coin", [[200_000, -10]], 200_000],
+    ["lent", "Lent to Minh", "owed", "lent", [[12_265_000, -40]], 12_265_000],
   ]
+  const assets: Asset[] = []
+  const moves: AssetMove[] = []
+  for (const [key, name, kind, icon, ins, now] of holdings) {
+    const assetId = id(key)
+    const put = ins.reduce((t, [v]) => t + v, 0)
+    const valued = now !== put ? addDays(today, -3) : addDays(today, Math.max(...ins.map(([, ago]) => ago)))
+    assets.push({ id: assetId, name, kind, icon, amount: now, updated: valued, sample: true })
+    ins.forEach(([amount, ago], k) => moves.push({ id: id(`m-${key}-${k}`), title: name, icon, amount, date: addDays(today, ago), sample: true, assetId, kind: "in" }))
+    if (now !== put) moves.push({ id: id(`m-${key}-value`), title: name, icon, amount: now - put, date: valued, sample: true, assetId, kind: "value" })
+  }
 
-  const moves: AssetMove[] = [
-    { id: id("m1"), title: "Gold", icon: "gold", amount: 14_500_000, date: addDays(today, -66), sample: true },
-    { id: id("m2"), title: "Fund - Fmarket", icon: "fund", amount: 5_000_000, date: addDays(today, -95), sample: true },
-    { id: id("m3"), title: "Saving - TP Bank", icon: "bank", amount: 450_000, date: addDays(today, -280), sample: true },
-    { id: id("m4"), title: "Lent to Minh", icon: "lent", amount: 12_265_000, date: addDays(today, -40), sample: true },
-    { id: id("m5"), title: "Fund - Fmarket", icon: "fund", amount: 3_000_000, date: addDays(today, -160), sample: true },
-  ]
+  // Family loans at 6% a year: money from Mom and Grandma, and interest paid to Mom.
+  const loans: FamilyLoan[] = (
+    [
+      ["Mom", "Mẹ gửi", "received", 20_000_000, -425],
+      ["Grand", "Bà Ngoại gửi", "received", 25_000_000, -311],
+      ["Grand", "Bà Ngoại - Feb", "received", 5_000_000, -291],
+      ["Mom", "Mẹ gửi - Feb", "received", 10_000_000, -286],
+      ["Mom", "Mẹ gửi - Mar", "received", 10_000_000, -259],
+      ["Grand", "Bà Ngoại gửi", "received", 5_000_000, -254],
+      ["Mom", "Lãi cho Mom", "interest", 1_200_000, -60],
+    ] as const
+  ).map(([who, title, kind, amount, ago], k) => ({ id: id(`loan-${k}`), who, title, kind, amount, date: addDays(today, ago), rate: 6, sample: true }))
 
   // Family support: parents every month, the younger brother's tuition each term, household bills.
   const care: CareGift[] = []
@@ -131,8 +150,8 @@ export function makeSample(today: string) {
     const wobble = Math.sin(k * 0.9) * 0.05 + Math.sin(k * 0.37) * 0.07
     const value = Math.round(total * (0.18 + 0.82 * t ** 1.6) * (1 + wobble * (1 - t * 0.6)))
     const y = 2020 + Math.floor(k / 12)
-    return { month: `${y}-${String((k % 12) + 1).padStart(2, "0")}`, value: k === months - 1 ? total : value }
+    return { month: `${y}-${String((k % 12) + 1).padStart(2, "0")}`, value: k === months - 1 ? total : value, sample: true }
   })
 
-  return { entries, notes, bills, assets, moves, care, worth, birthYear: Number(today.slice(0, 4)) - 27 }
+  return { entries, notes, bills, assets, moves, care, loans, worth, birthYear: Number(today.slice(0, 4)) - 27 }
 }

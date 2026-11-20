@@ -1,7 +1,7 @@
 /* Profile — Figma Draft › Account (707:7360). Grouped rows on bg-3, white cards, small caps labels. */
 .prof {
-  --page-bg: var(--bg-3);
-  background: var(--bg-3);
+  --page-bg: var(--canvas);
+  background: var(--canvas);
 }
 .prof-body {
   display: flex;
@@ -313,7 +313,7 @@
 }
 
 /* Profile opens over the current tab (from the person button), so it sits above the tab bar. */
-.prof--page {
+.screen.prof--page {
   position: fixed;
   inset: 0;
   z-index: 45;
@@ -330,4 +330,20 @@
   .prof--page {
     animation: none;
   }
+}
+
+/* Appearance: Auto / Light / Dark */
+.prof-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-height: 36px;
+  color: var(--grey-400);
+  font-size: 15px;
+}
+.prof-select select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
 }

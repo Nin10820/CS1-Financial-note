@@ -1,6 +1,6 @@
 /* AI tab — from the iOS AIHome. Basic surfaces, no blur. */
 .ai {
-  --page-bg: var(--bg-3);
+  --page-bg: var(--canvas);
   background: var(--bg-3);
 }
 .ai__title {

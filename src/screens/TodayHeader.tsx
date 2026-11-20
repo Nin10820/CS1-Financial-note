@@ -204,7 +204,7 @@ function YearStrip({ day, today, entries, hidden, onDay }: { day: string; today:
 }
 
 /** Three slots — before | picked | after. Swipe sideways or tap a side cell; future ones are grey. */
-function PeriodStrip({
+export function PeriodStrip({
   keys,
   last,
   selected,

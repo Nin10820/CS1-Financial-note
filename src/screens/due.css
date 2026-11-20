@@ -639,3 +639,56 @@
 .paid-history__text .t-capture-12-r {
   color: var(--grey-400);
 }
+
+/* ── Due (iOS DueView) ─────────────────────────────── */
+.due2 {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+  padding: var(--sp-16) var(--sp-20) calc(112px + env(safe-area-inset-bottom));
+}
+.due2-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+.due2-group + .due2-group {
+  padding-top: var(--sp-8);
+}
+.due2-group__title {
+  margin: 0;
+  padding-left: var(--sp-4);
+  color: var(--grey-400);
+  font-size: 12px;
+  font-weight: var(--weight-s);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.due2-list {
+  padding-right: var(--sp-4);
+}
+.due2-tick {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--grey-300);
+}
+.due2-tick.is-on {
+  color: var(--brand-500);
+}
+.due2-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-12);
+  padding: var(--sp-32) var(--sp-16);
+  border-radius: var(--corner-20);
+  background: var(--card);
+  color: var(--grey-400);
+  font-size: 14px;
+}

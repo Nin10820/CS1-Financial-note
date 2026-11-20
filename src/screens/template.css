@@ -247,20 +247,20 @@
   grid-template-columns: repeat(3, 1fr);
   gap: var(--sp-6);
   padding: var(--sp-8) var(--sp-12) calc(var(--sp-8) + env(safe-area-inset-bottom));
-  background: var(--bg-4);
+  background: var(--keypad-tray);
 }
 .tpl__key {
   min-height: 48px;
   border: 0;
   border-radius: var(--corner-12);
-  background: var(--bg-white);
+  background: var(--keypad-key);
   box-shadow: 0 1px 0 rgb(0 0 0 / 8%);
   color: var(--text-900);
   font-family: var(--font-heading);
   font-size: 22px;
 }
 .tpl__key:active {
-  background: var(--grey-200, #e4e7ec);
+  background: var(--bg-4);
 }
 .tpl__done {
   grid-column: 1 / -1;

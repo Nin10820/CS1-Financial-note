@@ -1,29 +1,37 @@
-import { useEffect, useRef, useState, type ReactNode } from "react"
-import { Amount, Button, IconButton, Sheet, GlassGroup } from "../components/ui"
-import StickyHeader from "../components/StickyHeader"
-import { usePageSwipe } from "../lib/pageSwipe"
+import { useEffect, useRef, useState } from "react"
+import { IconButton } from "../components/ui"
 import { Icon } from "../components/Icon"
-import { money, today } from "../lib/format"
+import StickyHeader from "../components/StickyHeader"
+import { ListCard, ListRow, TickMark, Tile, Toast } from "../components/kit"
+import { usePageSwipe } from "../lib/pageSwipe"
+import { money, today as todayIso } from "../lib/format"
 import { TILE, addMonths, monthSummary, ym, type Bill } from "../lib/bills"
-import dotFilled from "../assets/icons/dot-filled.svg"
-import dotOutline from "../assets/icons/dot-outline.svg"
-import leaderOut from "../assets/icons/leader-out.svg"
-import leaderIn from "../assets/icons/leader-in.svg"
+import { PeriodStrip, MONTHS, MONTHS_LONG } from "./TodayHeader"
+import "./today.css"
+import "./today-header.css"
 
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+const SHORT = MONTHS
 
-export const monthLabel = (m: string) => `${MONTHS[Number(m.slice(5, 7)) - 1]}, ${m.slice(0, 4)}`
+export const monthLabel = (m: string) => `${MONTHS_LONG[Number(m.slice(5, 7)) - 1]}, ${m.slice(0, 4)}`
 /** "Sep 15" */
 export const dueLabel = (iso: string) => `${SHORT[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`
+export const ddmmyyyy = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`
+/** "Was due Oct 15" for a late bill still open, otherwise "Oct 15". */
+const listDate = (due: string, paid: boolean, today: string) => (!paid && due < today ? `Was due ${dueLabel(due)}` : dueLabel(due))
 
-/** Figma Final › Due (765:20114): month, what's left to pay, then STILL / DONE bills. */
+type Filter = "all" | "still" | "done"
+type Tick = { id: number; bill: Bill; amount: number; paid: boolean }
+
+/**
+ * Due — iOS DueView: the month large, three months side by side, the dark Remaining card with
+ * All / Still · Done / History, then the bills in white cards. Ticking records the spending on the
+ * day it's ticked; a note offers Undo.
+ */
 export default function Due({
   onProfile,
   month,
   onMonthChange,
   bills,
-  name,
   hidden,
   onToggleHidden,
   onToggle,
@@ -37,7 +45,6 @@ export default function Due({
   month: string
   onMonthChange: (m: string) => void
   bills: Bill[]
-  name: string
   hidden: boolean
   onToggleHidden: () => void
   onToggle: (bill: Bill, paid: boolean) => void
@@ -47,13 +54,25 @@ export default function Due({
   onHistory: () => void
   onInstallments: () => void
 }) {
+  const today = todayIso()
   const s = monthSummary(bills, month)
-  const [open, setOpen] = useState({ still: true, done: true })
+  const [filter, setFilter] = useState<Filter>("all")
   const [menu, setMenu] = useState(false)
+  // Bills ticked while looking stay in the group they were in, so the list doesn't jump under the finger.
+  const [stay, setStay] = useState<Record<string, boolean>>({})
+  const [tick, setTick] = useState<Tick | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
-  const mask = (v: number) => (hidden ? "••••••" : money(v))
   const hasInstallments = bills.some((b) => b.kind === "installment")
 
+  useEffect(() => {
+    setStay({})
+    setTick(null)
+  }, [month])
+  useEffect(() => {
+    if (!tick) return
+    const t = setTimeout(() => setTick(null), 4000)
+    return () => clearTimeout(t)
+  }, [tick])
   useEffect(() => {
     if (!menu) return
     const close = (e: MouseEvent | KeyboardEvent) => {
@@ -67,161 +86,194 @@ export default function Due({
     }
   }, [menu])
 
-  // Swipe the page for the previous / next month.
+  const inDone = (b: Bill) => stay[b.id] ?? !!b.paid[month]
+  const still = s.due.filter((x) => !inDone(x.bill))
+  const done = s.due.filter((x) => inDone(x.bill))
+
+  const toggle = (bill: Bill) => {
+    const paid = !bill.paid[month]
+    setStay((m) => (bill.id in m ? m : { ...m, [bill.id]: !paid }))
+    onToggle(bill, paid)
+    setTick({ id: Date.now(), bill, amount: bill.paid[month]?.amount ?? bill.amount, paid })
+  }
+
+  // What's due in each month, for the strip. Bills are known ahead, so months to come can be picked.
+  const now = ym(today)
+  const earliest = bills.reduce((m, b) => (ym(b.start) < m ? ym(b.start) : m), now)
+  const first = earliest < addMonths(now, -12) ? earliest : addMonths(now, -12)
+  const last = addMonths(now, 12)
+  const keys: string[] = []
+  const dueBy: Record<string, number> = {}
+  for (let k = first; k <= last; k = addMonths(k, 1)) {
+    keys.push(k)
+    dueBy[k] = monthSummary(bills, k).due.reduce((t, x) => t + (x.bill.paid[k]?.amount ?? x.bill.amount), 0)
+  }
+
   const swipe = usePageSwipe((n) => onMonthChange(addMonths(month, n)))
+  const short = (v: number) => (v >= 1_000_000 ? `${money(Math.floor(v / 1000))}K` : money(v))
+  const [y, mo] = month.split("-").map(Number)
+
+  const group = (title: string, items: typeof s.due) => (
+    <section className="due2-group">
+      <h3 className="due2-group__title">
+        {title} · {items.length}
+      </h3>
+      <ListCard className="due2-list">
+        {items.map(({ bill, date }) => {
+          const record = bill.paid[month]
+          const paid = !!record
+          const amount = record?.amount ?? bill.amount
+          return (
+            <ListRow
+              key={bill.id}
+              tile={<Tile bg={TILE[bill.icon].solid} icon={bill.icon} dim={paid} />}
+              title={bill.name}
+              sub={listDate(date, paid, today)}
+              amount={`${!paid && bill.varies ? "~" : ""}${hidden ? "•••" : `${money(amount)}đ`}`}
+              done={paid}
+              label={`${bill.name}, ${listDate(date, paid, today)}`}
+              onClick={() => onOpenBill(bill.id)}
+              trailing={
+                <button
+                  type="button"
+                  className={`due2-tick${paid ? " is-on" : ""}`}
+                  aria-label={paid ? `Mark ${bill.name} as not paid` : `Mark ${bill.name} as paid`}
+                  aria-pressed={paid}
+                  onClick={() => toggle(bill)}
+                >
+                  <TickMark on={paid} />
+                </button>
+              }
+            />
+          )
+        })}
+      </ListCard>
+    </section>
+  )
 
   return (
     <div className="screen" {...swipe}>
       <span className="screen__glow" aria-hidden="true" />
       <StickyHeader
-        title={monthLabel(month)}
-        left={
-          <>
-            <div className="due-head__left">
-          <button type="button" className="avatar" aria-label={`Profile, signed in as ${name}`} onClick={onProfile}>
-            {name.slice(0, 2).toUpperCase()}
-          </button>
-          <IconButton icon="calendar" label="This month" variant="glass" onClick={() => onMonthChange(ym(today()))} style={{ color: "var(--grey-500)" }} />
-        </div>
-          </>
-        }
+        title="Due"
+        left={<IconButton icon="calendar" label="This month" variant="glass" size={44} onClick={() => onMonthChange(ym(today))} />}
         right={
-          <div className="pill-group" ref={menuRef}>
-          <GlassGroup aria-label="Bill actions" className="pill-group__glass">
-            <IconButton icon="dots-three" label="More" variant="plain" iconSize={24} aria-expanded={menu} aria-haspopup="menu" onClick={() => setMenu(!menu)} />
-            <IconButton icon="plus-18" label="Add a bill" variant="plain" iconSize={18} onClick={onAdd} />
-          </GlassGroup>
-          {menu && (
-            <div className="note-menu note-menu--top lg lg--thick lg-morph" role="menu">
-              <button type="button" role="menuitem" className="note-menu__item" onClick={() => (setMenu(false), onComingUp())}>
-                <Icon name="calendar-dots" size={20} />
-                Coming up
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                className="note-menu__item"
-                disabled={!hasInstallments}
-                onClick={() => (setMenu(false), onInstallments())}
-              >
-                <Icon name="phone" size={20} />
-                Installments
-              </button>
-            </div>
-          )}
-        </div>
+          <div className="today-top" ref={menuRef} style={{ position: "relative" }}>
+            <IconButton icon="dots-three" label="More" variant="glass" size={44} iconSize={22} aria-expanded={menu} aria-haspopup="menu" onClick={() => setMenu(!menu)} />
+            <IconButton icon="user" label="Profile" variant="glass" size={44} iconSize={24} style={{ color: "var(--brand-600)" }} onClick={onProfile} />
+            {menu && (
+              <div className="k-menu" role="menu">
+                <button type="button" role="menuitem" onClick={() => (setMenu(false), onComingUp())}>
+                  <Icon name="calendar-dots" size={20} />
+                  Coming up
+                </button>
+                <button type="button" role="menuitem" disabled={!hasInstallments} onClick={() => (setMenu(false), onInstallments())}>
+                  <Icon name="phone" size={20} />
+                  Installments
+                </button>
+                <button type="button" role="menuitem" onClick={() => (setMenu(false), onHistory())}>
+                  <Icon name="history" size={20} />
+                  History
+                </button>
+              </div>
+            )}
+          </div>
         }
       />
 
-      <div className="due-month">
-        <IconButton icon="caret-left" label="Previous month" variant="plain" size={32} iconSize={16} onClick={() => onMonthChange(addMonths(month, -1))} />
-        <h1 className="due-month__label" aria-live="polite">
-          {monthLabel(month)}
+      <div className="today-head">
+        <h1 className="today-head__date" aria-label={monthLabel(month)}>
+          <span className="today-head__big">{SHORT[mo - 1]}</span>
+          {month === now && <i className="today-head__dot" aria-label="this month" />}
+          <span className="today-head__month">{y}</span>
         </h1>
-        <IconButton icon="caret-right" label="Next month" variant="plain" size={32} iconSize={16} onClick={() => onMonthChange(addMonths(month, 1))} />
       </div>
 
-      <div className="screen__card due-card-wrap">
-        <section className="fn-spend-card due-card" aria-label="Remaining this month">
-          <p className="fn-spend-card__label">Remaining</p>
-          <div className="fn-spend-card__total">
-            <span className="fn-spend-card__amount tnum">
-              <span className="t-amount-32">{mask(s.remaining)}</span>
-              <span className="fn-spend-card__cur">đ</span>
+      <PeriodStrip
+        keys={keys}
+        last={last}
+        selected={month}
+        spent={dueBy}
+        hidden={hidden}
+        title={(k) => MONTHS_LONG[Number(k.slice(5, 7)) - 1]}
+        label="Months"
+        onSelect={onMonthChange}
+      />
+
+      <div className="due2">
+        <section className="total" aria-label="Remaining this month">
+          <p className="total__label">Remaining</p>
+          <div className="total__row">
+            <span className="total__amount tnum">
+              <span className="total__num">{hidden ? "••••••" : money(s.remaining)}</span>
+              <span className="total__cur">đ</span>
             </span>
-            <IconButton
-              icon="eye-slash"
-              label={hidden ? "Show amounts" : "Hide amounts"}
-              variant="on-dark"
-              size={32}
-              iconSize={16}
-              aria-pressed={hidden}
-              onClick={onToggleHidden}
-            />
+            <button type="button" className="total__eye" aria-label={hidden ? "Show amounts" : "Hide amounts"} aria-pressed={hidden} onClick={onToggleHidden}>
+              <Icon name="eye-slash" size={16} />
+            </button>
           </div>
-          <div className="fn-spend-card__rows">
-            <Leader dot={dotFilled} line={leaderOut} label="Paid" value={mask(s.paid)} />
-            <Leader dot={dotOutline} line={leaderIn} label="Total remaining" value={mask(s.totalRemaining)} />
-          </div>
-          <div className="fn-spend-card__foot">
-            <Button variant="on-dark" icon="clock" onClick={onHistory}>
-              History
-            </Button>
+          <p className="total__meta">
+            paid {hidden ? "••••" : `${short(s.paid)}đ`} <i /> left overall {hidden ? "••••" : `${short(s.totalRemaining)}đ`}
+          </p>
+          <div className="total__filters" role="group" aria-label="Show">
+            <div className="total__box">
+              <button type="button" className={`total__chip${filter === "all" ? " is-on" : ""}`} aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
+                All
+              </button>
+            </div>
+            <div className="total__box total__box--two">
+              <button type="button" className={`total__chip${filter === "still" ? " is-on" : ""}`} aria-pressed={filter === "still"} onClick={() => setFilter("still")}>
+                <Icon name="circle-dashed" size={16} />
+                Still <span className="total__count">{still.length}</span>
+              </button>
+              <button type="button" className={`total__chip${filter === "done" ? " is-on" : ""}`} aria-pressed={filter === "done"} onClick={() => setFilter("done")}>
+                <span style={{ color: "var(--brand-400)", display: "inline-flex" }}>
+                  <Icon name="check-circle" size={16} />
+                </span>
+                Done <span className="total__count">{done.length}</span>
+              </button>
+            </div>
+            <button type="button" className="total__tool" aria-label="History" onClick={onHistory}>
+              <Icon name="history" size={20} />
+            </button>
           </div>
         </section>
-      </div>
 
-      <Sheet className="screen__sheet due-sheet">
         {s.due.length === 0 ? (
-          <div className="due-empty">
-            <p className="t-body-14-r">No bills due in {monthLabel(month).split(",")[0]}.</p>
-            <Button variant="primary" size="md" icon="plus" onClick={onAdd}>
+          <div className="due2-empty">
+            <p>No bills due in {MONTHS_LONG[mo - 1]}.</p>
+            <button type="button" className="k-btn" onClick={onAdd}>
+              <Icon name="plus" size={18} />
               Add a bill
-            </Button>
+            </button>
           </div>
         ) : (
           <>
-            {s.still.length > 0 && (
-              <Group label="Still" count={s.still.length} tone="still" open={open.still} onToggle={() => setOpen((o) => ({ ...o, still: !o.still }))}>
-                {s.still.map(({ bill, date }) => (
-                  <BillItem key={bill.id} bill={bill} date={date} paid={false} hidden={hidden} onToggle={() => onToggle(bill, true)} onOpen={() => onOpenBill(bill.id)} />
-                ))}
-              </Group>
-            )}
-            {s.done.length > 0 && (
-              <Group label="Done" count={s.done.length} tone="done" open={open.done} onToggle={() => setOpen((o) => ({ ...o, done: !o.done }))}>
-                {s.done.map(({ bill, date }) => (
-                  <BillItem key={bill.id} bill={bill} date={date} paid hidden={hidden} month={month} onToggle={() => onToggle(bill, false)} onOpen={() => onOpenBill(bill.id)} />
-                ))}
-              </Group>
-            )}
+            {filter !== "done" && still.length > 0 && group("Still", still)}
+            {filter !== "still" && done.length > 0 && group("Done", done)}
+            {filter === "still" && still.length === 0 && <p className="k-empty">Everything&apos;s paid this month.</p>}
+            {filter === "done" && done.length === 0 && <p className="k-empty">Nothing ticked yet this month.</p>}
           </>
         )}
-      </Sheet>
-    </div>
-  )
-}
+      </div>
 
-function Leader({ dot, line, label, value }: { dot: string; line: string; label: string; value: string }) {
-  return (
-    <div className="fn-leader">
-      <span className="fn-leader__label">
-        <img src={dot} alt="" width={8} height={8} />
-        <span className="t-body-14-m">{label}</span>
-      </span>
-      <img className="fn-leader__line" src={line} alt="" aria-hidden="true" />
-      <Amount value={value} tone="on-dark" />
+      {tick && (
+        <Toast
+          key={tick.id}
+          icon={
+            <span style={{ color: tick.paid ? "var(--success)" : "var(--grey-400)", display: "inline-flex" }}>
+              <Icon name={tick.paid ? "check-circle" : "history"} size={22} />
+            </span>
+          }
+          title={tick.paid ? `Paid ${tick.bill.name}` : `${tick.bill.name} not paid yet`}
+          sub={tick.paid ? (hidden ? "Added to Today" : `${money(tick.amount)}đ added to Today`) : "Taken off Today"}
+          onUndo={() => {
+            onToggle(tick.bill, !tick.paid)
+            setTick(null)
+          }}
+        />
+      )}
     </div>
-  )
-}
-
-function Group({
-  label,
-  count,
-  tone,
-  open,
-  onToggle,
-  children,
-}: {
-  label: string
-  count: number
-  tone: "still" | "done"
-  open: boolean
-  onToggle: () => void
-  children: ReactNode
-}) {
-  return (
-    <section className="due-group">
-      <button type="button" className={`due-filter due-filter--${tone}`} aria-expanded={open} onClick={onToggle}>
-        <Icon name={tone === "still" ? "circle-dashed" : "check-circle-done"} size={18} />
-        <span className="due-filter__label">{label}</span>
-        <span className="due-filter__count">({count})</span>
-        <span className={`due-filter__caret${open ? "" : " is-closed"}`}>
-          <Icon name="caret-down" size={14} />
-        </span>
-      </button>
-      {open && <div className="due-group__list">{children}</div>}
-    </section>
   )
 }
 
@@ -236,53 +288,3 @@ export function BillTile({ bill, size = 36, soft }: { bill: Bill; size?: number;
     </span>
   )
 }
-
-function BillItem({
-  bill,
-  date,
-  paid,
-  hidden,
-  month,
-  onToggle,
-  onOpen,
-}: {
-  bill: Bill
-  date: string
-  paid: boolean
-  hidden: boolean
-  month?: string
-  onToggle: () => void
-  onOpen: () => void
-}) {
-  const amount = paid && month ? bill.paid[month].amount : bill.amount
-  return (
-    <article className="bill-item">
-      <div className="bill-item__top">
-        <BillTile bill={bill} />
-        <div className="bill-item__text">
-          <span className="bill-item__name">{bill.name}</span>
-          <span className="bill-item__date">{dueLabel(date)}</span>
-        </div>
-        <button
-          type="button"
-          className="bill-item__check"
-          aria-label={paid ? `Mark ${bill.name} as not paid` : `Mark ${bill.name} as paid`}
-          aria-pressed={paid}
-          onClick={onToggle}
-        >
-          <Icon name={paid ? "check-circle-fill" : "circle"} size={24} />
-        </button>
-      </div>
-      <button type="button" className="bill-item__bottom" onClick={onOpen} aria-label={`${bill.name} details`}>
-        <span className="bill-item__amount tnum">
-          {!paid && bill.varies ? "~" : ""}
-          {hidden ? "••••••" : money(amount)}
-          <span className="bill-item__cur">đ</span>
-        </span>
-        <Icon name="caret-right-sm" size={14} />
-      </button>
-    </article>
-  )
-}
-
-export const ddmmyyyy = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`

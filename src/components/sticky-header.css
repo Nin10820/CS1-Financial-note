@@ -34,7 +34,7 @@
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 .nav-bar.is-scrolled {
-  background: var(--page-bg, var(--bg-2));
+  background: var(--page-bg, var(--canvas));
   box-shadow: 0 1px 0 var(--bd-1);
 }
 .nav-bar.is-scrolled .nav-bar__swap--top {

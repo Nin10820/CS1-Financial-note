@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client"
 import "./styles/index.css"
 import App from "./App"
 import DesignSystem from "./pages/DesignSystem"
+import { applyAppearance, savedAppearance } from "./lib/theme"
+
+applyAppearance(savedAppearance())
 
 /* #/design-system opens the component reference; everything else is the app. */
 const Root = () => (location.hash === "#/design-system" ? <DesignSystem /> : <App />)

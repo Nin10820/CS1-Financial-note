@@ -1,3 +1,4 @@
+import type { Appearance } from "../lib/theme"
 import { useState, type ReactNode } from "react"
 import { Button, IconButton, Switch } from "../components/ui"
 import { Icon } from "../components/Icon"
@@ -94,6 +95,34 @@ export default function Profile({ store, onClose }: { store: Store; onClose: () 
               <Row label="Currency" value="VND" />
             </Group>
 
+            <Group label="Display">
+              <Row
+                label="Appearance"
+                control={
+                  <label className="prof-select">
+                    <select
+                      value={store.prefs.appearance ?? "auto"}
+                      aria-label="Appearance"
+                      onChange={(e) => store.setPrefs({ appearance: e.target.value as Appearance })}
+                    >
+                      <option value="auto">Auto</option>
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                    </select>
+                    <span aria-hidden="true">{{ auto: "Auto", light: "Light", dark: "Dark" }[store.prefs.appearance ?? "auto"]}</span>
+                    <Icon name="caret-up-down" size={14} />
+                  </label>
+                }
+              />
+              <Row label="Hide amounts when the app opens" control={<Switch label="Hide amounts when the app opens" checked={store.prefs.hideOnOpen} onChange={(v) => store.setPrefs({ hideOnOpen: v })} />} />
+              <Row label="Display" onClick={() => go("display")} />
+            </Group>
+
+            <Group label="Help">
+              <Row label="Report a problem" onClick={() => go("report")} />
+              <Row label="About the app" value={VERSION} onClick={() => go("about")} />
+            </Group>
+
             <Group label="Data & privacy">
               <Row label="Your data" sub="See what the app keeps" onClick={() => go("data")} />
               <Row label="What the AI does with notes" sub="Only reads what you send" onClick={() => go("ai")} />
@@ -103,16 +132,6 @@ export default function Profile({ store, onClose }: { store: Store; onClose: () 
                 sub={store.hasSample ? "Showing made-up notes, bills and assets" : "Fill every screen with made-up data"}
                 control={<Switch label="Sample data" checked={store.hasSample} onChange={(v) => (v ? store.loadSample() : store.clearSample())} />}
               />
-            </Group>
-
-            <Group label="Display">
-              <Row label="Hide amounts when the app opens" control={<Switch label="Hide amounts when the app opens" checked={store.prefs.hideOnOpen} onChange={(v) => store.setPrefs({ hideOnOpen: v })} />} />
-              <Row label="Display" onClick={() => go("display")} />
-            </Group>
-
-            <Group label="Help">
-              <Row label="Report a problem" onClick={() => go("report")} />
-              <Row label="About the app" value={VERSION} onClick={() => go("about")} />
             </Group>
             <p className="prof-note">No account, no server: everything you write stays on this phone.</p>
           </>

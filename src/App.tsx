@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import Today from "./screens/Today";
 import type { Range } from "./screens/TodayHeader";
 import NoteEditor from "./screens/NoteEditor";
@@ -8,7 +8,7 @@ import AddBill from "./screens/AddBill";
 import { ComingUp, Installments, PaidHistory } from "./screens/DueSheets";
 import Assistant, { type AssistantOpen } from "./screens/Assistant";
 import AI from "./screens/AI";
-import Finance from "./screens/Finance";
+import { watchAppearance } from "./lib/theme";
 import Profile from "./screens/Profile";
 import type { ScanPrefill } from "./screens/Scan";
 import Template from "./screens/Template";
@@ -32,10 +32,13 @@ type Overlay =
   | { kind: "add-bill" }
   | { kind: "coming-up" }
   | { kind: "paid-history" }
+  | { kind: "analytics" }
   | null;
 
 // The QR reader is heavy; load it the first time Scan opens.
 const Scan = lazy(() => import("./screens/Scan"));
+const Analytics = lazy(() => import("./screens/Analytics"));
+const Finance = lazy(() => import("./screens/Finance"));
 
 const TAB_OF: Record<Screen, Tab> = {
   transaction: "expense",
@@ -60,6 +63,11 @@ export default function App() {
   const [addAsset, setAddAsset] = useState(0);
 
   const close = useCallback(() => setOverlay(null), []);
+  // Profile › Display › Appearance: Auto follows the phone.
+  useEffect(
+    () => watchAppearance(store.prefs.appearance ?? "auto"),
+    [store.prefs.appearance],
+  );
   const go = (s: Screen) => {
     setOverlay(null);
     setMenuOpen(false);
@@ -141,6 +149,7 @@ export default function App() {
                 )
           }
           onProfile={() => setOverlay({ kind: "profile" })}
+          onAnalytics={() => setOverlay({ kind: "analytics" })}
         />
       )}
       {screen === "due" && (
@@ -148,7 +157,6 @@ export default function App() {
           month={month}
           onMonthChange={setMonth}
           bills={store.bills}
-          name={store.name}
           hidden={hidden}
           onToggleHidden={() => setHidden((h) => !h)}
           onToggle={(bill, paid) => toggleBill(bill.id, paid)}
@@ -173,27 +181,31 @@ export default function App() {
         />
       )}
       {screen === "finance" && (
-        <Finance
-          name={store.name}
-          assets={store.assets}
-          moves={store.moves}
-          care={store.care}
-          worth={store.worth}
-          bills={store.bills}
-          entries={store.entries}
-          birthYear={store.prefs.birthYear}
-          hidden={assetsHidden}
-          onToggleHidden={() => setAssetsHidden((h) => !h)}
-          onAddAsset={store.addAsset}
-          addRequest={addAsset}
-          onProfile={() => setOverlay({ kind: "profile" })}
-          onTalk={() =>
-            assistant({
-              notice:
-                "Talking about family money comes later. For now I record what you spend and receive, and keep track of bills.",
-            })
-          }
-        />
+        <Suspense fallback={null}>
+          <Finance
+            assets={store.assets}
+            moves={store.moves}
+            care={store.care}
+            worth={store.worth}
+            bills={store.bills}
+            entries={store.entries}
+            birthYear={store.prefs.birthYear}
+            hidden={assetsHidden}
+            onToggleHidden={() => setAssetsHidden((h) => !h)}
+            loans={store.loans}
+            onAddAsset={store.addAsset}
+            onMoveAsset={store.moveAsset}
+            onEditAsset={store.editAsset}
+            onRemoveAsset={store.removeAsset}
+            onAddLoan={store.addLoan}
+            onRemoveLoan={store.removeLoan}
+            onToggleBill={(bill, paid) =>
+              toggleBill(bill.id, paid, undefined, ym(today()))
+            }
+            addRequest={addAsset}
+            onProfile={() => setOverlay({ kind: "profile" })}
+          />
+        </Suspense>
       )}
       {screen === "ai" && (
         <AI
@@ -230,6 +242,23 @@ export default function App() {
       )}
 
       {overlay?.kind === "profile" && <Profile store={store} onClose={close} />}
+      {overlay?.kind === "analytics" && (
+        <Suspense fallback={null}>
+          <Analytics
+            entries={store.entries}
+            moves={store.moves}
+            start={day}
+            today={today()}
+            hidden={hidden}
+            savingGoal={store.prefs.savingGoal ?? 0}
+            countBills={store.prefs.countBills ?? false}
+            onPrefs={store.setPrefs}
+            onPutAside={store.putAside}
+            onUndoPutAside={store.undoPutAside}
+            onClose={close}
+          />
+        </Suspense>
+      )}
       {overlay?.kind === "scan" && (
         <Suspense fallback={null}>
           <Scan

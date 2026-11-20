@@ -30,6 +30,7 @@ export default function Today({
   onOpenNote,
   onIdea,
   onProfile,
+  onAnalytics,
 }: {
   day: string
   today: string
@@ -47,6 +48,7 @@ export default function Today({
   onOpenNote: (date: string) => void
   onIdea: (idea: "write" | "due" | "decisions") => void
   onProfile: () => void
+  onAnalytics: () => void
 }) {
   const [pane, setPane] = useState<Pane>("recent")
   const [flow, setFlow] = useState<Flow>("all")
@@ -134,7 +136,7 @@ export default function Today({
           </section>
         ) : (
           <>
-            <TotalCard out={out} incoming={incoming} notes={noteCount} updated={updated} hidden={hidden} onToggleHidden={onToggleHidden} flow={flow} onFlow={setFlow} />
+            <TotalCard out={out} incoming={incoming} notes={noteCount} updated={updated} hidden={hidden} onToggleHidden={onToggleHidden} flow={flow} onFlow={setFlow} onChart={onAnalytics} />
             <div className="today__panes" role="tablist" aria-label="Show">
               {(["recent", "file"] as const).map((p) => (
                 <button key={p} type="button" role="tab" aria-selected={pane === p} className={`today__pane${pane === p ? " is-on" : ""}`} onClick={() => setPane(p)}>
@@ -194,6 +196,7 @@ function TotalCard({
   onToggleHidden,
   flow,
   onFlow,
+  onChart,
 }: {
   out: number
   incoming: number
@@ -203,6 +206,7 @@ function TotalCard({
   onToggleHidden: () => void
   flow: Flow
   onFlow: (f: Flow) => void
+  onChart: () => void
 }) {
   const net = incoming - out
   // From a million up, thousands with K ("1,900K"), so the chips don't fill with zeros.
@@ -244,6 +248,9 @@ function TotalCard({
             <small>đ</small>
           </button>
         </div>
+        <button type="button" className="total__tool" aria-label="Analytics" onClick={onChart}>
+          <Icon name="chart-bar" size={20} />
+        </button>
       </div>
     </section>
   )
@@ -268,14 +275,25 @@ function Recent({
   onDelete: (e: Entry) => void
 }) {
   if (!list.length) return <p className="recent__none">{nothing}</p>
+  // One white card per day; Monthly and Yearly give each a small heading.
+  const days: Entry[][] = []
+  for (const e of list) {
+    const last = days[days.length - 1]
+    if (last && last[0].date === e.date) last.push(e)
+    else days.push([e])
+  }
   return (
     <div className="recent">
-      {list.map((e, i) => (
-        <div key={e.id}>
-          {many && (i === 0 || list[i - 1].date !== e.date) && <h3 className="recent__day">{dayHeading(e.date, today)}</h3>}
-          <SwipeRow onTap={() => onOpen(e.id)} onEdit={() => onOpen(e.id)} onDelete={() => onDelete(e)}>
-            <EntryRow entry={e} hidden={hidden} />
-          </SwipeRow>
+      {days.map((group) => (
+        <div key={group[0].date}>
+          {many && <h3 className="recent__day">{dayHeading(group[0].date, today)}</h3>}
+          <div className="recent__card">
+            {group.map((e) => (
+              <SwipeRow key={e.id} onTap={() => onOpen(e.id)} onEdit={() => onOpen(e.id)} onDelete={() => onDelete(e)}>
+                <EntryRow entry={e} hidden={hidden} />
+              </SwipeRow>
+            ))}
+          </div>
         </div>
       ))}
     </div>

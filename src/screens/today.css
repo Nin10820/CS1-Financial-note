@@ -1,6 +1,6 @@
 /* Today — from the iOS app (TodayView, SpendCard, EntryRow, SwipeRow). Page is bg-3 with a green glow. */
 .today {
-  --page-bg: var(--bg-3);
+  --page-bg: var(--canvas);
   background: var(--bg-3);
 }
 .today__glow {
@@ -145,6 +145,24 @@
   background: rgb(255 255 255 / 16%);
   box-shadow: inset 0 0.75px 0 rgb(255 255 255 / 35%), inset 0 -0.75px 0 rgb(255 255 255 / 12%);
 }
+/* The square button at the end of the row: Analytics on Today, History on Due. */
+.total__tool {
+  display: grid;
+  place-items: center;
+  width: 51px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  background: rgb(0 0 0 / 36%);
+  box-shadow: inset 0 0.75px 0 rgb(255 255 255 / 14%), inset 0 -0.75px 0 rgb(255 255 255 / 6%);
+  color: #fff;
+}
+.total__count {
+  color: rgb(255 255 255 / 64%);
+  font-size: 14px;
+  font-weight: 400;
+}
 /* coloured disc with a white − / + (the icon's sign is cut out; white shows through) */
 .total__sign {
   display: grid;
@@ -197,7 +215,7 @@
   margin: 0;
   padding: var(--sp-16);
   border-radius: var(--corner-20);
-  background: rgb(234 236 240 / 60%);
+  background: color-mix(in srgb, var(--bg-4) 60%, transparent);
   color: var(--grey-400);
   font-size: 14px;
   text-align: center;
@@ -315,6 +333,22 @@
 .swipe__btn.is-delete {
   right: 4px;
   background: #d92d20;
+}
+
+/* One white card per day (iOS: the app's content card, radius 20). */
+.recent__card {
+  padding: var(--sp-6) var(--sp-12);
+  border-radius: var(--corner-20);
+  background: var(--card);
+  overflow: hidden;
+}
+.recent__card > .swipe + .swipe::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 48px;
+  right: 0;
+  border-top: 0.5px solid var(--bd-0);
 }
 
 /* File: written notes as cards */

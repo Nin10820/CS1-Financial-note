@@ -1,4 +1,5 @@
 import { useEffect, useRef, type PointerEvent, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 
 const CLOSE_DISTANCE = 120 // px dragged before letting go closes the sheet
 const FLICK_SPEED = 0.5 // px/ms — a quick flick closes it even when short
@@ -96,7 +97,8 @@ export default function ModalSheet({
     else setOffset(0, "transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.15)")
   }
 
-  return (
+  // Drawn on <body> so a sheet opened from inside a page still sits above the tab bar.
+  return createPortal(
     <div className="modal-layer">
       <div ref={scrim} className="modal-scrim" onClick={close} aria-hidden="true" />
       <div
@@ -115,6 +117,8 @@ export default function ModalSheet({
         {footer}
       </div>
     </div>
+    ,
+    document.body,
   )
 }
 
