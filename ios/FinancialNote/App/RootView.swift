@@ -14,16 +14,16 @@ struct RootView: View {
         @Bindable var app = app
         TabView(selection: $app.tab) {
             Tab("Today", systemImage: "calendar", value: AppState.TabID.today) {
-                TodayView().toolbarVisibility(.hidden, for: .tabBar).modifier(BarRoom(show: true))
+                TodayView().toolbarVisibility(.hidden, for: .tabBar).modifier(BarRoom(show: true)).modifier(TabEntrance(tab: .today))
             }
             Tab("Due", systemImage: "doc.text.fill", value: AppState.TabID.due) {
-                DueView().toolbarVisibility(.hidden, for: .tabBar).modifier(BarRoom(show: true))
+                DueView().toolbarVisibility(.hidden, for: .tabBar).modifier(BarRoom(show: true)).modifier(TabEntrance(tab: .due))
             }
             Tab("Finance", systemImage: "chart.pie.fill", value: AppState.TabID.finance) {
-                FinanceView().toolbarVisibility(.hidden, for: .tabBar).modifier(BarRoom(show: true))
+                FinanceView().toolbarVisibility(.hidden, for: .tabBar).modifier(BarRoom(show: true)).modifier(TabEntrance(tab: .finance))
             }
             Tab("AI", systemImage: "sparkles", value: AppState.TabID.ai) {
-                AssistantView().toolbarVisibility(.hidden, for: .tabBar)
+                AssistantView().toolbarVisibility(.hidden, for: .tabBar).modifier(TabEntrance(tab: .ai))
             }
         }
         .tint(Tokens.brand600)
@@ -262,6 +262,25 @@ struct ActionPill: View {
         .buttonStyle(.plain)
         // A near-white tint keeps the green label readable over whatever is behind the glass.
         .glassEffect(.regular.tint(Tokens.bgWhite.opacity(0.9)).interactive(), in: .capsule)
+    }
+}
+
+/// A tab coming into view fades in, so switching tabs feels smooth rather than a cut.
+/// Off with Reduce Motion.
+private struct TabEntrance: ViewModifier {
+    var tab: AppState.TabID
+    @Environment(AppState.self) private var app
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var shown = true
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .onChange(of: app.tab) { _, now in
+                guard now == tab, !reduceMotion else { return }
+                shown = false
+                withAnimation(.easeOut(duration: 0.28)) { shown = true }
+            }
     }
 }
 

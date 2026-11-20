@@ -7,7 +7,8 @@ import SwiftUI
 /// - Merriweather: only where Figma draws it — the "Good Morning, Nin" greeting and the Due month.
 /// Everything scales with Dynamic Type.
 ///
-/// Sizes come from one scale (Figma text styles). Use only these sizes — a test checks it:
+/// Sizes come from one scale (Figma text styles), Montserrat drawn 1pt larger (`bodyBump`).
+/// Use only these sizes — a test checks it:
 /// - Montserrat: 11 (tab), 12 (Capture), 14 (Text-body 14), 16 (Text-body 16), 18 (H6 / Text-body 18),
 ///   24 / 26 (the New bill heading)
 /// - Bricolage: 12, 14, 16, 18, 20, 22, 24, 26, 28, 32, 36, 40, 44
@@ -17,8 +18,12 @@ enum AppFont {
     static let title = "Merriweather"
     static let heading = "Bricolage Grotesque"
 
+    /// Montserrat reads small on the phone, so every size on the scale is drawn 1pt larger.
+    /// The big numbers (amounts, the date) are Bricolage and keep their size.
+    static let bodyBump: CGFloat = 1
+
     static func main(_ size: CGFloat, _ weight: Font.Weight = .regular, relativeTo style: Font.TextStyle = .body) -> Font {
-        .custom(main, size: size, relativeTo: style).weight(weight)
+        .custom(main, size: size + bodyBump, relativeTo: style).weight(weight)
     }
 
     static func title(_ size: CGFloat, _ weight: Font.Weight = .regular, relativeTo style: Font.TextStyle = .title) -> Font {
@@ -27,6 +32,12 @@ enum AppFont {
 
     static func heading(_ size: CGFloat, _ weight: Font.Weight = .semibold, relativeTo style: Font.TextStyle = .headline) -> Font {
         .custom(heading, size: size, relativeTo: style).weight(weight)
+    }
+
+    /// Table cells (Finance's Total Asset, Debt, family loans): Montserrat a size down from the
+    /// rest of the text — the scale's size without the 1pt bump.
+    static func table(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
+        .custom(main, size: size, relativeTo: .body).weight(weight)
     }
 
     // MARK: - Named styles (Figma names)

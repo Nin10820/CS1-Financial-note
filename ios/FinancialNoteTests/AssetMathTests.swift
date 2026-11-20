@@ -3,11 +3,16 @@ import XCTest
 
 @MainActor
 final class AssetMathTests: XCTestCase {
-    func testSampleSplitsFortyThirtyTwentyTen() {
+    func testSampleHoldingsAddUp() {
         let x = SampleData.make(today: "2026-10-28")
         let s = AssetMath.shares(x.assets)
-        XCTAssertEqual(s.total, 122_647_000)
-        XCTAssertEqual(s.groups.map(\.pct), [40, 30, 20, 10])
+        XCTAssertEqual(s.total, 287_465_000)
+        XCTAssertEqual(s.groups.reduce(0) { $0 + $1.pct }, 100)
+        // Every sample asset keeps its moves: put in, then what it's worth now.
+        let gold = x.assets.first { $0.name == "Gold" }!
+        let g = AssetMath.growth(gold, moves: x.moves)
+        XCTAssertEqual(g?.putIn, 30_000_000)
+        XCTAssertEqual(g?.change, 35_000_000)
     }
 
     func testSharesAlwaysAddUpToHundred() {

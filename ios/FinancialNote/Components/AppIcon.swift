@@ -21,6 +21,30 @@ enum Icon: String {
     case caretUpDown = "icon-caret-up-down"  // Phosphor CaretUpDown
     case eyeSlash = "icon-eye-slash"         // Phosphor EyeSlash
     case user = "icon-user"                  // Phosphor User
+    case chartBar = "icon-chart-bar"         // Phosphor ChartBar
+    case wallet = "icon-wallet"              // Phosphor Wallet
+    case chartLineUp = "icon-chart-line-up"  // Phosphor ChartLineUp
+    case chartDonut = "icon-chart-donut"     // Phosphor ChartDonut
+    case receipt = "icon-receipt"            // Phosphor Receipt
+    case piggyBank = "icon-piggy-bank"       // Phosphor PiggyBank
+    case caretDown = "icon-caret-down"       // Phosphor CaretDown
+    case arrowSquareOut = "icon-arrow-square-out" // Phosphor ArrowSquareOut
+    case lightbulb = "icon-lightbulb"        // Phosphor Lightbulb
+    case chartPieSlice = "icon-chart-pie-slice" // Phosphor ChartPieSlice
+    case forkKnife = "icon-fork-knife"       // Phosphor ForkKnife
+    case coffee = "icon-coffee"              // Phosphor Coffee
+    case motorcycle = "icon-motorcycle"      // Phosphor Motorcycle
+    case heart = "icon-heart"                // Phosphor Heart
+    case shoppingBag = "icon-shopping-bag"   // Phosphor ShoppingBag
+    case dotsThreeCircle = "icon-dots-three-circle" // Phosphor DotsThreeCircle
+    case house = "icon-house"                // Phosphor House
+    case heartbeat = "icon-heartbeat"        // Phosphor Heartbeat
+    case graduationCap = "icon-graduation-cap" // Phosphor GraduationCap
+    case deviceMobile = "icon-device-mobile" // Phosphor DeviceMobile
+    case gameController = "icon-game-controller" // Phosphor GameController
+    case airplane = "icon-airplane"          // Phosphor Airplane
+    case gift = "icon-gift"                  // Phosphor Gift
+    case repeatIcon = "icon-repeat"          // Phosphor Repeat
 }
 
 /// One icon at its Figma size, growing with Dynamic Type like the text beside it.

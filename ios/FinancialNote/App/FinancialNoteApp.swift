@@ -16,6 +16,12 @@ struct FinancialNoteApp: App {
             fatalError("Couldn't open the on-device store: \(error)")
         }
         LocalStore(context: container.mainContext).prepareOnLaunch()
+        #if DEBUG
+        // For trying the app: `-reloadSample` puts in a fresh copy of the made-up data.
+        if ProcessInfo.processInfo.arguments.contains("-reloadSample") {
+            LocalStore(context: container.mainContext).loadSample()
+        }
+        #endif
         Self.styleNavigationTitles()
     }
 

@@ -56,3 +56,40 @@ extension View {
         }
     }
 }
+
+extension View {
+    /// A content card that sits up off the page like the green cards, without their colour:
+    /// the card colour, a fine edge brighter at the top, and a soft shadow underneath.
+    func raisedCard(cornerRadius: CGFloat = Corner.c20) -> some View {
+        modifier(RaisedCard(cornerRadius: cornerRadius))
+    }
+}
+
+private struct RaisedCard: ViewModifier {
+    var cornerRadius: CGFloat
+    @Environment(\.colorScheme) private var scheme
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        let dark = scheme == .dark
+        return content
+            .background(Tokens.bgWhite, in: shape)
+            .overlay {
+                shape
+                    .strokeBorder(
+                        LinearGradient(
+                            stops: dark
+                                ? [.init(color: .white.opacity(0.22), location: 0),
+                                   .init(color: .white.opacity(0.05), location: 0.3),
+                                   .init(color: .white.opacity(0.05), location: 0.75),
+                                   .init(color: .white.opacity(0.12), location: 1)]
+                                : [.init(color: .white, location: 0),
+                                   .init(color: Color(hex: 0x0D121C).opacity(0.05), location: 0.3),
+                                   .init(color: Color(hex: 0x0D121C).opacity(0.08), location: 1)],
+                            startPoint: .top, endPoint: .bottom),
+                        lineWidth: 1)
+                    .allowsHitTesting(false)
+            }
+            .shadow(color: .black.opacity(dark ? 0.32 : 0.06), radius: 9, y: 6)
+    }
+}

@@ -26,67 +26,64 @@ struct DueView: View {
     @Query(sort: \Bill.createdAt) private var bills: [Bill]
 
     @State private var sheet: DueSheet?
-    @State private var showStill = true
-    @State private var showDone = true
+    /// The card's All / Still / Done row, applied to the list.
+    @State private var filter: DueFilter = .all
     @State private var path: [DueRoute] = []
     @State private var ticks = 0
     @State private var pageHeight: CGFloat = 0
+    /// Bills ticked or unticked while looking: they stay in the group they were in (true = Done)
+    /// so the list doesn't jump under the finger. They settle when the month changes or Due is left.
+    @State private var stay: [String: Bool] = [:]
+    @State private var toast: TickToast?
 
     enum DueRoute: Hashable { case installments }
 
     var body: some View {
         @Bindable var app = app
         let s = BillMath.monthSummary(bills, month: app.dueMonth)
+        let inDone = { (i: BillMath.DueItem) in stay[i.bill.id] ?? (i.bill.paid[app.dueMonth] != nil) }
+        let still = s.due.filter { !inDone($0) }
+        let done = s.due.filter(inDone)
 
         NavigationStack(path: $path) {
             ScrollView {
                 VStack(spacing: Space.s16) {
-                    monthSwitcher
-                    HeroCard(
-                        label: "Remaining", amount: s.remaining, sub: nil,
-                        rows: [("Paid", s.paid), ("Total remaining", s.totalRemaining)],
-                        hidden: $app.hidden
-                    ) {
-                        HeroButton(title: "History", systemImage: "clock.arrow.circlepath") { sheet = .history }
-                    }
+                    header
+                    // Edge to edge: the outer months run off the screen.
+                    DueMonthStrip(month: $app.dueMonth, today: app.today, bills: bills, hidden: app.hidden)
+                        .padding(.horizontal, -Space.s20)
+                    DueCard(remaining: s.remaining, paid: s.paid, totalRemaining: s.totalRemaining,
+                            stillCount: still.count, doneCount: done.count,
+                            hidden: $app.hidden, filter: $filter) { sheet = .history }
                     if s.due.isEmpty {
                         empty
                     } else {
-                        VStack(alignment: .leading, spacing: Space.s12) {
-                            if !s.still.isEmpty {
-                                GroupHeader(label: "Still", count: s.still.count, done: false, open: $showStill)
-                                if showStill {
-                                    ForEach(s.still, id: \.bill.id) { item in
-                                        BillCard(bill: item.bill, date: item.date, month: app.dueMonth, today: app.today,
-                                                 hidden: app.hidden, onTick: { tick(item.bill, true) },
-                                                 onOpen: { sheet = .bill(item.bill.id) })
-                                    }
-                                }
+                        VStack(alignment: .leading, spacing: Space.s8) {
+                            if filter != .done && !still.isEmpty { group("Still", still) }
+                            if filter != .still && !done.isEmpty {
+                                group("Done", done).padding(.top, filter == .all && !still.isEmpty ? Space.s8 : 0)
                             }
-                            if !s.done.isEmpty {
-                                GroupHeader(label: "Done", count: s.done.count, done: true, open: $showDone)
-                                    .padding(.top, s.still.isEmpty ? 0 : Space.s8)
-                                if showDone {
-                                    ForEach(s.done, id: \.bill.id) { item in
-                                        BillCard(bill: item.bill, date: item.date, month: app.dueMonth, today: app.today,
-                                                 hidden: app.hidden, onTick: { tick(item.bill, false) },
-                                                 onOpen: { sheet = .bill(item.bill.id) })
-                                    }
-                                }
+                            if (filter == .still && still.isEmpty) || (filter == .done && done.isEmpty) {
+                                Text(filter == .still ? "Everything's paid this month." : "Nothing ticked yet this month.")
+                                    .font(AppFont.body()).foregroundStyle(Tokens.grey400)
+                                    .frame(maxWidth: .infinity, minHeight: 120)
+                                    .background(Tokens.bg4.opacity(0.6), in: .rect(cornerRadius: Corner.c20))
                             }
                         }
-                        // No frame around the groups: the cards sit straight on the page.
-                        .padding(.top, Space.s8)
+                        .animation(.snappy, value: filter)
                     }
                 }
                 .padding(.horizontal, Space.s20)
                 .frame(minHeight: pageHeight, alignment: .top)
                 .pageSwipe(back: { animate { app.dueMonth = Month.add(app.dueMonth, -1) } },
                            forward: { animate { app.dueMonth = Month.add(app.dueMonth, 1) } })
-                .padding(.bottom, Space.s24)
+                // Room so the last bill scrolls clear of the floating tab bar.
+                .padding(.bottom, 96)
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pageHeight = $0 }
             .onChange(of: app.addBillRequest) { _, _ in sheet = .add(nil) }
+            .onChange(of: app.dueMonth) { _, _ in stay = [:]; toast = nil }
+            .onDisappear { stay = [:]; toast = nil }
             .modifier(MinimizesTabBar())
             .background(alignment: .top) {
                 LinearGradient(colors: [Tokens.brand100, Tokens.bg3], startPoint: .top, endPoint: .bottom)
@@ -117,6 +114,20 @@ struct DueView: View {
                 }
             }
             .sensoryFeedback(.success, trigger: ticks)
+        }
+        // On the whole stack, not the scroll view, so it sits above the tab bar.
+        .overlay(alignment: .bottom) {
+            if let toast {
+                TickToastView(toast: toast, hidden: app.hidden) { undo(toast) }
+                    .id(toast.id)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .task(id: toast?.id) {
+            guard toast != nil else { return }
+            try? await Task.sleep(for: .seconds(4))
+            guard !Task.isCancelled else { return }
+            animate(.smooth) { toast = nil }
         }
     }
 
@@ -149,31 +160,49 @@ struct DueView: View {
         }
     }
 
-    private var monthSwitcher: some View {
-        @Bindable var app = app
-        return HStack(spacing: Space.s16) {
-            Button {
-                app.dueMonth = Month.add(app.dueMonth, -1)
-            } label: {
-                Image(systemName: "chevron.left").frame(width: 44, height: 44).contentShape(.rect)
+    /// "Nov 2026" large, like Today's date; a red dot when it's this month.
+    private var header: some View {
+        let (y, m, _) = Day.parts(app.dueMonth + "-01")
+        return HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
+            HStack(alignment: .top, spacing: 2) {
+                Text(Day.monthsShort[m - 1])
+                    .font(AppFont.heading(44, .medium, relativeTo: .largeTitle))
+                    .foregroundStyle(Tokens.text900)
+                if app.dueMonth == Month.of(app.today) {
+                    Circle().fill(Tokens.todayRed).frame(width: 8, height: 8).padding(.top, 8)
+                }
             }
-            .accessibilityLabel("Previous month")
-            Text(DueText.monthLabel(app.dueMonth))
-                .font(AppFont.greeting)
-                .foregroundStyle(Tokens.text900)
-                .contentTransition(.numericText())
-                .accessibilityAddTraits(.isHeader)
-            Button {
-                app.dueMonth = Month.add(app.dueMonth, 1)
-            } label: {
-                Image(systemName: "chevron.right").frame(width: 44, height: 44).contentShape(.rect)
-            }
-            .accessibilityLabel("Next month")
+            Text(String(y))
+                .font(AppFont.heading(24, .medium, relativeTo: .title))
+                .foregroundStyle(Tokens.grey400)
+            Spacer()
         }
-        .font(.system(size: 15, weight: .semibold))
-        .foregroundStyle(Tokens.text700)
-        .buttonStyle(.plain)
-        .padding(.top, Space.s4)
+        .frame(minHeight: 44)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(DueText.monthLabel(app.dueMonth))")
+        .accessibilityAddTraits(.isHeader)
+    }
+
+    /// "STILL · 3" then the bills in one white card, rows split by thin lines (like Recent).
+    private func group(_ title: String, _ items: [BillMath.DueItem]) -> some View {
+        VStack(alignment: .leading, spacing: Space.s6) {
+            Text("\(title) · \(items.count)".uppercased())
+                .font(AppFont.main(12, .semibold, relativeTo: .caption))
+                .tracking(0.4)
+                .foregroundStyle(Tokens.grey400)
+                .padding(.leading, Space.s4)
+                .accessibilityAddTraits(.isHeader)
+            VStack(spacing: 0) {
+                ForEach(Array(items.enumerated()), id: \.element.bill.id) { i, item in
+                    if i > 0 { Divider().overlay(Tokens.bd0).padding(.leading, 52) }
+                    BillRow(bill: item.bill, date: item.date, month: app.dueMonth, today: app.today, hidden: app.hidden,
+                            onTick: { tick(item.bill) }, onOpen: { sheet = .bill(item.bill.id) })
+                }
+            }
+            .padding(.horizontal, Space.s12)
+            .padding(.vertical, Space.s6)
+            .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
+        }
     }
 
     private var empty: some View {
@@ -192,107 +221,108 @@ struct DueView: View {
     }
 
     /// The spending is recorded on the day the bill is ticked — the day the money actually left.
-    private func tick(_ bill: Bill, _ paid: Bool) {
+    /// Ticks or unticks in place: the card keeps its spot, only the check changes.
+    private func tick(_ bill: Bill) {
+        let paid = bill.paid[app.dueMonth] == nil
+        if stay[bill.id] == nil { stay[bill.id] = !paid }
         LocalStore(context: context).setBillPaid(bill, month: app.dueMonth, paid: paid, date: app.today)
         if paid { ticks += 1 }
-    }
-}
-
-/// "STILL (2) ⌄" / "DONE (2) ⌄" — tap to fold the group.
-private struct GroupHeader: View {
-    var label: String
-    var count: Int
-    var done: Bool
-    @Binding var open: Bool
-
-    var body: some View {
-        Button {
-            animate { open.toggle() }
-        } label: {
-            HStack(spacing: Space.s6) {
-                Image(systemName: done ? "checkmark.circle" : "circle.dashed")
-                Text(label.uppercased()).tracking(0.4)
-                Text("(\(count))")
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 11, weight: .bold))
-                    .rotationEffect(.degrees(open ? 0 : -90))
-            }
-            .font(AppFont.main(12, .semibold, relativeTo: .caption))
-            .foregroundStyle(done ? Tokens.brand700 : Tokens.text700)
-            .padding(.horizontal, Space.s12)
-            .padding(.vertical, Space.s6)
-            .background(done ? Tokens.brand100 : Tokens.bg4, in: .capsule)
+        animate(.spring(duration: 0.4, bounce: 0.25)) {
+            toast = TickToast(billId: bill.id, name: bill.name,
+                              amount: bill.paid[app.dueMonth]?.amount ?? bill.amount, paid: paid)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(label), \(count) \(count == 1 ? "bill" : "bills")")
-        .accessibilityValue(open ? "Shown" : "Folded")
+    }
+
+    /// Undo puts the bill back the way it was and closes the note quietly.
+    private func undo(_ t: TickToast) {
+        if let bill = bills.first(where: { $0.id == t.billId }) {
+            LocalStore(context: context).setBillPaid(bill, month: app.dueMonth, paid: !t.paid, date: app.today)
+        }
+        animate(.smooth) { toast = nil }
     }
 }
 
-/// One bill in the Due list (Figma bill-item): tile, name, date, tick; amount and details below.
-struct BillCard: View {
-    var bill: Bill
-    var date: String
-    var month: String
+/// Three months side by side — before | this one | after — with what's due in each, the picked
+/// one in the middle (the same strip as Today's months). Bills are known ahead, so the months
+/// to come can be picked too.
+struct DueMonthStrip: View {
+    @Binding var month: String
     var today: String
+    var bills: [Bill]
     var hidden: Bool
-    var onTick: () -> Void
-    var onOpen: () -> Void
 
     var body: some View {
-        let record = bill.paid[month]
-        let paid = record != nil
-        let amount = record?.amount ?? bill.amount
-        VStack(spacing: 0) {
-            HStack(spacing: Space.s12) {
-                BillTile(icon: bill.icon)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(bill.name)
-                        .font(AppFont.main(16, .semibold))
-                        .foregroundStyle(Tokens.text900)
-                    Text(DueText.listDate(date, paid: paid, today: today))
-                        .font(AppFont.main(12, .medium, relativeTo: .caption))
-                        .foregroundStyle(Tokens.grey400)
-                }
-                Spacer()
-                Button(action: onTick) {
-                    Image(systemName: paid ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 24))
-                        .foregroundStyle(paid ? Tokens.text900 : Tokens.grey300)
-                        .contentTransition(.symbolEffect(.replace))
-                        .frame(width: 44, height: 44)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(paid ? "Mark \(bill.name) as not paid" : "Mark \(bill.name) as paid")
-                .accessibilityAddTraits(paid ? .isSelected : [])
-            }
-            .padding(.leading, Space.s12)
-            .padding(.vertical, Space.s4)
-            Divider().overlay(Tokens.bd0)
-            Button(action: onOpen) {
-                HStack {
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text((!paid && bill.varies ? "~" : "") + (hidden ? "••••••" : Money.format(amount)))
-                            .font(AppFont.main(14, .semibold))
-                            .foregroundStyle(Tokens.text900)
-                            .monospacedDigit()
-                        Text("đ").font(AppFont.main(12, .medium)).foregroundStyle(Tokens.grey400)
-                    }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Tokens.grey300)
-                }
-                .padding(.horizontal, Space.s12)
-                .padding(.vertical, Space.s12)
-                .background(Tokens.bg2)
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(bill.name) details, \(hidden ? "amount hidden" : "\(Money.format(amount)) dong")")
+        let now = Month.of(today)
+        let earliest = bills.map { Month.of($0.start) }.min() ?? now
+        let first = min(earliest, Month.add(now, -12))
+        let last = Month.add(now, 12)
+        let keys = (0...Month.between(first, last)).map { Month.add(first, $0) }
+        var due: [String: Int] = [:]
+        for k in keys {
+            let s = BillMath.monthSummary(bills, month: k)
+            due[k] = s.due.reduce(0) { $0 + ($1.bill.paid[k]?.amount ?? $1.bill.amount) }
         }
-        .background(Tokens.bgWhite)
-        .clipShape(.rect(cornerRadius: Corner.c12))
-        .overlay(RoundedRectangle(cornerRadius: Corner.c12).strokeBorder(Tokens.bd1))
+        return PeriodStrip(
+            keys: keys,
+            last: last,
+            selected: $month,
+            spent: due,
+            hidden: hidden,
+            title: { Day.monthsLong[Int($0.suffix(2))! - 1] },
+            spoken: { "\(Day.monthsLong[Int($0.suffix(2))! - 1]) \($0.prefix(4))" },
+            name: "Months",
+            peek: true)
+    }
+}
+
+/// What the note under the list says after a tick.
+struct TickToast: Equatable {
+    var id = UUID()
+    var billId: String
+    var name: String
+    var amount: Int
+    var paid: Bool
+}
+
+/// "Paid Rent · 2,500,000đ added to Today  Undo" — a small glass note that goes by itself.
+private struct TickToastView: View {
+    var toast: TickToast
+    var hidden: Bool
+    var onUndo: () -> Void
+
+    var body: some View {
+        HStack(spacing: Space.s12) {
+            Image(systemName: toast.paid ? "checkmark.circle.fill" : "arrow.uturn.backward.circle.fill")
+                .font(.system(size: 22))
+                .foregroundStyle(toast.paid ? Tokens.success : Tokens.grey400)
+                .symbolEffect(.bounce, value: toast.id)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(toast.paid ? "Paid \(toast.name)" : "\(toast.name) not paid yet")
+                    .font(AppFont.main(14, .semibold))
+                    .foregroundStyle(Tokens.text900)
+                    .lineLimit(1)
+                Text(toast.paid
+                     ? (hidden ? "Added to Today" : "\(Money.format(toast.amount))đ added to Today")
+                     : "Taken off Today")
+                    .font(AppFont.main(12))
+                    .foregroundStyle(Tokens.grey400)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: Space.s8)
+            Button("Undo", action: onUndo)
+                .font(AppFont.main(14, .semibold))
+                .foregroundStyle(Tokens.brand600)
+                .padding(.horizontal, Space.s12)
+                .frame(minHeight: 44)
+                .contentShape(.rect)
+                .buttonStyle(.plain)
+        }
+        .padding(.leading, Space.s16)
+        .padding(.trailing, Space.s4)
+        .padding(.vertical, Space.s6)
+        .glassEffect(.regular, in: .capsule)
+        .padding(.horizontal, Space.s20)
+        .padding(.bottom, Space.s12)
+        .accessibilityElement(children: .contain)
     }
 }

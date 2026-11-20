@@ -134,7 +134,8 @@ struct MonthStrip: View {
             hidden: hidden,
             title: { Day.monthsLong[Int($0.suffix(2))! - 1] },
             spoken: { "\(Day.monthsLong[Int($0.suffix(2))! - 1]) \($0.prefix(4))" },
-            name: "Months")
+            name: "Months",
+            peek: true)
     }
 }
 
@@ -161,14 +162,15 @@ struct YearStrip: View {
             hidden: hidden,
             title: { $0 },
             spoken: { $0 },
-            name: "Years")
+            name: "Years",
+            peek: true)
     }
 }
 
 /// Three slots — before | picked | after — so the picked one always sits in the middle
 /// (Figma Date-bar 1117:35943). Swipe sideways or tap a side cell to move; periods that haven't
 /// come yet show greyed out and can't be picked.
-private struct PeriodStrip: View {
+struct PeriodStrip: View {
     var keys: [String]
     /// The latest one that can be picked; later ones are shown but disabled.
     var last: String
@@ -178,6 +180,9 @@ private struct PeriodStrip: View {
     var title: (String) -> String
     var spoken: (String) -> String
     var name: String
+    /// Five cells instead of three: one more period on each side, smaller and faded, so the
+    /// row doesn't look empty.
+    var peek = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @GestureState private var drag: CGFloat = 0
 
@@ -185,27 +190,33 @@ private struct PeriodStrip: View {
         let idx = keys.firstIndex(of: selected) ?? max(keys.count - 1, 0)
         let lastIdx = keys.lastIndex(where: { $0 <= last }) ?? 0
         GeometryReader { g in
-            let slot = g.size.width / 3
-            // One long row; the picked cell is kept in the middle slot by sliding the row.
+            // Peek: the picked one wide in the middle, two the same size either side — the outer
+            // ones running off the screen edge, faded. Otherwise three equal slots.
+            let big = peek ? g.size.width * 0.3 : g.size.width / 3
+            let small = peek ? (g.size.width - big) / 3 : g.size.width / 3
+            let lead = CGFloat(idx) * small
+            // One long row; the picked cell is kept in the middle by sliding the row.
             HStack(spacing: 0) {
                 ForEach(Array(keys.enumerated()), id: \.element) { i, k in
+                    let far = abs(i - idx) >= 2
                     cell(k, picked: i == idx)
-                        .frame(width: slot)
+                        .frame(width: i == idx ? big : small)
+                        .opacity(peek && far ? 0.45 : 1)
                         .onTapGesture { move(to: i, lastIdx: lastIdx) }
                 }
             }
-            .offset(x: -CGFloat(idx - 1) * slot + drag)
+            .offset(x: g.size.width / 2 - lead - big / 2 + drag)
             .animation(reduceMotion ? nil : .snappy, value: idx)
             .gesture(
                 DragGesture(minimumDistance: 10)
                     .updating($drag) { v, s, _ in s = v.translation.width }
                     .onEnded { v in
-                        let steps = Int((-v.translation.width / slot).rounded())
+                        let steps = Int((-v.translation.width / small).rounded())
                         move(to: idx + steps, lastIdx: lastIdx)
                     }
             )
         }
-        .padding(.horizontal, Space.s12)
+        .padding(.horizontal, peek ? 0 : Space.s12)
         .frame(height: 60)
         .clipped()
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)
@@ -247,8 +258,8 @@ private struct PeriodStrip: View {
                 .foregroundStyle(picked ? Tokens.brand900 : Tokens.grey300)
         }
         .lineLimit(1)
-        .minimumScaleFactor(0.8)
-        .padding(.horizontal, picked ? 20.5 : 14)
+        .minimumScaleFactor(peek ? 0.7 : 0.8)
+        .padding(.horizontal, picked ? (peek ? 10 : 20.5) : (peek ? 4 : 14))
         .padding(.vertical, picked ? 8.5 : 8)
         .frame(minHeight: 60)
         .background {

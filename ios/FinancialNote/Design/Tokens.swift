@@ -65,19 +65,25 @@ enum Tokens {
     static let textDisabled = Color(light: 0x9AA4B2, dark: 0x697586)
 
     // Surfaces
-    static let bg1 = Color(light: 0xFCFCFD, dark: 0x1A1F29) // sheets
-    static let bg2 = Color(light: 0xF9FAFB, dark: 0x141922) // list sheet
-    static let bg3 = Color(light: 0xF3F4F6, dark: 0x0D121C) // app canvas
-    static let bg4 = Color(light: 0xEAECF0, dark: 0x202939) // idle chips
-    static let bgWhite = Color(light: 0xFFFFFF, dark: 0x1A1F29)
+    static let bg1 = Color(light: 0xFCFCFD, dark: 0x171C25) // sheets
+    static let bg2 = Color(light: 0xF9FAFB, dark: 0x12161F) // list sheet
+    static let bg3 = Color(light: 0xF3F4F6, dark: 0x0C1019) // app canvas
+    static let bg4 = Color(light: 0xEAECF0, dark: 0x1D2533) // idle chips
+    static let bgWhite = Color(light: 0xFFFFFF, dark: 0x171C25)
+    /// The page under white cards (iOS grouped background): light grey, the app canvas in dark
+    /// mode, so cards and the header above it always read as the raised layer.
+    /// The picked segment on a grey track (D/W/M/Y, All/out/in): white, and lighter than the
+    /// track in dark mode.
+    static let segmentOn = Color(light: 0xFFFFFF, dark: 0x364152)
+    static let bgGrouped = Color(light: 0xEAECF0, dark: 0x0C1019)
     /// Number pad tray tint: the system keyboard's grey (#DFE1E6), dark #2B2F37.
-    static let keypadTray = Color(light: 0xDFE1E6, dark: 0x2B2F37)
+    static let keypadTray = Color(light: 0xDFE1E6, dark: 0x272A32)
     /// Number pad keys, white like the system keyboard's.
     static let keypadKey = Color(light: 0xFFFFFF, dark: 0x364152)
 
     // Borders
-    static let bd0 = Color(light: 0xEEF2F6, dark: 0x202939) // row dividers
-    static let bd1 = Color(light: 0xE3E8EF, dark: 0x2A3343)
+    static let bd0 = Color(light: 0xEEF2F6, dark: 0x1D2533) // row dividers
+    static let bd1 = Color(light: 0xE3E8EF, dark: 0x262E3C)
     static let bd2 = Color(light: 0xCDD5DF, dark: 0x364152)
 
     // Category labels on entry rows
@@ -146,7 +152,7 @@ enum Tokens {
         case .phone: (Color(light: 0xE2F4D3, dark: 0x1C3314), Color(light: 0x3B6922, dark: 0x9CD472))
         case .student: (Color(light: 0xD1E9FF, dark: 0x0F2A4D), Color(light: 0x1570EF, dark: 0x5B9BF5))
         case .monitor: (Color(light: 0xF8EADC, dark: 0x3D2618), Color(light: 0xC85A34, dark: 0xE5875F))
-        case .bell: (Color(light: 0xEAECF0, dark: 0x202939), Color(light: 0x364152, dark: 0xCDD5DF))
+        case .bell: (Color(light: 0xEAECF0, dark: 0x1D2533), Color(light: 0x364152, dark: 0xCDD5DF))
         }
     }
 

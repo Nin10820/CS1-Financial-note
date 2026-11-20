@@ -14,6 +14,8 @@ struct SpendCard: View {
     var updated: String
     @Binding var hidden: Bool
     @Binding var filter: FlowFilter
+    /// Opens Analytics; no button when it isn't given.
+    var onChart: (() -> Void)? = nil
     @Namespace private var pill
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -90,6 +92,21 @@ struct SpendCard: View {
                 .frame(minHeight: 44)
                 .background(.black.opacity(0.36), in: .rect(cornerRadius: Corner.c14))
                 .innerEdge(cornerRadius: Corner.c14, top: 0.14, bottom: 0.06)
+
+                if let onChart {
+                    Button(action: onChart) {
+                        AppIcon(.chartBar, size: 20)
+                            .foregroundStyle(.white)
+                            .frame(width: 43, height: 36)
+                            .padding(Space.s4)
+                            .frame(minHeight: 44)
+                            .background(.black.opacity(0.36), in: .rect(cornerRadius: Corner.c14))
+                            .innerEdge(cornerRadius: Corner.c14, top: 0.14, bottom: 0.06)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Analytics")
+                }
             }
             .padding(.top, Space.s12)
         }

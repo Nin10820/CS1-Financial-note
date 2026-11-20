@@ -253,6 +253,51 @@ final class CareGift {
     }
 }
 
+/// Money from family that is owed back, with yearly interest: a person ("Mom", "Grand") sends
+/// money ("in"), you pay some back ("back") or pay interest ("interest"). Interest runs on what's
+/// still borrowed, day by day, at `rate` percent a year.
+@Model
+final class FamilyLoan {
+    @Attribute(.unique) var id: String
+    var who: String
+    var title: String
+    /// "in" money received, "back" principal paid back, "interest" interest paid.
+    var kindRaw: String
+    var amount: Int
+    var date: String
+    /// Percent a year, e.g. 6.
+    var rate: Double
+    var sample: Bool
+
+    var kind: LoanMove { LoanMove(rawValue: kindRaw) ?? .received }
+
+    init(id: String = UUID().uuidString, who: String, title: String, kind: LoanMove, amount: Int, date: String,
+         rate: Double = 6, sample: Bool = false) {
+        self.id = id
+        self.who = who
+        self.title = title
+        self.kindRaw = kind.rawValue
+        self.amount = amount
+        self.date = date
+        self.rate = rate
+        self.sample = sample
+    }
+}
+
+nonisolated enum LoanMove: String, Codable, Sendable, CaseIterable {
+    case received = "in"
+    case paidBack = "back"
+    case interest
+
+    var label: String {
+        switch self {
+        case .received: "Received"
+        case .paidBack: "Paid back"
+        case .interest: "Interest paid"
+        }
+    }
+}
+
 /// Net worth at the end of a month, for the chart. Only the sample fills it today.
 @Model
 final class WorthPoint {
@@ -295,5 +340,6 @@ final class Profile {
 enum AppSchema {
     static let models: [any PersistentModel.Type] = [
         Entry.self, DayNote.self, Bill.self, Asset.self, AssetMove.self, CareGift.self, WorthPoint.self, Profile.self,
+        FamilyLoan.self,
     ]
 }

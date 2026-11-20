@@ -11,12 +11,17 @@ struct FinanceView: View {
     @Query(sort: \CareGift.date, order: .reverse) private var care: [CareGift]
     @Query(sort: \WorthPoint.month) private var worth: [WorthPoint]
     @Query(sort: \Bill.createdAt) private var bills: [Bill]
+    @Query(sort: \FamilyLoan.date, order: .reverse) private var loans: [FamilyLoan]
     @Query private var profiles: [Profile]
 
     @State private var view: FinanceTab = .overview
     @State private var adding = false
     @State private var path: [Route] = []
     @State private var pageHeight: CGFloat = 0
+    /// The month touched on the Total Asset line (nil: now).
+    @State private var pickedMonth: String?
+    /// How far back the Total Asset line goes.
+    @State private var worthRange: WorthRange = .sixMonths
 
     enum FinanceTab: String, CaseIterable { case overview = "Overview", total = "Total Asset", debt = "Debt" }
     enum Route: Hashable { case family, asset(String) }
@@ -32,14 +37,15 @@ struct FinanceView: View {
                     .pickerStyle(.segmented)
                     switch view {
                     case .overview: overview
-                    case .total: TotalAssetsSection(assets: assets, hidden: app.assetsHidden) { adding = true }
-                    case .debt: DebtSection(bills: bills, hidden: app.assetsHidden)
+                    case .total: TotalAssetsSection(assets: assets, moves: moves, bills: bills, loans: loans, today: app.today,
+                                                    hidden: app.assetsHidden) { adding = true }
+                    case .debt: DebtSection(bills: bills, loans: loans, today: app.today, hidden: app.assetsHidden)
                     }
                 }
                 .padding(.horizontal, Space.s20)
                 .frame(minHeight: pageHeight, alignment: .top)
                 .pageSwipe(back: { turn(-1) }, forward: { turn(1) })
-                .padding(.bottom, Space.s24)
+                .padding(.bottom, 96)
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pageHeight = $0 }
             .onChange(of: app.addAssetRequest) { _, _ in adding = true }
@@ -101,23 +107,55 @@ struct FinanceView: View {
             .padding(Space.s24)
             .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
         } else {
-            let shares = AssetMath.shares(assets)
+            // Total assets leave out money others owe you (Owed): it isn't yours to use yet.
+            let shares = AssetMath.shares(assets.filter { $0.kind != .owed })
             let growth = FinanceText.growth(worth.map { ($0.month, $0.value) })
-            VStack(spacing: 0) {
-                TotalBlock(total: shares.total, groups: shares.groups, growth: growth, hidden: app.assetsHidden)
-                    .padding(Space.s16)
-                Divider().overlay(Tokens.bd0)
+            let owed = BillMath.monthSummary(bills, month: Month.of(app.today)).totalRemaining + LoanMath.owed(loans, today: app.today)
+            let picked = worth.first { $0.month == pickedMonth }
+            // No card: the amount sits on the page and the line runs edge to edge, like View Analysis.
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .center) {
+                    // Total assets as a story over time: touch a month on the line to read it here.
+                    TotalBlock(total: picked?.value ?? shares.total, month: picked.map { FinanceText.monthLabel($0.month) },
+                               growth: picked == nil ? growth : nil, hidden: app.assetsHidden)
+                    Spacer(minLength: Space.s8)
+                    Menu {
+                        Picker("Show", selection: $worthRange) {
+                            ForEach(WorthRange.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }
+                    } label: {
+                        HStack(spacing: Space.s4) {
+                            Text(worthRange.short)
+                            AppIcon(.caretUpDown, size: 14, relativeTo: .caption)
+                        }
+                        .font(AppFont.capture(.medium))
+                        .foregroundStyle(Tokens.text700)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(.rect)
+                    }
+                    .accessibilityLabel("Show \(worthRange.label)")
+                    .onChange(of: worthRange) { _, _ in pickedMonth = nil }
+                }
                 if worth.count > 1 {
-                    WorthChart(points: worth, growth: growth, hidden: app.assetsHidden)
-                        .padding(Space.s16)
+                    WorthChart(points: worth, months: worthRange.months, growth: growth, hidden: app.assetsHidden,
+                               picked: $pickedMonth)
+                        .padding(.horizontal, -Space.s20)
+                        .padding(.top, Space.s8)
+                        .padding(.bottom, Space.s20)
                 } else {
                     Text("The line appears after your second month of updates.")
                         .font(AppFont.main(12))
                         .foregroundStyle(Tokens.grey400)
-                        .padding(Space.s16)
+                        .padding(.vertical, Space.s16)
                 }
+                // Today's net worth: what you own less what you owe.
+                NetWorthBar(assets: shares.total, owed: owed, hidden: app.assetsHidden)
+                    .padding(Space.s16)
+                    .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
             }
-            .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
+
+            // The sheet at a glance; updating it lives on Total Asset.
+            HoldingsTable(assets: assets, moves: moves, hidden: app.assetsHidden)
 
             MovesCard(moves: moves, hidden: app.assetsHidden)
 
@@ -148,53 +186,84 @@ struct FinanceView: View {
 
 private struct TotalBlock: View {
     var total: Int
-    var groups: [AssetMath.Group]
+    /// The month touched on the line, or nil for now.
+    var month: String?
     var growth: Int?
     var hidden: Bool
-    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Space.s12) {
-            Text("Total Asset").font(AppFont.main(14, .medium)).foregroundStyle(Tokens.text700)
+        VStack(alignment: .leading, spacing: Space.s8) {
+            Text(month.map { "Total Asset · \($0)" } ?? "Total Asset")
+                .font(AppFont.main(14, .medium))
+                .foregroundStyle(month == nil ? Tokens.text700 : Tokens.brand600)
+                .contentTransition(.opacity)
             HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
                 Text(hidden ? "••••••" : Money.format(total))
                     .font(AppFont.amount(32))
                     .monospacedDigit()
                     .foregroundStyle(Tokens.text900)
+                    .contentTransition(.numericText())
                     .minimumScaleFactor(0.7)
                     .lineLimit(1)
                 Text("đ").font(AppFont.currency(for: 32)).foregroundStyle(Tokens.grey400)
-                if let growth, !hidden { GrowthBadge(pct: growth) }
             }
             .accessibilityElement(children: .combine)
-
-            GeometryReader { g in
-                let shown = groups.filter { $0.pct > 0 }
-                let gaps = CGFloat(max(shown.count - 1, 0)) * 4
-                HStack(spacing: 4) {
-                    ForEach(shown, id: \.kind) { grp in
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(Tokens.assetKind(grp.kind))
-                            .frame(width: max(0, (g.size.width - gaps) * CGFloat(grp.pct) / 100))
-                    }
-                }
-            }
-            .frame(height: 32)
-            .accessibilityHidden(true)
-
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: typeSize.isAccessibilitySize ? 1 : 2),
-                      spacing: Space.s8) {
-                ForEach(groups, id: \.kind) { grp in
-                    HStack(spacing: Space.s6) {
-                        RoundedRectangle(cornerRadius: 3).fill(Tokens.assetKind(grp.kind)).frame(width: 12, height: 12)
-                        Text("\(grp.kind.label):").foregroundStyle(Tokens.text700).lineLimit(1).fixedSize()
-                        Text("\(grp.pct)%").foregroundStyle(Tokens.text900)
-                    }
-                    .font(AppFont.main(12, .medium))
-                    .accessibilityElement(children: .combine)
-                }
-            }
+            // On its own line under the amount.
+            if let growth, !hidden { GrowthBadge(pct: growth) }
         }
+    }
+}
+
+/// Net worth today — total assets less what's owed (installments and family loans) — as one bar
+/// split between the two, with the amounts.
+private struct NetWorthBar: View {
+    var assets: Int
+    var owed: Int
+    var hidden: Bool
+
+    var body: some View {
+        let net = assets - owed
+        let whole = max(assets, 1)
+        let netPct = Int((Double(max(net, 0)) / Double(whole) * 100).rounded())
+        let debtColor = Color(hex: 0xF97066)
+        VStack(alignment: .leading, spacing: Space.s12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Net worth").font(AppFont.main(14, .medium)).foregroundStyle(Tokens.text700)
+                Spacer()
+                Text(hidden ? "••••••" : (net < 0 ? "-" : "") + Money.format(abs(net)) + "đ")
+                    .font(AppFont.heading(20, .semibold)).foregroundStyle(Tokens.text900).monospacedDigit()
+            }
+            GeometryReader { g in
+                let w = g.size.width - (owed > 0 && net > 0 ? 4 : 0)
+                HStack(spacing: 4) {
+                    if net > 0 {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Tokens.brand500)
+                            .frame(width: max(8, w * CGFloat(netPct) / 100))
+                    }
+                    if owed > 0 {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous).fill(debtColor)
+                    }
+                }
+            }
+            .frame(height: 24)
+            .accessibilityHidden(true)
+            HStack(spacing: Space.s16) {
+                legend(Tokens.brand500, "Net worth", "\(netPct)%")
+                legend(debtColor, "Debt " + (hidden ? "" : AnalyticsView.compact(owed)), "\(100 - netPct)%")
+            }
+            Text("All you own, less installments and family loans still owed.")
+                .font(AppFont.main(12)).foregroundStyle(Tokens.grey400)
+        }
+    }
+
+    private func legend(_ color: Color, _ name: String, _ value: String) -> some View {
+        HStack(spacing: Space.s6) {
+            RoundedRectangle(cornerRadius: 3).fill(color).frame(width: 12, height: 12)
+            Text(name).foregroundStyle(Tokens.text700)
+            Text(value).foregroundStyle(Tokens.text900)
+        }
+        .font(AppFont.main(12, .medium))
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -214,79 +283,132 @@ struct GrowthBadge: View {
 
 // MARK: - Net-worth chart (Swift Charts)
 
+/// Total assets month by month, edge to edge in the card (no scale): a soft line over a
+/// fading fill, the last eight months along the bottom. The picked month (the latest unless you
+/// touch another) gets a light column, a ringed dot and its amount in a green pill.
+/// How far back the Total Asset line goes.
+enum WorthRange: CaseIterable {
+    case sixMonths, oneYear, threeYears, all
+    var label: String {
+        switch self {
+        case .sixMonths: "Last 6 months"
+        case .oneYear: "Last year"
+        case .threeYears: "Last 3 years"
+        case .all: "All time"
+        }
+    }
+    var short: String {
+        switch self {
+        case .sixMonths: "6 months"
+        case .oneYear: "1 year"
+        case .threeYears: "3 years"
+        case .all: "All"
+        }
+    }
+    /// Months shown, nil for all.
+    var months: Int? {
+        switch self {
+        case .sixMonths: 6
+        case .oneYear: 12
+        case .threeYears: 36
+        case .all: nil
+        }
+    }
+}
+
 private struct WorthChart: View {
     var points: [WorthPoint]
+    var months: Int?
     var growth: Int?
     var hidden: Bool
-    @State private var selected: Date?
-
-    private func date(_ month: String) -> Date { Day.date(month + "-01") }
+    /// The touched month, shared with the amount above (nil: the latest).
+    @Binding var picked: String?
 
     var body: some View {
-        let last = points[points.count - 1]
-        let focus = selected.flatMap { s in points.min { abs(date($0.month).timeIntervalSince(s)) < abs(date($1.month).timeIntervalSince(s)) } } ?? last
-        Chart {
-            ForEach(points, id: \.month) { p in
-                AreaMark(x: .value("Month", date(p.month)), y: .value("Worth", p.value))
-                    .foregroundStyle(LinearGradient(colors: [Tokens.brand500.opacity(0.28), Tokens.brand500.opacity(0)],
+        let sorted = points.sorted { $0.month < $1.month }
+        let shown = Array(sorted.suffix(max(months ?? sorted.count, 2)))
+        // Up to a year: the month. Up to three years: "Apr 25". Longer: just the year.
+        let long = shown.count > 12, veryLong = shown.count > 36
+        let label = { (m: String) -> String in
+            let (y, mm, _) = Day.parts(m + "-01")
+            if veryLong { return String(y) }
+            return Day.monthsShort[mm - 1] + (long ? " " + String(String(y).suffix(2)) : "")
+        }
+        // A few labels along the bottom (every month up to seven, else at most five), always the last.
+        let step = shown.count <= 7 ? 1 : max(1, Int((Double(shown.count) / 5).rounded(.up)))
+        let tick = { (i: Int) in (shown.count - 1 - i) % step == 0 }
+        let focus = shown.first { $0.month == picked } ?? shown.last!
+        let lo = shown.map(\.value).min() ?? 0, hi = shown.map(\.value).max() ?? 1
+        let pad = max((hi - lo) / 3, hi / 40, 1)
+        VStack(spacing: Space.s12) {
+            Chart {
+                // Light column behind the picked month.
+                RectangleMark(x: .value("Month", focus.month), width: .ratio(0.7))
+                    .foregroundStyle(LinearGradient(colors: [Tokens.brand500.opacity(0), Tokens.brand500.opacity(0.22)],
                                                     startPoint: .top, endPoint: .bottom))
-                    .interpolationMethod(.monotone)
-                LineMark(x: .value("Month", date(p.month)), y: .value("Worth", p.value))
-                    .foregroundStyle(Tokens.brand500)
-                    .lineStyle(StrokeStyle(lineWidth: 1.5))
-                    .interpolationMethod(.monotone)
-            }
-            RuleMark(x: .value("Month", date(focus.month)))
-                .foregroundStyle(Tokens.grey300)
-                .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
-            PointMark(x: .value("Month", date(focus.month)), y: .value("Worth", focus.value))
-                .foregroundStyle(Tokens.bgWhite)
-                .symbolSize(40)
-                .annotation(position: .top, spacing: 8, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
-                    if !hidden {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(FinanceText.monthLabel(focus.month)).font(AppFont.main(12, .semibold)).foregroundStyle(Tokens.text900)
-                            HStack(spacing: 4) {
-                                Text(DueText.short(focus.value))
-                                if focus.month == last.month, let growth {
-                                    Text("·")
-                                    Image(systemName: growth < 0 ? "arrow.down.right" : "arrow.up.right")
-                                    Text("\(abs(growth))%")
-                                }
-                            }
-                            .font(AppFont.main(11, .medium))
-                            .foregroundStyle(Tokens.brand700)
-                        }
-                        .padding(Space.s8)
-                        .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c8))
-                        .overlay(RoundedRectangle(cornerRadius: Corner.c8).strokeBorder(Tokens.bd1))
-                        .shadow(color: .black.opacity(0.08), radius: 6, y: 2)
+                ForEach(shown, id: \.month) { p in
+                    AreaMark(x: .value("Month", p.month), yStart: .value("Base", lo - pad), yEnd: .value("Worth", p.value))
+                        .foregroundStyle(LinearGradient(colors: [Tokens.brand500.opacity(0.22), Tokens.brand500.opacity(0)],
+                                                        startPoint: .top, endPoint: .bottom))
+                        .interpolationMethod(.catmullRom)
+                    LineMark(x: .value("Month", p.month), y: .value("Worth", p.value))
+                        .foregroundStyle(Tokens.brand500)
+                        .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round))
+                        .interpolationMethod(.catmullRom)
+                }
+                PointMark(x: .value("Month", focus.month), y: .value("Worth", focus.value))
+                    .symbol {
+                        Circle().fill(Tokens.brand500).frame(width: 12, height: 12)
+                            .overlay(Circle().strokeBorder(.white, lineWidth: 3))
                     }
-                }
-            PointMark(x: .value("Month", date(focus.month)), y: .value("Worth", focus.value))
-                .foregroundStyle(Tokens.brand500)
-                .symbolSize(14)
-        }
-        .chartXSelection(value: $selected)
-        .noPageSwipe()
-        .chartYAxis {
-            AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
-                AxisGridLine().foregroundStyle(Tokens.bd0)
-                AxisValueLabel {
-                    if !hidden, let n = v.as(Int.self) { Text(Money.format(n / 1000)).font(AppFont.main(11)) }
+                    .annotation(position: .top, spacing: 10, overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
+                        if !hidden {
+                            Text(AnalyticsView.compact(focus.value) + "đ")
+                                .font(AppFont.main(13, .semibold))
+                                .foregroundStyle(Color(hex: 0x0D121C))
+                                .padding(.horizontal, Space.s12)
+                                .frame(height: 30)
+                                .background(Tokens.brand300, in: .capsule)
+                        }
+                    }
+            }
+            .chartYScale(domain: (lo - pad)...(hi + pad))
+            // Months in order (the picked month's column is drawn first, and would lead otherwise).
+            .chartXScale(domain: shown.map(\.month), range: .plotDimension(padding: 8))
+            .chartYAxis(.hidden)
+            .chartXAxis(.hidden)
+            // A tap or a drag picks the month under the finger; it stays when the finger lifts.
+            // The latest month means "now".
+            .chartOverlay { proxy in
+                Rectangle().fill(.clear).contentShape(.rect)
+                    .gesture(DragGesture(minimumDistance: 0).onChanged { g in
+                        guard let key: String = proxy.value(atX: g.location.x),
+                              let p = shown.first(where: { $0.month == key }) else { return }
+                        let next = p.month == shown.last?.month ? nil : p.month
+                        if next != picked { withAnimation(.snappy) { picked = next } }
+                    })
+            }
+            .chartPlotStyle { $0.padding(.top, 44) }
+            .frame(height: 190)
+            .noPageSwipe()
+            // Months along the bottom; the picked one in green.
+            HStack(spacing: 0) {
+                ForEach(Array(shown.enumerated()), id: \.element.month) { i, p in
+                    // Every few months; the picked one turns green when it has a label.
+                    Text(tick(i) ? label(p.month) : "")
+                        .font(AppFont.main(12, p.month == focus.month ? .semibold : .regular))
+                        .foregroundStyle(p.month == focus.month ? Tokens.brand600 : Tokens.grey400)
+                        .lineLimit(1).fixedSize()
+                        .frame(maxWidth: .infinity, alignment: i == shown.count - 1 ? .trailing : .center)
                 }
             }
+            .padding(.horizontal, Space.s8)
+            .accessibilityHidden(true)
         }
-        .chartXAxis {
-            AxisMarks(values: [date(points[0].month), date(last.month)]) { v in
-                AxisValueLabel(anchor: v.index == 0 ? .topLeading : .topTrailing) {
-                    if let d = v.as(Date.self) { Text(FinanceText.monthLabel(Month.of(Day.iso(d)))).font(AppFont.main(11)) }
-                }
-            }
-        }
-        .frame(height: 170)
-        .accessibilityLabel("Net worth from \(FinanceText.monthLabel(points[0].month)) to \(FinanceText.monthLabel(last.month))")
-        .accessibilityValue(hidden ? "Hidden" : "Now \(Money.format(last.value)) dong")
+        .accessibilityElement(children: .ignore)
+        .animation(.snappy, value: shown.count)
+        .accessibilityLabel("Total assets over the last \(shown.count) months")
+        .accessibilityValue(hidden ? "Hidden" : "\(FinanceText.monthLabel(focus.month)), \(Money.format(focus.value)) dong")
     }
 }
 
@@ -379,99 +501,487 @@ private struct MovesCard: View {
 
 // MARK: - Total Asset and Debt
 
+/// Total Asset — where values get updated: net worth on top (assets less installments still
+/// owed), then the table with Now and Put in as buttons — tap Now to write down today's worth,
+/// Put in to add money. Every change keeps its date, so the gains follow on their own.
 private struct TotalAssetsSection: View {
     var assets: [Asset]
+    var moves: [AssetMove]
+    var bills: [Bill]
+    var loans: [FamilyLoan]
+    var today: String
     var hidden: Bool
+    /// The page's top already shows net worth (both layouts), so this card can step aside.
+    var showNetWorth = true
     var onAdd: () -> Void
+    @State private var quick: QuickMove?
+    /// The group picked on the pie's legend: the list below shows only it.
+    @State private var group: AssetKind?
 
     var body: some View {
-        let s = AssetMath.shares(assets)
+        // Money others owe you (Owed) isn't counted in what you have.
+        let counted = assets.filter { $0.kind != .owed }
+        let worth = counted.reduce(0) { $0 + $1.amount }
+        let putIn = counted.reduce(0) { $0 + (AssetMath.growth($1, moves: moves)?.putIn ?? $1.amount) }
+        let gain = worth - putIn
+        // Owed: installments still to pay plus family loans with their interest.
+        let owed = BillMath.monthSummary(bills, month: Month.of(today)).totalRemaining + LoanMath.owed(loans, today: today)
         VStack(alignment: .leading, spacing: Space.s12) {
-            ForEach(s.groups, id: \.kind) { g in
-                let list = assets.filter { $0.kind == g.kind }
-                VStack(alignment: .leading, spacing: Space.s4) {
-                    HStack(spacing: Space.s8) {
-                        RoundedRectangle(cornerRadius: 3).fill(Tokens.assetKind(g.kind)).frame(width: 12, height: 12)
-                        Text(g.kind.label).font(AppFont.main(16, .semibold)).foregroundStyle(Tokens.text900)
-                        Text("\(g.pct)%").font(AppFont.main(12, .medium)).foregroundStyle(Tokens.grey400)
-                        Spacer()
-                        AmountText(value: g.sum, hidden: hidden)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityAddTraits(.isHeader)
-                    if list.isEmpty {
-                        Text("Nothing here yet.").font(AppFont.main(12)).foregroundStyle(Tokens.grey400).padding(.vertical, Space.s4)
-                    }
-                    ForEach(list) { a in
-                        Divider().overlay(Tokens.bd0)
-                        NavigationLink(value: FinanceView.Route.asset(a.id)) {
-                            MoneyRow(title: a.name, sub: "Updated \(FinanceText.dayLabel(a.updatedOn))", amount: a.amount,
-                                     icon: a.icon, hidden: hidden, chevron: true)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Opens what you put in, growth and history")
-                    }
-                }
-                .padding(Space.s16)
-                .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
+            if showNetWorth {
+                // Net worth on top; underneath, what went into the assets and how they moved.
+                let pct = putIn > 0 ? Double(gain) / Double(putIn) * 100 : 0
+                StatCard(label: "Net worth", amount: worth - owed, hidden: hidden, stats: [
+                    ("Put in", hidden ? "•••" : AnalyticsView.compact(putIn), false),
+                    (gain < 0 ? "Loss" : "Gain", hidden ? "•••" : (gain < 0 ? "−" : "+") + AnalyticsView.compact(abs(gain)), gain > 0),
+                    ("Change", (gain < 0 ? "−" : "+") + String(format: "%.1f%%", abs(pct)), gain > 0),
+                ])
             }
+
+            AssetsPie(assets: assets, hidden: hidden, picked: $group)
+
+            HoldingsTable(assets: group.map { g in assets.filter { $0.kind == g } } ?? assets, moves: moves, hidden: hidden,
+                          editable: true, title: group?.label ?? "Assets") { asset, kind in
+                quick = QuickMove(asset: asset, kind: kind)
+            }
+
             HStack(spacing: Space.s4) {
-                Text("\(hidden ? "••••••" : Money.format(s.total)) đ in total ·")
+                Text("Tap Now to update a value, Put in to add money ·")
                 Button("Add an asset", action: onAdd).foregroundStyle(Tokens.brand600)
             }
             .font(AppFont.main(12))
             .foregroundStyle(Tokens.grey400)
+            .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
         }
+        .sheet(item: $quick) { q in QuickMoveSheet(move: q, moves: moves, today: today) }
+    }
+}
+
+/// The asset sheet as a list (like a subscriptions list): a round tile, the name with its gain
+/// or loss under it, and what it's worth now with what went in under that. Read-only on
+/// Overview (a row opens the asset); on Total Asset the amount is a button for a quick update.
+struct HoldingsTable: View {
+    var assets: [Asset]
+    var moves: [AssetMove]
+    var hidden: Bool
+    var editable = false
+    var title = "Assets"
+    var onQuick: (Asset, AssetMoveKind) -> Void = { _, _ in }
+
+    var body: some View {
+        let rows = assets.map { a in (asset: a, putIn: AssetMath.growth(a, moves: moves)?.putIn ?? a.amount) }
+        // The total leaves out money others owe you, unless that's all the list shows.
+        let summed = rows.filter { $0.asset.kind != .owed || assets.allSatisfy { $0.kind == .owed } }
+        let putIn = summed.reduce(0) { $0 + $1.putIn }
+        let worth = summed.reduce(0) { $0 + $1.asset.amount }
+        VStack(alignment: .leading, spacing: Space.s8) {
+            HStack {
+                Text(title).font(AppFont.section).foregroundStyle(Tokens.text900)
+                    .contentTransition(.opacity)
+                Spacer()
+                Text(editable ? "Tap an amount to update" : "\(rows.count) \(rows.count == 1 ? "asset" : "assets")")
+                    .font(AppFont.table(12)).foregroundStyle(Tokens.grey400)
+            }
+            .padding(.horizontal, Space.s4)
+            VStack(spacing: 0) {
+                if rows.isEmpty {
+                    Text("Nothing here yet.").font(AppFont.table(12)).foregroundStyle(Tokens.grey400).padding(.vertical, Space.s16)
+                }
+                ForEach(Array(rows.enumerated()), id: \.element.asset.id) { i, r in
+                    if i > 0 { Divider().overlay(Tokens.bd0).padding(.leading, 56) }
+                    row(r.asset, putIn: r.putIn)
+                }
+                Divider().overlay(Tokens.bd0)
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Total").font(AppFont.table(14, .semibold)).foregroundStyle(Tokens.text900)
+                        Text(hidden ? "" : "in " + AnalyticsView.compact(putIn)).font(AppFont.table(12)).foregroundStyle(Tokens.grey400)
+                    }
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(hidden ? "•••" : Money.format(worth) + "đ").font(AppFont.heading(16, .semibold)).foregroundStyle(Tokens.text900)
+                        gainLine(worth - putIn, of: putIn)
+                    }
+                }
+                .monospacedDigit()
+                .padding(.vertical, Space.s16)
+                .accessibilityElement(children: .combine)
+            }
+            .padding(.horizontal, Space.s16)
+            .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
+        }
+    }
+
+    private func row(_ a: Asset, putIn: Int) -> some View {
+        HStack(spacing: Space.s12) {
+            NavigationLink(value: FinanceView.Route.asset(a.id)) {
+                HStack(spacing: Space.s12) {
+                    Text(a.icon.mark)
+                        .font(AppFont.table(13, .bold))
+                        .foregroundStyle(a.icon == .gold ? Color(hex: 0x0D121C) : .white)
+                        .frame(width: 40, height: 40)
+                        .background(Tokens.assetTile(a.icon), in: .circle)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(a.name).font(AppFont.table(15, .semibold)).foregroundStyle(Tokens.text900).lineLimit(1)
+                        Text("\(hidden ? "" : "in " + AnalyticsView.compact(putIn) + " · ")\(HoldingsTable.shortDay(a.updatedOn))")
+                            .font(AppFont.table(12)).foregroundStyle(Tokens.grey400).lineLimit(1)
+                    }
+                    Spacer(minLength: Space.s4)
+                }
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Opens its history")
+            Button { onQuick(a, .value) } label: {
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(hidden ? "•••" : Money.format(a.amount) + "đ")
+                        .font(AppFont.heading(16, .semibold)).foregroundStyle(Tokens.text900)
+                    gainLine(a.amount - putIn, of: putIn)
+                }
+                .monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            // Read-only on Overview without greying the amount out.
+            .allowsHitTesting(editable)
+            .accessibilityLabel("\(a.name), " + (hidden ? "amount hidden" : "worth \(Money.format(a.amount)) dong, put in \(Money.format(putIn)) dong"))
+            .accessibilityHint(editable ? "Update what it's worth" : "")
+        }
+        .padding(.vertical, Space.s12)
+    }
+
+    /// "+22.2M · +25%" in green, "−33.3M · −31%" in grey (no red alarms), "No change" when flat.
+    private func gainLine(_ change: Int, of putIn: Int) -> some View {
+        let pct = putIn > 0 ? Int((Double(change) / Double(putIn) * 100).rounded()) : 0
+        let text = change == 0 ? "No change"
+            : (change > 0 ? "+" : "−") + (hidden ? "•••" : AnalyticsView.compact(abs(change)))
+              + (putIn > 0 ? " · " + (pct == 0 ? "<1%" : (change > 0 ? "+" : "−") + "\(abs(pct))%") : "")
+        return Text(text)
+            .font(AppFont.table(12, .medium))
+            .foregroundStyle(change > 0 ? Tokens.success : Tokens.grey400)
+            .monospacedDigit()
+    }
+
+    /// "16 Nov" — this year's dates without the year.
+    static func shortDay(_ iso: String) -> String {
+        let (y, m, d) = Day.parts(iso)
+        return "\(d) \(Day.monthsShort[m - 1])" + (String(y) == String(Day.today().prefix(4)) ? "" : " \(y)")
+    }
+}
+
+/// What the quick sheet is for: today's worth of an asset, or money put in.
+struct QuickMove: Identifiable {
+    var asset: Asset
+    var kind: AssetMoveKind
+    var id: String { asset.id + kind.rawValue }
+}
+
+/// Quick update from the table: pick what happened — new worth, money put in or taken out —
+/// see the asset's put in / now / gain change as you type, pick the day (today by default),
+/// and save. It goes into the asset's history like any other move.
+struct QuickMoveSheet: View {
+    var move: QuickMove
+    var moves: [AssetMove]
+    var today: String
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var kind: AssetMoveKind
+    @State private var value: Int?
+    @State private var date: Date
+
+    init(move: QuickMove, moves: [AssetMove], today: String) {
+        self.move = move
+        self.moves = moves
+        self.today = today
+        _kind = State(initialValue: move.kind)
+        _date = State(initialValue: Day.date(today))
+    }
+
+    var body: some View {
+        let a = move.asset
+        let putIn = AssetMath.growth(a, moves: moves)?.putIn ?? a.amount
+        let typed = value ?? 0
+        // What the asset would look like after saving.
+        let after: (putIn: Int, now: Int) = switch kind {
+        case .value: (putIn, value ?? a.amount)
+        case .putIn: (putIn + typed, a.amount + typed)
+        case .takeOut: (putIn - min(typed, a.amount), a.amount - min(typed, a.amount))
+        }
+        NavigationStack {
+            VStack(alignment: .leading, spacing: Space.s16) {
+                Picker("What happened", selection: $kind) {
+                    Text("Update value").tag(AssetMoveKind.value)
+                    Text("Put in").tag(AssetMoveKind.putIn)
+                    Text("Take out").tag(AssetMoveKind.takeOut)
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: kind) { _, _ in value = nil }
+
+                VStack(alignment: .leading, spacing: Space.s4) {
+                    Text(prompt(a.name)).font(AppFont.main(14)).foregroundStyle(Tokens.grey400)
+                    // The current worth shows greyed until you type; typing starts a fresh number.
+                    HStack(alignment: .firstTextBaseline, spacing: Space.s4) {
+                        Text(Money.format(value ?? (kind == .value ? a.amount : 0)))
+                            .font(AppFont.heading(40, .medium))
+                            .foregroundStyle(value == nil ? Tokens.grey300 : Tokens.text900)
+                            .monospacedDigit().contentTransition(.numericText())
+                            .lineLimit(1).minimumScaleFactor(0.6)
+                        Text("đ").font(AppFont.heading(28)).foregroundStyle(Tokens.grey400)
+                    }
+                }
+
+                // Put in / Now / Gain, before → after.
+                HStack(spacing: Space.s8) {
+                    summary("Put in", putIn, after.putIn)
+                    summary("Now", a.amount, after.now)
+                    summary("Gain", a.amount - putIn, after.now - after.putIn, signed: true)
+                }
+                .padding(Space.s12)
+                .background(Tokens.bg4.opacity(0.6), in: .rect(cornerRadius: Corner.c16, style: .continuous))
+
+                DatePicker("Day", selection: $date, in: ...Day.date(today), displayedComponents: .date)
+                    .font(AppFont.main(14, .medium))
+                    .foregroundStyle(Tokens.text700)
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, Space.s20)
+            .padding(.top, Space.s8)
+            .safeAreaInset(edge: .bottom, spacing: 0) { AmountPad(value: $value) }
+            .navigationTitle(a.name)
+            .toolbarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) { Button("Cancel", systemImage: "xmark") { dismiss() } }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Save", systemImage: "checkmark") {
+                        LocalStore(context: context).move(a, kind, amount: typed, date: Day.iso(date))
+                        dismiss()
+                    }
+                    .buttonStyle(.glassProminent)
+                    .tint(Tokens.brand600)
+                    .disabled(typed <= 0 || (kind == .value && typed == a.amount) || (kind == .takeOut && a.amount == 0))
+                }
+            }
+        }
+        .presentationDetents([.large])
+    }
+
+    private func prompt(_ name: String) -> String {
+        switch kind {
+        case .value: "What is \(name) worth now?"
+        case .putIn: "How much did you put in?"
+        case .takeOut: "How much did you take out?"
+        }
+    }
+
+    /// One figure: "110M", or "110M → 74M" while what you type would change it.
+    private func summary(_ label: String, _ before: Int, _ after: Int, signed: Bool = false) -> some View {
+        func text(_ v: Int) -> String { (signed ? (v < 0 ? "−" : "+") : "") + AnalyticsView.compact(abs(v)) }
+        return VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(AppFont.main(11)).foregroundStyle(Tokens.grey400)
+            HStack(spacing: Space.s4) {
+                Text(text(before))
+                    .foregroundStyle(after == before ? Tokens.text900 : Tokens.grey400)
+                if after != before {
+                    Image(systemName: "arrow.right").font(.system(size: 10, weight: .bold)).foregroundStyle(Tokens.grey400)
+                    Text(text(after))
+                        .foregroundStyle(signed ? (after >= 0 ? Tokens.success : Tokens.text900) : Tokens.text900)
+                        .contentTransition(.numericText())
+                }
+            }
+            .font(AppFont.main(14, .semibold))
+            .lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }
 
 private struct DebtSection: View {
     var bills: [Bill]
+    var loans: [FamilyLoan]
+    var today: String
     var hidden: Bool
+    @Environment(\.modelContext) private var context
+    @State private var addingLoan = false
+    @State private var openPerson: String?
 
     var body: some View {
         let d = FinanceText.debt(bills)
+        let month = Month.of(today)
+        let monthly = d.rows.reduce(0) { $0 + $1.bill.amount }
+        let family = LoanMath.people(loans, today: today)
+        let familyOwed = family.reduce(0) { $0 + $1.owed }
         VStack(alignment: .leading, spacing: Space.s12) {
-            VStack(alignment: .leading, spacing: Space.s8) {
-                Text("Still to pay on installments").font(AppFont.main(14, .medium)).foregroundStyle(Tokens.text700)
-                AmountText(value: d.total, size: 28, hidden: hidden)
-                Text("Worked out from your installments in Due. Paying one off there updates this.")
-                    .font(AppFont.main(12))
-                    .foregroundStyle(Tokens.grey400)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(Space.s16)
-            .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
+            StatCard(label: "Still to pay", amount: d.total + familyOwed, hidden: hidden, stats: [
+                ("Installments", hidden ? "•••" : AnalyticsView.compact(d.total), false),
+                ("Family", hidden ? "•••" : AnalyticsView.compact(familyOwed), false),
+                ("A month", hidden ? "•••" : AnalyticsView.compact(monthly), false),
+            ])
+
+            DebtPie(bills: bills, loans: loans, today: today, hidden: hidden)
+
+            familyCard(family)
 
             if d.rows.isEmpty {
                 Text("No installments left to pay.").font(AppFont.main(12)).foregroundStyle(Tokens.grey400)
                     .frame(maxWidth: .infinity)
             } else {
                 VStack(spacing: 0) {
-                    ForEach(Array(d.rows.enumerated()), id: \.element.bill.id) { i, r in
-                        if i > 0 { Divider().overlay(Tokens.bd0) }
-                        HStack(alignment: .top) {
-                            VStack(alignment: .leading, spacing: Space.s6) {
-                                Text(r.bill.name).font(AppFont.main(14, .semibold)).foregroundStyle(Tokens.text900)
-                                Text("\(r.bill.lender.map { "\($0) · " } ?? "")\(r.left) of \(r.bill.payments ?? 0) left")
-                                    .font(AppFont.main(12))
-                                    .foregroundStyle(Tokens.grey400)
+                    HStack(spacing: Space.s8) {
+                        Text("Installment").frame(maxWidth: .infinity, alignment: .leading)
+                        Text("Paid").frame(width: 52, alignment: .trailing)
+                        Text("Left").frame(width: 72, alignment: .trailing)
+                        Text(Day.monthsShort[Day.parts(today).m - 1]).frame(width: 44, alignment: .center)
+                    }
+                    .font(AppFont.table(11, .semibold))
+                    .tracking(0.3)
+                    .foregroundStyle(Tokens.grey400)
+                    .textCase(.uppercase)
+                    .padding(.vertical, Space.s8)
+                    .accessibilityHidden(true)
+                    Divider().overlay(Tokens.bd0)
+                    ForEach(d.rows, id: \.bill.id) { r in
+                        let due = BillMath.dueIn(r.bill, month: month) != nil
+                        let paidNow = r.bill.paid[month] != nil
+                        HStack(spacing: Space.s8) {
+                            VStack(alignment: .leading, spacing: Space.s4) {
+                                Text(r.bill.name).font(AppFont.table(14, .semibold)).foregroundStyle(Tokens.text900).lineLimit(1)
+                                Text((r.bill.lender.map { "\($0) · " } ?? "") + (hidden ? "•••" : AnalyticsView.compact(r.bill.amount)) + "/month")
+                                    .font(AppFont.table(11)).foregroundStyle(Tokens.grey400).lineLimit(1)
                                 ProgressView(value: Double(r.paid), total: Double(max(r.bill.payments ?? 1, 1)))
                                     .tint(Tokens.brand500)
-                                    .frame(maxWidth: 160)
                             }
-                            Spacer()
-                            AmountText(value: r.owe, hidden: hidden)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            Text("\(r.paid)/\(r.bill.payments ?? 0)")
+                                .font(AppFont.table(14, .medium)).foregroundStyle(Tokens.text700).monospacedDigit()
+                                .frame(width: 52, alignment: .trailing)
+                            Text(hidden ? "•••" : AnalyticsView.compact(r.owe))
+                                .font(AppFont.table(14, .semibold)).foregroundStyle(Tokens.text900).monospacedDigit()
+                                .frame(width: 72, alignment: .trailing)
+                            Button {
+                                withAnimation(.snappy) {
+                                    LocalStore(context: context).setBillPaid(r.bill, month: month, paid: !paidNow, date: today)
+                                }
+                            } label: {
+                                Image(systemName: paidNow ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 22, weight: paidNow ? .regular : .light))
+                                    .foregroundStyle(paidNow ? Tokens.brand500 : Tokens.grey300)
+                                    .contentTransition(.symbolEffect(.replace))
+                                    .frame(width: 44, height: 44)
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!due)
+                            .opacity(due ? 1 : 0.3)
+                            .sensoryFeedback(.success, trigger: paidNow)
+                            .accessibilityLabel(paidNow ? "Mark this month's \(r.bill.name) as not paid" : "Mark this month's \(r.bill.name) as paid")
                         }
                         .padding(.vertical, Space.s12)
-                        .accessibilityElement(children: .combine)
+                        Divider().overlay(Tokens.bd0)
                     }
+                    Text("Tick a month here or in Due — both stay in step.")
+                        .font(AppFont.table(11)).foregroundStyle(Tokens.grey400)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, Space.s12)
                 }
                 .padding(.horizontal, Space.s16)
                 .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
             }
         }
+    }
+
+    /// Money family sent, owed back with yearly interest: per person what came in, the interest
+    /// so far and what's owed today. Tap a person to see each payment; + to add one.
+    private func familyCard(_ family: [LoanMath.Person]) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Family loans").font(AppFont.table(14, .semibold)).foregroundStyle(Tokens.text900)
+                Spacer()
+                Button { addingLoan = true } label: {
+                    Label("Add", systemImage: "plus").font(AppFont.table(12, .semibold))
+                        .padding(.horizontal, Space.s12).frame(height: 32)
+                }
+                .buttonStyle(.glass)
+            }
+            .padding(.vertical, Space.s8)
+            HStack(spacing: Space.s8) {
+                Text("Person").frame(maxWidth: .infinity, alignment: .leading)
+                Text("Got").frame(width: 64, alignment: .trailing)
+                Text("Interest").frame(width: 70, alignment: .trailing)
+                Text("Owed").frame(width: 70, alignment: .trailing)
+            }
+            .font(AppFont.table(11, .semibold))
+            .tracking(0.3)
+            .foregroundStyle(Tokens.grey400)
+            .textCase(.uppercase)
+            .padding(.vertical, Space.s8)
+            .accessibilityHidden(true)
+            Divider().overlay(Tokens.bd0)
+            if family.isEmpty {
+                Text("Money from family you'll pay back goes here, with its interest.")
+                    .font(AppFont.table(12)).foregroundStyle(Tokens.grey400)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, Space.s16)
+            }
+            ForEach(family, id: \.who) { p in
+                Button { openPerson = p.who } label: {
+                    HStack(spacing: Space.s8) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(p.who).font(AppFont.table(14, .semibold)).foregroundStyle(Tokens.text900).lineLimit(1)
+                            Text(String(format: "%g%% a year", p.rate)).font(AppFont.table(11)).foregroundStyle(Tokens.grey400)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(hidden ? "•••" : AnalyticsView.compact(p.principal))
+                            .font(AppFont.table(14)).foregroundStyle(Tokens.text700)
+                            .frame(width: 64, alignment: .trailing)
+                        VStack(alignment: .trailing, spacing: 0) {
+                            Text(hidden ? "•••" : "+" + AnalyticsView.compact(max(0, p.interest - p.interestPaid)))
+                                .font(AppFont.table(14, .medium)).foregroundStyle(Tokens.text700)
+                            if p.interestPaid > 0 {
+                                Text(hidden ? "" : "paid " + AnalyticsView.compact(p.interestPaid))
+                                    .font(AppFont.table(11)).foregroundStyle(Tokens.grey400)
+                            }
+                        }
+                        .frame(width: 70, alignment: .trailing)
+                        Text(hidden ? "•••" : AnalyticsView.compact(p.owed))
+                            .font(AppFont.table(14, .semibold)).foregroundStyle(Tokens.text900)
+                            .frame(width: 70, alignment: .trailing)
+                    }
+                    .monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.7)
+                    .padding(.vertical, Space.s16)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("\(p.who), " + (hidden ? "amounts hidden" :
+                    "borrowed \(Money.format(p.principal)) dong, interest \(Money.format(max(0, p.interest - p.interestPaid))) dong, owed \(Money.format(p.owed)) dong"))
+                .accessibilityHint("Shows each payment")
+                Divider().overlay(Tokens.bd0)
+            }
+            Text("Interest runs day by day on what's still borrowed. Paying interest takes it off first.")
+                .font(AppFont.table(11)).foregroundStyle(Tokens.grey400)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, Space.s12)
+        }
+        .padding(.horizontal, Space.s16)
+        .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
+        .sheet(isPresented: $addingLoan) {
+            AddLoanSheet(people: Array(Set(loans.map(\.who))).sorted(), today: today)
+        }
+        .sheet(item: Binding(get: { openPerson.map { PersonID(id: $0) } }, set: { openPerson = $0?.id })) { p in
+            LoanPersonSheet(who: p.id, loans: loans.filter { $0.who == p.id }, today: today, hidden: hidden)
+        }
+    }
+
+    private func stat(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(value).font(AppFont.main(14, .semibold)).foregroundStyle(Tokens.text900)
+            Text(label).font(AppFont.main(11)).foregroundStyle(Tokens.grey400)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }
 

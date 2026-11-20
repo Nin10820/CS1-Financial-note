@@ -27,7 +27,7 @@ struct AmountPad: View {
                 ForEach(Self.keys, id: \.self) { k in key(k) }
             }
         }
-        .padding(.horizontal, Space.s8)
+        .padding(.horizontal, Space.s12)
         .padding(.top, onDone == nil ? Space.s12 : Space.s6)
         .padding(.bottom, Space.s4)
         // Liquid Glass tray tinted the keyboard's grey: rounded on top, following the phone's
@@ -40,6 +40,8 @@ struct AmountPad: View {
                     style: .continuous))
                 .ignoresSafeArea(edges: .bottom)
         }
+        // Place it at the bottom edge (a bottom safe-area inset): the tray runs under the home
+        // indicator, so its round corners sit below the keys.
         .padding(.horizontal, Space.s4)
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)
     }
@@ -56,8 +58,9 @@ struct AmountPad: View {
             }
             .foregroundStyle(Tokens.text900)
             .frame(maxWidth: .infinity, minHeight: 48)
-            .background(isDelete ? Color.clear : Tokens.keypadKey, in: .rect(cornerRadius: Corner.c8))
-            .shadow(color: isDelete ? .clear : .black.opacity(0.18), radius: 0, y: 1)
+            // Delete sits on a quieter key, like the system keyboard's function keys.
+            .background(isDelete ? Tokens.keypadKey.opacity(0.45) : Tokens.keypadKey, in: .rect(cornerRadius: Corner.c8))
+            .shadow(color: .black.opacity(isDelete ? 0.1 : 0.18), radius: 0, y: 1)
             .contentShape(.rect)
         }
         .buttonStyle(KeyPress())

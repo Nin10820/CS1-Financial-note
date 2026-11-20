@@ -41,6 +41,7 @@ struct LocalStore {
         x.assets.forEach(context.insert)
         x.moves.forEach(context.insert)
         x.care.forEach(context.insert)
+        x.loans.forEach(context.insert)
         // A day note from the sample only fills a day the user hasn't written yet.
         let written = Set(all(DayNote.self).map(\.date))
         x.notes.filter { !written.contains($0.date) }.forEach(context.insert)
@@ -52,11 +53,13 @@ struct LocalStore {
     /// Removes every sample item and leaves the user's own data alone.
     func clearSample() {
         let hadSample = all(Asset.self).contains(where: \.sample) || all(Entry.self).contains(where: \.sample)
-        all(Entry.self).filter(\.sample).forEach(context.delete)
+        // Ticking a sample bill in Due writes an entry of its own; it goes with the bill.
+        all(Entry.self).filter { $0.sample || ($0.billId?.hasPrefix("sample-") ?? false) }.forEach(context.delete)
         all(Bill.self).filter(\.sample).forEach(context.delete)
         all(Asset.self).filter(\.sample).forEach(context.delete)
         all(AssetMove.self).filter(\.sample).forEach(context.delete)
         all(CareGift.self).filter(\.sample).forEach(context.delete)
+        all(FamilyLoan.self).filter(\.sample).forEach(context.delete)
         all(DayNote.self).filter(\.sample).forEach(context.delete)
         // The chart is made from the sample, so it goes with it.
         if hadSample { all(WorthPoint.self).forEach(context.delete) }
@@ -153,6 +156,40 @@ struct LocalStore {
         asset.amount += change
         if date > asset.updatedOn { asset.updatedOn = date }
         context.insert(AssetMove(title: asset.name, icon: asset.icon, amount: change, date: date, assetId: asset.id, kind: kind))
+        recordWorth(on: date)
+        try? context.save()
+    }
+
+    // MARK: - Saving goal
+
+    /// The asset the saving goal fills ("Savings", put aside), made the first time something is saved.
+    static let savingsId = "saving-goal"
+
+    /// Notes money put aside toward the saving goal. The app moves no money: this only writes it
+    /// down, on the Savings asset in Finance.
+    func putAside(_ amount: Int, date: String) {
+        guard amount > 0 else { return }
+        let savings: Asset
+        if let a = all(Asset.self).first(where: { $0.id == Self.savingsId }) {
+            savings = a
+        } else {
+            savings = Asset(id: Self.savingsId, name: "Savings", kind: .aside, icon: .bank, amount: 0, updated: date)
+            context.insert(savings)
+        }
+        savings.amount += amount
+        if date > savings.updatedOn { savings.updatedOn = date }
+        context.insert(AssetMove(title: savings.name, icon: savings.icon, amount: amount, date: date,
+                                 assetId: savings.id, kind: .putIn))
+        recordWorth(on: date)
+        try? context.save()
+    }
+
+    /// Takes back what was put aside on a day (the quick save's undo).
+    func undoPutAside(on date: String) {
+        guard let savings = all(Asset.self).first(where: { $0.id == Self.savingsId }) else { return }
+        let moves = all(AssetMove.self).filter { $0.assetId == savings.id && $0.date == date && $0.kind == .putIn }
+        savings.amount -= min(savings.amount, moves.reduce(0) { $0 + $1.amount })
+        moves.forEach(context.delete)
         recordWorth(on: date)
         try? context.save()
     }

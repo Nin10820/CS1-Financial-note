@@ -13,6 +13,8 @@ struct TodayView: View {
     @State private var picking = false
     @State private var openEntry: Entry?
     @State private var summaryOpen = false
+    /// View Analysis moved from its sheet onto this page (the tab bar stays).
+    @State private var analysisPushed = false
     @State private var scrolled = false
     @State private var laterNotice: String?
     /// The card's All / out / in filter, applied to Recent.
@@ -38,9 +40,12 @@ struct TodayView: View {
                     case .day:
                         WeekStrip(day: $app.day, today: app.today, marked: Set(entries.map(\.date)))
                     case .month:
+                        // Edge to edge: the outer months run off the screen.
                         MonthStrip(day: $app.day, today: app.today, entries: entries, hidden: app.hidden)
+                            .padding(.horizontal, -Space.s20)
                     case .year:
                         YearStrip(day: $app.day, today: app.today, entries: entries, hidden: app.hidden)
+                            .padding(.horizontal, -Space.s20)
                     }
                     // An empty day greets you; an empty month or year still shows its card (0 đ).
                     if list.isEmpty && pane == .recent && app.range == .day {
@@ -76,7 +81,17 @@ struct TodayView: View {
             .toolbarTitleDisplayMode(.inline)
             .sheet(isPresented: $picking) { DayPickerSheet(day: $app.day) }
             .sheet(item: $openEntry) { EntrySheet(entry: $0) }
-            .sheet(isPresented: $summaryOpen) { SummarySheet(title: summaryTitle, entries: list) }
+            .sheet(isPresented: $summaryOpen) {
+                AnalyticsView(entries: entries, anchor: app.day, today: app.today, hidden: app.hidden) {
+                    // Expand: close the sheet, then show the same view as a page here.
+                    summaryOpen = false
+                    Task { try? await Task.sleep(for: .milliseconds(350)); analysisPushed = true }
+                }
+            }
+            .navigationDestination(isPresented: $analysisPushed) {
+                AnalyticsView(entries: entries, anchor: app.day, today: app.today, hidden: app.hidden,
+                              pushed: true, onAdd: { app.actionsOpen = true })
+            }
             .alert("Comes later", isPresented: Binding(get: { laterNotice != nil }, set: { if !$0 { laterNotice = nil } })) {
                 Button("OK", role: .cancel) {}
             } message: {
@@ -177,8 +192,8 @@ struct TodayView: View {
             notes: notes,
             updated: updated,
             hidden: $app.hidden,
-            filter: $flowFilter)
-            .accessibilityAction(named: "Summary") { summaryOpen = true }
+            filter: $flowFilter,
+            onChart: { summaryOpen = true })
     }
 
     /// "Recent | File": the day's lines, or the notes written for it.
@@ -211,6 +226,15 @@ struct TodayView: View {
         }
     }
 
+    /// Lines grouped by day, in the order they're shown.
+    private static func byDay(_ shown: [Entry]) -> [(date: String, entries: [Entry])] {
+        var out: [(date: String, entries: [Entry])] = []
+        for e in shown {
+            if out.last?.date == e.date { out[out.count - 1].entries.append(e) } else { out.append((e.date, [e])) }
+        }
+        return out
+    }
+
     private func recentRows(_ shown: [Entry]) -> some View {
         LazyVStack(alignment: .leading, spacing: 0) {
             if shown.isEmpty {
@@ -222,19 +246,30 @@ struct TodayView: View {
                     .frame(maxWidth: .infinity, minHeight: 140)
                     .background(Tokens.bg4.opacity(0.6), in: .rect(cornerRadius: Corner.c20))
             }
-            ForEach(Array(shown.enumerated()), id: \.element.id) { i, e in
-                // Weekly and Monthly cover many days: each day gets a small heading.
-                if app.range != .day && (i == 0 || shown[i - 1].date != e.date) {
-                    Text(Day.dayHeading(e.date, today: app.today))
+            // One white card per day (the app's content card: solid white, radius 20).
+            // Monthly and Yearly cover many days: each day's card gets a small heading above it.
+            ForEach(Array(Self.byDay(shown).enumerated()), id: \.element.date) { g, day in
+                if app.range != .day {
+                    Text(Day.dayHeading(day.date, today: app.today))
                         .font(AppFont.main(12, .semibold, relativeTo: .caption))
                         .foregroundStyle(Tokens.grey400)
-                        .padding(.top, i == 0 ? 0 : Space.s16)
-                        .padding(.bottom, Space.s4)
+                        .padding(.top, g == 0 ? 0 : Space.s16)
+                        .padding(.bottom, Space.s6)
+                        .padding(.leading, Space.s4)
                         .accessibilityAddTraits(.isHeader)
                 }
-                SwipeRow(onTap: { openEntry = e }, onEdit: { openEntry = e }, onDelete: { deleting = e }) {
-                    EntryRow(entry: e, hidden: app.hidden)
+                VStack(spacing: 0) {
+                    ForEach(Array(day.entries.enumerated()), id: \.element.id) { i, e in
+                        if i > 0 { Divider().overlay(Tokens.bd0).padding(.leading, 60) }
+                        SwipeRow(onTap: { openEntry = e }, onEdit: { openEntry = e }, onDelete: { deleting = e }) {
+                            EntryRow(entry: e, hidden: app.hidden)
+                        }
+                        .padding(.vertical, Space.s2)
+                    }
                 }
+                .padding(.horizontal, Space.s12)
+                .padding(.vertical, Space.s6)
+                .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
             }
         }
         .confirmationDialog("Delete “\(deleting?.title ?? "")”?",
@@ -294,14 +329,6 @@ struct TodayView: View {
         case .year: return "Spent in \(app.day.prefix(4))"
         case .month: return "Spent in \(Day.monthsLong[m - 1])"
         case .day: return app.day == app.today ? "Spent today" : "Spent on \(Day.short(app.day))"
-        }
-    }
-
-    private var summaryTitle: String {
-        switch app.range {
-        case .day: "Summary · \(Day.short(app.day))"
-        case .year: "Summary · \(app.day.prefix(4))"
-        case .month: "Summary · \(Day.monthsLong[Day.parts(app.day).m - 1])"
         }
     }
 
