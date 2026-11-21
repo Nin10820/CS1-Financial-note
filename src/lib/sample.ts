@@ -98,22 +98,55 @@ export function makeSample(today: string) {
     { id: id("course"), kind: "installment", name: "English Course", icon: "student", amount: 367_000, varies: false, start: addMonthsIso(`${thisMonth}-18`, -5), lender: "Home Credit", principal: 2_200_000, payments: 6, rate: 0, fee: 0, paid: paidMonths(1, 5, 367_000), createdAt: now, sample: true },
   ]
 
-  // 122,647,000 đ split 40 / 30 / 20 / 10 like the Figma overview.
-  const assets: Asset[] = [
-    { id: id("cash"), name: "Cash & bank account", kind: "available", icon: "cash", amount: 49_059_000, updated: today, sample: true },
-    { id: id("gold"), name: "Gold", kind: "growing", icon: "gold", amount: 14_500_000, updated: addDays(today, -66), sample: true },
-    { id: id("fund"), name: "Fund - Fmarket", kind: "growing", icon: "fund", amount: 22_294_000, updated: addDays(today, -95), sample: true },
-    { id: id("saving"), name: "Saving - TP Bank", kind: "aside", icon: "bank", amount: 24_529_000, updated: addDays(today, -280), sample: true },
-    { id: id("lent"), name: "Lent to Minh", kind: "owed", icon: "lent", amount: 12_265_000, updated: addDays(today, -40), sample: true },
+  // Assets from Nin's Investment Diary: every time money went in (or came out), on its real day,
+  // from the first fund in Oct 2021, then what each is worth now. Same as the iOS sample.
+  const FUND: [number, string][] = [
+    [5_300_000, "2021-10-21"], [4_000_000, "2021-10-22"], [5_000_000, "2021-11-23"], [5_200_000, "2021-11-26"],
+    [5_000_000, "2021-12-22"], [10_000_000, "2021-12-24"], [5_000_000, "2022-01-20"], [2_000_000, "2022-01-21"],
+    [2_000_000, "2022-02-22"], [750_000, "2023-01-30"], [3_000_000, "2023-02-23"], [100_000, "2023-11-24"],
+    [2_000_000, "2024-01-23"], [4_000_000, "2024-02-22"], [2_000_000, "2024-02-22"], [500_000, "2024-02-22"],
+    [1_000_000, "2024-03-04"], [2_000_000, "2024-03-21"], [2_000_000, "2024-03-21"], [500_000, "2024-04-23"],
+    [1_000_000, "2024-05-23"], [2_000_000, "2024-05-23"], [3_000_000, "2024-06-21"], [2_500_000, "2024-08-08"],
+    [200_000, "2024-08-29"], [3_000_000, "2024-09-05"], [500_000, "2024-09-24"], [1_500_000, "2024-11-21"],
+    [2_000_000, "2024-12-12"], [5_000_000, "2025-03-21"], [1_000_000, "2025-04-14"], [1_000_000, "2025-04-23"],
+    [1_500_000, "2025-05-19"], [700_000, "2025-06-22"], [500_000, "2025-07-22"], [1_000_000, "2025-07-30"],
   ]
+  // Stock, with money from Mom and Grandma put straight in, and one 60M taken out.
+  const STOCK: [number, string][] = [
+    [5_500_000, "2025-04-08"], [4_500_000, "2025-04-11"], [10_000_000, "2025-04-22"], [3_000_000, "2025-05-13"],
+    [5_000_000, "2025-05-16"], [2_000_000, "2025-06-19"], [6_500_000, "2025-07-18"], [6_300_000, "2025-07-29"],
+    [1_300_000, "2025-09-19"], [20_000_000, "2025-09-20"], [10_000_000, "2025-10-11"], [-60_000_000, "2025-10-28"],
+    [10_000_000, "2025-11-11"], [25_000_000, "2026-01-12"], [8_000_000, "2026-01-14"], [10_000_000, "2026-01-31"],
+    [5_000_000, "2026-02-01"], [10_000_000, "2026-02-06"], [20_000_000, "2026-03-05"], [5_000_000, "2026-03-10"],
+    [1_200_000, "2026-09-20"],
+  ]
+  type Holding = { key: string; name: string; kind: Asset["kind"]; icon: Asset["icon"]; ins: [number, string][]; now: number }
+  const gold: [number, string][] = [...Array.from({ length: 4 }, (): [number, string] => [5_575_000, "2022-08-10"]), [7_700_000, "2024-08-10"]]
+  const raw: Holding[] = [
+    { key: "vnd", name: "VND", kind: "available", icon: "cash", ins: [[1_000_000, "2023-05-01"], [2_000_000, "2025-05-25"], [1_000_000, "2026-02-17"]], now: 4_000_000 },
+    { key: "usd", name: "USD", kind: "available", icon: "cash", ins: [[2_600_000, "2023-08-10"], [4_500_000, "2025-04-10"], [13_000_000, "2026-02-26"]], now: 20_000_000 },
+    { key: "saving", name: "Saving", kind: "aside", icon: "bank", ins: [[1_000_000, addDays(today, -88)]], now: 1_000_000 },
+    { key: "gold", name: "Gold", kind: "growing", icon: "gold", ins: gold, now: 65_000_000 },
+    { key: "fund", name: "Fund", kind: "growing", icon: "fund", ins: FUND, now: 110_000_000 },
+    { key: "stock", name: "Stock", kind: "growing", icon: "fund", ins: STOCK, now: 75_000_000 },
+    { key: "coin", name: "Coin", kind: "growing", icon: "cash", ins: [[200_000, "2026-02-20"]], now: 200_000 },
+    { key: "lent", name: "Lent to Minh", kind: "owed", icon: "lent", ins: [[12_265_000, addDays(today, -40)]], now: 12_265_000 },
+  ]
+  // Only what has happened by today, oldest first.
+  const holdings = raw.map((h) => ({ ...h, ins: h.ins.filter(([, d]) => d <= today).sort((x, y) => x[1].localeCompare(y[1])) }))
 
-  const moves: AssetMove[] = [
-    { id: id("m1"), title: "Gold", icon: "gold", amount: 14_500_000, date: addDays(today, -66), sample: true },
-    { id: id("m2"), title: "Fund - Fmarket", icon: "fund", amount: 5_000_000, date: addDays(today, -95), sample: true },
-    { id: id("m3"), title: "Saving - TP Bank", icon: "bank", amount: 450_000, date: addDays(today, -280), sample: true },
-    { id: id("m4"), title: "Lent to Minh", icon: "lent", amount: 12_265_000, date: addDays(today, -40), sample: true },
-    { id: id("m5"), title: "Fund - Fmarket", icon: "fund", amount: 3_000_000, date: addDays(today, -160), sample: true },
-  ]
+  const assets: Asset[] = holdings.map((h) => ({
+    id: id(h.key),
+    name: h.name,
+    kind: h.kind,
+    icon: h.icon,
+    amount: h.now,
+    updated: h.ins.reduce((s, [v]) => s + v, 0) !== h.now ? addDays(today, -3) : (h.ins[h.ins.length - 1]?.[1] ?? today),
+    sample: true,
+  }))
+  const moves: AssetMove[] = holdings.flatMap((h) =>
+    h.ins.map(([amount, date], k) => ({ id: id(`m-${h.key}-${k}`), title: h.name, icon: h.icon, amount, date, sample: true })),
+  )
 
   // Family support: parents every month, the younger brother's tuition each term, household bills.
   const care: CareGift[] = []
@@ -122,17 +155,25 @@ export function makeSample(today: string) {
   for (let k = 0; k < 24; k++) care.push({ id: id(`h${k}`), who: "Household", title: "Household", amount: 1_250_000, date: addMonthsIso(addDays(today, -3), -k), sample: true })
   care.push({ id: id("med"), who: "Parents", title: "Medical costs", amount: 4_034_000, date: addMonthsIso(today, -9), sample: true })
 
-  // Net worth by month since Jan 2020: slow growth with some wobble, ending at today's total.
+  // Total assets month by month, from 0 đ the month before the first deposit: what was put in so
+  // far, with each asset's gain or loss growing in step until it reaches today's worth.
   const total = assets.reduce((s, a) => s + a.amount, 0)
-  const [ty, tm] = today.split("-").map(Number)
-  const months = (ty - 2020) * 12 + tm
-  const worth: WorthPoint[] = Array.from({ length: months }, (_, k) => {
-    const t = k / (months - 1)
-    const wobble = Math.sin(k * 0.9) * 0.05 + Math.sin(k * 0.37) * 0.07
-    const value = Math.round(total * (0.18 + 0.82 * t ** 1.6) * (1 + wobble * (1 - t * 0.6)))
-    const y = 2020 + Math.floor(k / 12)
-    return { month: `${y}-${String((k % 12) + 1).padStart(2, "0")}`, value: k === months - 1 ? total : value }
-  })
+  const nowMonth = today.slice(0, 7)
+  const firstDay = holdings.flatMap((h) => h.ins.map(([, d]) => d)).sort()[0] ?? today
+  const between = (a: string, b: string) => (Number(b.slice(0, 4)) - Number(a.slice(0, 4))) * 12 + Number(b.slice(5, 7)) - Number(a.slice(5, 7))
+  const worth: WorthPoint[] = []
+  for (let month = addMonthsIso(`${firstDay.slice(0, 7)}-01`, -1).slice(0, 7); month <= nowMonth; month = addMonthsIso(`${month}-01`, 1).slice(0, 7)) {
+    let value = 0
+    for (const h of holdings) {
+      const put = h.ins.filter(([, d]) => d.slice(0, 7) <= month).reduce((s, [v]) => s + v, 0)
+      const all = h.ins.reduce((s, [v]) => s + v, 0)
+      if (put <= 0 || all <= 0) continue
+      const first = h.ins[0][1].slice(0, 7)
+      const f = Math.min(Math.max(between(first, month) / Math.max(between(first, nowMonth), 1), 0), 1)
+      value += put * (1 + (h.now / all - 1) * f)
+    }
+    worth.push({ month, value: month === nowMonth ? total : Math.round(value) })
+  }
 
   return { entries, notes, bills, assets, moves, care, worth, birthYear: Number(today.slice(0, 4)) - 27 }
 }

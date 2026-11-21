@@ -583,3 +583,152 @@
   color: var(--grey-400);
   font-size: 13px;
 }
+
+/* Total Asset line: deposit dots on a bar, years along the bottom */
+.fin-chart__deposits {
+  position: relative;
+  height: 10px;
+  margin-top: var(--sp-8);
+  border-radius: 1px;
+  background: linear-gradient(var(--bd-1), var(--bd-1)) center / 100% 2px no-repeat;
+}
+.fin-chart__deposits i {
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-500);
+  transform: translate(-50%, -50%);
+}
+.fin-chart__x--years {
+  position: relative;
+  display: block;
+  height: 14px;
+}
+.fin-chart__x--years span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+/* How often you put money in: one row a year, one dot a month */
+.fin-dots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-16);
+  padding: var(--sp-16);
+}
+.fin-dots__title {
+  margin: 0;
+  color: var(--text-900);
+  font-size: 14px;
+  font-weight: var(--weight-s);
+}
+.fin-dots__stats {
+  display: flex;
+  gap: var(--sp-24);
+}
+.fin-dots__stats p {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+.fin-dots__stats b {
+  color: var(--text-900);
+  font-size: 18px;
+  font-weight: var(--weight-s);
+}
+.fin-dots__stats span {
+  color: var(--grey-400);
+  font-size: 12px;
+}
+.fin-dots__grid {
+  display: grid;
+  grid-template-columns: 36px repeat(12, 1fr);
+  row-gap: var(--sp-6, 6px);
+  align-items: center;
+}
+.fin-dots__row {
+  display: contents;
+}
+.fin-dots__head {
+  color: var(--grey-400);
+  font-size: 11px;
+  text-align: center;
+}
+.fin-dots__head:first-child {
+  font-size: 9px;
+  text-align: left;
+}
+.fin-dots__year {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-700, var(--grey-700));
+  font-size: 11px;
+  font-weight: var(--weight-m);
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+}
+.fin-dots__year small {
+  color: var(--grey-300, #9aa4b2);
+  font-size: 9px;
+}
+.fin-dots__year small.is-set {
+  color: var(--brand-600, #4c8a26);
+}
+.fin-dots__dot {
+  justify-self: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--bd-1);
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+}
+.fin-dots__dot.is-off {
+  opacity: 0.4;
+  cursor: default;
+}
+/* Less, on plan, more: far apart so the three read apart. */
+.fin-dots__dot.is-l0 { border-color: transparent; background: #dcf0cc; }
+.fin-dots__dot.is-l1 { border-color: transparent; background: #6db83b; }
+.fin-dots__dot.is-l2 { border-color: transparent; background: #2c5a14; }
+.fin-dots__dot.is-on {
+  outline: 1.5px solid var(--text-900);
+  outline-offset: 2px;
+}
+.fin-dots__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-12);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--grey-400);
+  font-size: 11px;
+}
+.fin-dots__legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+.fin-dots__legend .fin-dots__dot {
+  width: 10px;
+  height: 10px;
+  cursor: default;
+}
+.fin-dots__pick {
+  margin: 0;
+  color: var(--grey-400);
+  font-size: 12px;
+}
+.fin-dots__picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-8);
+}

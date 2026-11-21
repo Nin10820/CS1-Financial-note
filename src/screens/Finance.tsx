@@ -206,11 +206,13 @@ function Overview({
           </ul>
         </div>
         {worth.length > 1 ? (
-          <WorthChart points={worth} mask={mask} growth={growth} />
+          <WorthChart points={fillMonths(worth)} deposits={depositsByMonth(moves)} mask={mask} growth={growth} />
         ) : (
           <p className="fin-chart-empty">The line appears after your second month of updates.</p>
         )}
       </section>
+
+      {moves.some((m) => m.amount > 0) && <DepositDots moves={moves} mask={mask} />}
 
       <History title="History" rows={recent.map((m) => ({ id: m.id, title: m.title, date: m.date, amount: m.amount, icon: m.icon }))} mask={mask} />
 
@@ -240,7 +242,18 @@ function sinceText(care: CareGift[], birthYear?: number) {
 }
 
 /** Month-end net worth, with the latest point called out (Figma tooltip "12 Sep 2026 · 5.034 M"). */
-function WorthChart({ points, mask, growth }: { points: WorthPoint[]; mask: (v: string) => string; growth: number | null }) {
+function WorthChart({
+  points,
+  deposits,
+  mask,
+  growth,
+}: {
+  points: WorthPoint[]
+  /** Money put in by month: a dot on the bar under the line for each. */
+  deposits: Record<string, number>
+  mask: (v: string) => string
+  growth: number | null
+}) {
   const W = 330
   const H = 110
   const max = Math.max(...points.map((p) => p.value))
@@ -290,11 +303,227 @@ function WorthChart({ points, mask, growth }: { points: WorthPoint[]; mask: (v: 
           </span>
         )}
       </div>
-      <figcaption className="fin-chart__x">
-        <span>{monthLabel(points[0].month)}</span>
-        <span>{monthLabel(last.month)}</span>
-      </figcaption>
+      {/* The bar under the line: a dot for every month money went in. */}
+      {points.some((p) => deposits[p.month]) && (
+        <div className="fin-chart__deposits" aria-hidden="true">
+          {points.map((p, i) =>
+            deposits[p.month] ? <i key={p.month} style={{ left: `${(x(i) / W) * 100}%` }} /> : null,
+          )}
+        </div>
+      )}
+      {/* Over three years: each year on its January. Shorter: first and last month. */}
+      {points.length > 36 ? (
+        <figcaption className="fin-chart__x fin-chart__x--years">
+          {points.map((p, i) =>
+            p.month.endsWith("-01") ? (
+              <span key={p.month} style={{ left: `${(x(i) / W) * 100}%` }}>
+                {p.month.slice(0, 4)}
+              </span>
+            ) : null,
+          )}
+        </figcaption>
+      ) : (
+        <figcaption className="fin-chart__x">
+          <span>{monthLabel(points[0].month)}</span>
+          <span>{monthLabel(last.month)}</span>
+        </figcaption>
+      )}
     </figure>
+  )
+}
+
+/** Every month from the first point to the last; a month nobody wrote down keeps the one before. */
+function fillMonths(points: WorthPoint[]): WorthPoint[] {
+  const sorted = [...points].sort((a, b) => a.month.localeCompare(b.month))
+  if (!sorted.length) return []
+  const out: WorthPoint[] = []
+  let i = 0
+  let value = sorted[0].value
+  for (let m = sorted[0].month; m <= sorted[sorted.length - 1].month; m = nextMonth(m)) {
+    while (i < sorted.length && sorted[i].month <= m) value = sorted[i++].value
+    out.push({ month: m, value })
+  }
+  return out
+}
+
+const nextMonth = (ym: string) => {
+  const y = Number(ym.slice(0, 4))
+  const m = Number(ym.slice(5, 7))
+  return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`
+}
+
+/** Money put in, summed by month ("2024-03": 4000000). Money taken out doesn't count. */
+function depositsByMonth(moves: AssetMove[]) {
+  const out: Record<string, number> = {}
+  for (const m of moves) if (m.amount > 0 && m.date <= today()) out[m.date.slice(0, 7)] = (out[m.date.slice(0, 7)] ?? 0) + m.amount
+  return out
+}
+
+const PLANS_KEY = "financial-note:deposit-plans"
+const LEVEL_NAMES = ["Less", "On plan", "More"] as const
+
+function readPlans(): Record<string, number> {
+  try {
+    const p = JSON.parse(localStorage.getItem(PLANS_KEY) ?? "{}")
+    return p && typeof p === "object" ? p : {}
+  } catch {
+    return {}
+  }
+}
+
+/** 0 less than the plan, 1 about the plan (90–120%), 2 more than the plan. */
+const level = (sum: number, plan: number) => (plan <= 0 ? 1 : sum / plan < 0.9 ? 0 : sum / plan <= 1.2 ? 1 : 2)
+
+/**
+ * How often money went in, like iOS: one row a year, one dot a month, against that year's monthly
+ * plan (tap the year to set it). An empty ring = nothing went in; then less / on plan / more.
+ * A year with no plan uses the one before it, or your usual month (the average of months with money in).
+ */
+function DepositDots({ moves, mask }: { moves: AssetMove[]; mask: (v: string) => string }) {
+  const [plans, setPlans] = useState(readPlans)
+  const [picked, setPicked] = useState<string | null>(null)
+  const [editing, setEditing] = useState<number | null>(null)
+  const sums = useMemo(() => depositsByMonth(moves), [moves])
+  const now = today().slice(0, 7)
+  const months = Object.keys(sums).sort()
+  const first = months[0] ?? now
+  const y0 = Number(first.slice(0, 4))
+  const y1 = Number(now.slice(0, 4))
+  const years = Array.from({ length: y1 - y0 + 1 }, (_, i) => y0 + i)
+  const span = (y1 - y0) * 12 + Number(now.slice(5, 7)) - Number(first.slice(5, 7)) + 1
+  const usual = months.length ? Math.round(months.reduce((s, m) => s + sums[m], 0) / months.length / 500_000) * 500_000 || 500_000 : 0
+  const planFor = (y: number) => {
+    if (plans[y] != null) return plans[y]
+    const earlier = Object.keys(plans).map(Number).filter((k) => k < y).sort((a, b) => b - a)[0]
+    return earlier != null ? plans[earlier] : usual
+  }
+  let best = 0
+  let run = 0
+  months.forEach((m, i) => {
+    run = i > 0 && nextMonth(months[i - 1]) === m ? run + 1 : 1
+    best = Math.max(best, run)
+  })
+  const focus = picked ?? now
+  const save = (y: number, v: number | null) => {
+    const next = { ...plans }
+    if (v && v > 0) next[y] = v
+    else delete next[y]
+    setPlans(next)
+    try {
+      localStorage.setItem(PLANS_KEY, JSON.stringify(next))
+    } catch {
+      // Private mode: the plan lasts until the page closes.
+    }
+  }
+  const lvl = (m: string) => level(sums[m], planFor(Number(m.slice(0, 4))))
+  return (
+    <section className="fin-card fin-dots" aria-label="How often you put money in">
+      <h2 className="fin-dots__title">How often you put money in</h2>
+      <div className="fin-dots__stats">
+        <p>
+          <b className="tnum">
+            {months.length} of {span}
+          </b>
+          <span>months with money in</span>
+        </p>
+        <p>
+          <b className="tnum">{best}</b>
+          <span>months in a row, best</span>
+        </p>
+      </div>
+      <div className="fin-dots__grid" role="grid">
+        <span className="fin-dots__head">Plan</span>
+        {MONTHS.map((m, i) => (
+          <span key={i} className="fin-dots__head">
+            {m[0]}
+          </span>
+        ))}
+        {years.map((y) => (
+          <div key={y} className="fin-dots__row" role="row">
+            <button type="button" className="fin-dots__year" onClick={() => setEditing(y)} aria-label={`${y} plan, ${mask(money(planFor(y)))} đ a month. Set the plan`}>
+              {y}
+              <small className={plans[y] != null ? "is-set" : ""}>{mask(short(planFor(y)).replace(" ", ""))}</small>
+            </button>
+            {MONTHS.map((_, i) => {
+              const m = `${y}-${String(i + 1).padStart(2, "0")}`
+              const off = m > now || m < first
+              const has = sums[m] != null
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  role="gridcell"
+                  disabled={m > now}
+                  className={`fin-dots__dot${has ? ` is-l${lvl(m)}` : ""}${off ? " is-off" : ""}${m === focus ? " is-on" : ""}`}
+                  aria-label={`${monthLabel(m)}: ${has ? `put in ${mask(money(sums[m]))} đ, ${LEVEL_NAMES[lvl(m)].toLowerCase()}` : "nothing put in"}`}
+                  onClick={() => setPicked(m === picked ? null : m)}
+                />
+              )
+            })}
+          </div>
+        ))}
+      </div>
+      <ul className="fin-dots__legend" aria-hidden="true">
+        <li>
+          <i className="fin-dots__dot" />
+          None
+        </li>
+        {LEVEL_NAMES.map((n, i) => (
+          <li key={n}>
+            <i className={`fin-dots__dot is-l${i}`} />
+            {n}
+          </li>
+        ))}
+      </ul>
+      <p className="fin-dots__pick">
+        {monthLabel(focus)} ·{" "}
+        {sums[focus] != null ? `put in ${mask(short(sums[focus]))} đ · ${LEVEL_NAMES[lvl(focus)].toLowerCase()}` : "nothing put in"}
+      </p>
+      {editing != null && <PlanSheet year={editing} value={plans[editing] ?? planFor(editing)} onClose={() => setEditing(null)} onSave={(v) => save(editing, v)} />}
+    </section>
+  )
+}
+
+/** Set how much you plan to put in each month of one year. */
+function PlanSheet({ year, value, onClose, onSave }: { year: number; value: number; onClose: () => void; onSave: (v: number) => void }) {
+  const [amount, setAmount] = useState(value ? String(value) : "")
+  const v = Number(amount.replace(/[^\d]/g, ""))
+  return (
+    <ModalSheet
+      label={`Plan for ${year}`}
+      size="auto"
+      onClose={onClose}
+      header={
+        <ModalHeader
+          title={`Plan for ${year}`}
+          left={
+            <Button variant="glass" size="md" onClick={onClose}>
+              Cancel
+            </Button>
+          }
+          right={
+            <Button variant="glass" size="md" disabled={v <= 0} onClick={() => (onSave(v), onClose())}>
+              Save
+            </Button>
+          }
+        />
+      }
+    >
+      <div className="fin-add">
+        <label className="fin-add__field">
+          <span>How much do you plan to put in each month of {year}?</span>
+          <input className="field tnum" inputMode="numeric" value={amount ? money(v) : ""} placeholder="0" onChange={(e) => setAmount(e.target.value)} autoFocus />
+        </label>
+        <div className="fin-dots__picks">
+          {[1, 2, 3, 5, 10, 15].map((n) => (
+            <button key={n} type="button" className="fin-add__kind" onClick={() => setAmount(String(n * 1_000_000))}>
+              {n}M
+            </button>
+          ))}
+        </div>
+        <p className="fin-add__hint">Each month of {year} is compared with this: less, on plan or more.</p>
+      </div>
+    </ModalSheet>
   )
 }
 
