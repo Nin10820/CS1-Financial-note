@@ -1,4 +1,5 @@
 import AVFoundation
+import PhotosUI
 import SwiftUI
 
 /// Scan — Figma 1077:21312: the camera with X, QR Code / Note and the shutter below.
@@ -13,6 +14,8 @@ struct ScanView: View {
     @State private var access = AVCaptureDevice.authorizationStatus(for: .video)
     @State private var lines: [String] = []
     @State private var notPayment: String?
+    /// From Finance: a photo or screenshot already on the phone, read instead of the camera.
+    @State private var photo: PhotosPickerItem?
 
     enum Mode: String, CaseIterable { case qr = "QR Code", note = "Note" }
 
@@ -26,7 +29,8 @@ struct ScanView: View {
                 if let notPayment {
                     banner(notPayment)
                 } else if mode == .note && canScan {
-                    banner(lines.isEmpty ? "Point at a receipt or a written note" : "\(lines.count) \(lines.count == 1 ? "line" : "lines") found")
+                    banner(lines.isEmpty ? (app.scanForAssets ? "Point at a savings book, a gold receipt or a balance"
+                                                              : "Point at a receipt or a written note") : "\(lines.count) \(lines.count == 1 ? "line" : "lines") found")
                 } else if mode == .qr && canScan {
                     banner("Point at a payment QR code")
                 }
@@ -41,11 +45,17 @@ struct ScanView: View {
                     .frame(width: 44, height: 44)
                     .glassEffect(.regular.interactive(), in: .circle)
                 Spacer()
-                Picker("Scan", selection: $mode) {
-                    ForEach(Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                if app.scanForAssets {
+                    // From Finance: words only (a savings book, a gold receipt, a bank screen),
+                    // from the camera or from a photo / screenshot already on the phone.
+                    photoButton
+                } else {
+                    Picker("Scan", selection: $mode) {
+                        ForEach(Mode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 200)
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 200)
                 Spacer()
                 Button(action: useText) {
                     Image(systemName: "checkmark")
@@ -63,11 +73,19 @@ struct ScanView: View {
         }
         .background(Tokens.canvas)
         .task {
+            if app.scanForAssets { mode = .note }
             #if DEBUG
             // UI tests: feed a code as if the camera had read it.
             if let i = CommandLine.arguments.firstIndex(of: "-scanPayload"), i + 1 < CommandLine.arguments.count {
                 try? await Task.sleep(for: .milliseconds(600))
                 readCode(CommandLine.arguments[i + 1])
+                return
+            }
+            // UI tests: feed receipt lines ("a|b|c") as if the camera had read them.
+            if let i = CommandLine.arguments.firstIndex(of: "-scanText"), i + 1 < CommandLine.arguments.count {
+                try? await Task.sleep(for: .milliseconds(600))
+                lines = CommandLine.arguments[i + 1].components(separatedBy: "|")
+                useText()
                 return
             }
             #endif
@@ -80,6 +98,28 @@ struct ScanView: View {
         .onChange(of: mode) { _, _ in
             lines = []
             notPayment = nil
+        }
+    }
+
+    private var photoButton: some View {
+        PhotosPicker(selection: $photo, matching: .any(of: [.screenshots, .images])) {
+            Label { Text("Photos") } icon: { AppIcon(.image, size: 20) }
+                .font(AppFont.main(16, .semibold))
+                .foregroundStyle(Tokens.text900)
+                .padding(.horizontal, Space.s16)
+                .frame(height: 44)
+                .glassEffect(.regular.interactive(), in: .capsule)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Read a photo or a screenshot instead")
+        .onChange(of: photo) { _, item in
+            guard let item else { return }
+            Task {
+                let data = try? await item.loadTransferable(type: Data.self)
+                photo = nil
+                guard let data else { return }
+                open { app.assetImport = AssetImportSeed(input: .photo(data)) }
+            }
         }
     }
 
@@ -119,7 +159,13 @@ struct ScanView: View {
                 .font(AppFont.main(14, .semibold))
                 .buttonStyle(.glass)
             }
-            Button("Type it instead") { open { app.templateOpen = true } }
+            Button("Type it instead") {
+                if app.scanForAssets {
+                    open { app.assetImport = AssetImportSeed(input: .note) }
+                } else {
+                    open { app.templateOpen = true }
+                }
+            }
                 .font(AppFont.main(14, .semibold))
                 .buttonStyle(.glassProminent)
                 .tint(Tokens.action)
@@ -164,10 +210,15 @@ struct ScanView: View {
     }
 
     /// The words on screen go to the AI tab as a note, read into lines to confirm there.
+    /// Opened from Finance, they're read as assets instead.
     private func useText() {
         let found = lines
         guard !found.isEmpty else { return }
-        open { app.openAssistant(date: app.today, noteLines: found) }
+        if app.scanForAssets {
+            open { app.assetImport = AssetImportSeed(input: .lines(found)) }
+        } else {
+            open { app.openAssistant(date: app.today, noteLines: found, scanned: true) }
+        }
     }
 
     /// Closes the camera first, then opens the next screen.

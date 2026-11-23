@@ -298,6 +298,15 @@ private struct AIInfoView: View {
                     }
                 }
                 LabeledContent {
+                    Text(ReceiptAI.isAvailable ? "On" : "Not on this iPhone")
+                        .foregroundStyle(ReceiptAI.isAvailable ? Tokens.brand700 : .secondary)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Reads scanned receipts")
+                        Text("Apple Intelligence, on the phone · iPhone 15 Pro or later").font(AppFont.main(12)).foregroundStyle(.secondary)
+                    }
+                }
+                LabeledContent {
                     Text("Later").foregroundStyle(.secondary)
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {

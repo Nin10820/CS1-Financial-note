@@ -132,9 +132,9 @@ struct AssetDetailView: View {
                 HStack(spacing: Space.s8) {
                     // Held in units you add or take out chỉ / $ / BTC, and correct how many you hold.
                     let inUnits = asset.unit != nil && asset.quantity != nil
-                    action(inUnits ? "Add" : "Add money", "plus", .putIn)
-                    action("Take out", "minus", .takeOut)
-                    action(inUnits ? "Set amount" : "Update value", inUnits ? "pencil" : "chart.line.uptrend.xyaxis", .value)
+                    action(inUnits ? "Add" : "Add money", .plus, .putIn)
+                    action("Take out", .minus, .takeOut)
+                    action(inUnits ? "Set amount" : "Update value", inUnits ? .pencilBold : .chartLineUpBold, .value)
                 }
 
                 // Line over time
@@ -366,11 +366,11 @@ struct AssetDetailView: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func action(_ title: String, _ symbol: String, _ kind: AssetMoveKind) -> some View {
+    private func action(_ title: String, _ icon: Icon, _ kind: AssetMoveKind) -> some View {
         Button { withAnimation(.snappy) { moving = kind }; onAct?() } label: {
             // Every icon sits in the same box, so the icons and the labels line up across buttons.
             VStack(spacing: Space.s6) {
-                Image(systemName: symbol).font(.system(size: 18, weight: .semibold))
+                AppIcon(icon, size: 20, relativeTo: .caption)
                     .frame(width: 24, height: 24)
                 Text(title).font(AppFont.capture(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
                     .frame(height: 18)

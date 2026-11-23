@@ -41,6 +41,10 @@ struct AssistantView: View {
         var notice: String?
         /// An answer to a question, worked out on the phone.
         var report: LocalAnswers.Report?
+        /// Apple Intelligence is still reading a scanned receipt.
+        var reading = false
+        /// The lines were read by Apple Intelligence (not the rule reader).
+        var byAI = false
     }
 
     var body: some View {
@@ -227,9 +231,24 @@ struct AssistantView: View {
         } else if let lines = seed.noteLines, !lines.isEmpty {
             dropReviews()
             let joined = lines.joined(separator: "\n")
-            animate {
-                turns.append(Turn(text: joined, drafts: NoteParser.parse(joined, day: seed.date),
-                                  attached: (seed.date, lines)))
+            let drafts = NoteParser.parse(joined, day: seed.date)
+            // A scanned receipt: Apple Intelligence reads it on the phone when this iPhone has it;
+            // the rule reader's lines stay if it can't.
+            let ai = seed.scanned && ReceiptAI.isAvailable
+            let turn = Turn(text: joined, drafts: drafts, attached: (seed.date, lines), reading: ai)
+            animate { turns.append(turn) }
+            if ai {
+                Task {
+                    let read = await ReceiptAI.read(joined, day: seed.date)
+                    guard let i = turns.firstIndex(where: { $0.id == turn.id }) else { return }
+                    animate {
+                        if let read {
+                            turns[i].drafts = read
+                            turns[i].byAI = true
+                        }
+                        turns[i].reading = false
+                    }
+                }
             }
         } else {
             focused = true
@@ -394,7 +413,13 @@ private struct TurnView: View {
                 }
             }
         case .review:
-            if drafts.isEmpty {
+            if turn.reading {
+                HStack(spacing: Space.s8) {
+                    ProgressView().controlSize(.small)
+                    bot("Apple Intelligence is reading the receipt on this phone…")
+                }
+                .accessibilityElement(children: .combine)
+            } else if drafts.isEmpty {
                 bot("I couldn't find anything to save. Try a line with an amount, like “coffee 24k”.")
             } else {
                 let missing = drafts.filter { $0.amount == nil }.count
@@ -418,6 +443,11 @@ private struct TurnView: View {
                     .padding(.horizontal, Space.s12)
                     .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c14))
                     .overlay(RoundedRectangle(cornerRadius: Corner.c14).strokeBorder(Tokens.secondary300))
+                    if turn.byAI {
+                        Label("Read by Apple Intelligence on this phone · check before saving", systemImage: "apple.intelligence")
+                            .font(AppFont.main(12))
+                            .foregroundStyle(Tokens.grey400)
+                    }
                     HStack(spacing: Space.s8) {
                         if missing > 0 {
                             Text("\(missing) \(missing == 1 ? "line needs" : "lines need") an amount")

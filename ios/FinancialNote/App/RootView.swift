@@ -41,7 +41,9 @@ struct RootView: View {
                 .sheetSurface()
         }
         .sheet(isPresented: $app.profileOpen) { ProfileView().sheetSurface() }
-        .fullScreenCover(isPresented: $app.scanOpen) { ScanView().sheetSurface() }
+        .fullScreenCover(isPresented: $app.scanOpen, onDismiss: { app.scanForAssets = false }) { ScanView().sheetSurface() }
+        .sheet(item: $app.assetImport) { AssetImportSheet(seed: $0).sheetSurface() }
+
         .fullScreenCover(item: $app.transfer) { TransferSheet(draft: $0).sheetSurface() }
         .alert(sentTitle, isPresented: Binding(
             get: { app.sentToBank != nil && scenePhase == .active && app.transfer == nil },
@@ -177,10 +179,9 @@ private struct AppTabBar: View {
                 .glassEffectID("bar", in: glass)
 
                 Button {
-                    // Due and Finance: + adds a bill / an asset. Today and AI: the menu.
+                    // Due: + adds a bill. Today, Finance and AI: the menu.
                     switch app.tab {
                     case .due where !app.actionsOpen: app.addBillRequest += 1
-                    case .finance where !app.actionsOpen: app.addAssetRequest += 1
                     default: withAnimation(spring) { app.actionsOpen.toggle() }
                     }
                 } label: {
@@ -192,8 +193,9 @@ private struct AppTabBar: View {
                 .buttonStyle(.plain)
                 .glassEffect(.regular.tint(Tokens.writeButton).interactive(), in: .circle)
                 .glassEffectID("plus", in: glass)
-                .accessibilityLabel(app.actionsOpen ? "Close menu" : app.tab == .due ? "Add a bill" : app.tab == .finance ? "Add an asset" : "Add")
-                .accessibilityHint(app.tab == .due || app.tab == .finance ? "" : "Talk With AI, Template or Scan")
+                .accessibilityLabel(app.actionsOpen ? "Close menu" : app.tab == .due ? "Add a bill" : "Add")
+                .accessibilityHint(app.tab == .due ? "" : app.tab == .finance
+                    ? "New asset, Scan or Quick note" : "Talk With AI, Template or Scan")
             }
         }
         .padding(.horizontal, small ? Space.s32 : Space.s20)
@@ -227,6 +229,21 @@ private struct ActionMenu: View {
                     .accessibilityAddTraits(.isButton)
                 GlassEffectContainer(spacing: Space.s12) {
                     VStack(alignment: .trailing, spacing: Space.s12) {
+                        if app.tab == .finance {
+                            ActionPill(title: "Quick note", icon: .notePencil) {
+                                app.actionsOpen = false
+                                app.assetImport = AssetImportSeed(input: .note)
+                            }
+                            ActionPill(title: "Scan", icon: .scan) {
+                                app.actionsOpen = false
+                                app.scanForAssets = true
+                                app.scanOpen = true
+                            }
+                            ActionPill(title: "New asset", icon: .plus) {
+                                app.actionsOpen = false
+                                app.addAssetRequest += 1
+                            }
+                        } else {
                         ActionPill(title: "Talk With AI", icon: .mic) { app.openAssistant(voice: true) }
                         ActionPill(title: "Template", icon: .template) {
                             app.actionsOpen = false
@@ -235,6 +252,7 @@ private struct ActionMenu: View {
                         ActionPill(title: "Scan", icon: .scan) {
                             app.actionsOpen = false
                             app.scanOpen = true
+                        }
                         }
                     }
                 }

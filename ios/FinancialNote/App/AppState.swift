@@ -22,14 +22,18 @@ final class AppState {
     /// Something for the AI tab to start with (a day's note, a notice). Taken once by the tab.
     var assistant: AssistantSeed?
     var dayNoteOpen = false
-    /// The + menu: Talk With AI, Template, Scan.
+    /// The + menu: Talk With AI, Template, Scan (on Finance: New asset, Scan, Quick note).
     var actionsOpen = false
+    /// Scan was opened from Finance: what it reads becomes assets, not spending.
+    var scanForAssets = false
+    /// Assets to read from a quick note, a scan or a photo, then check and add.
+    var assetImport: AssetImportSeed?
     /// A blank entry sheet with a composer (Template).
     var templateOpen = false
     /// What a scanned QR code filled in, for the Template sheet.
     var templatePrefill: EntryEdit?
     var scanOpen = false
-    /// The + on Due / Finance asks those tabs to open their own "add" form.
+    /// The + on Due (and New asset on Finance) asks those tabs to open their own "add" form.
     var addBillRequest = 0
     var addAssetRequest = 0
     /// A scanned payment QR, open on the check screen.
@@ -53,8 +57,8 @@ final class AppState {
     }
 
     /// Goes to the AI tab on the picked day, optionally with a day's note already read.
-    func openAssistant(date: String? = nil, noteLines: [String]? = nil, notice: String? = nil, voice: Bool = false) {
-        assistant = AssistantSeed(date: date ?? day, noteLines: noteLines, notice: notice, voice: voice)
+    func openAssistant(date: String? = nil, noteLines: [String]? = nil, scanned: Bool = false, notice: String? = nil, voice: Bool = false) {
+        assistant = AssistantSeed(date: date ?? day, noteLines: noteLines, scanned: scanned, notice: notice, voice: voice)
         actionsOpen = false
         tab = .ai
     }
@@ -88,6 +92,8 @@ struct AssistantSeed: Identifiable {
     var date: String
     /// Lines from Notes of the day, read as soon as the Assistant opens.
     var noteLines: [String]?
+    /// The lines came from the camera (a receipt), so Apple Intelligence reads them when it can.
+    var scanned = false
     /// A plain message to show first ("… comes later").
     var notice: String?
     /// Open straight into Talk With AI (voice).

@@ -45,6 +45,11 @@ enum Icon: String {
     case airplane = "icon-airplane"          // Phosphor Airplane
     case gift = "icon-gift"                  // Phosphor Gift
     case repeatIcon = "icon-repeat"          // Phosphor Repeat
+    case minus = "icon-minus"                // Phosphor Minus, bold
+    case pencilBold = "icon-pencil-bold"     // Phosphor PencilSimple, bold
+    case chartLineUpBold = "icon-chart-line-up-bold" // Phosphor ChartLineUp, bold
+    case notePencil = "icon-note-pencil"     // Phosphor NotePencil
+    case image = "icon-image"                // Phosphor Image
 }
 
 /// One icon at its Figma size, growing with Dynamic Type like the text beside it.
