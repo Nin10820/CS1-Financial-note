@@ -37,6 +37,85 @@ struct AmountText: View {
     }
 }
 
+/// A big amount being typed, in the amount font.
+struct BigAmount: View {
+    var value: Int?
+    var size: CGFloat = 44
+
+    var body: some View {
+        Text(value.map(Money.format) ?? "0")
+            .font(AppFont.amount(size))
+            .monospacedDigit()
+            .contentTransition(.numericText())
+    }
+}
+
+/// A big number you can tap into: tap a digit and the caret goes after it, so the number pad
+/// changes that spot (118,000,000 → tap after 8, ⌫, 20 → 120,000,000). `cursor` counts the
+/// characters to the right of the caret (0 = at the end); grouping commas don't count for đồng.
+struct CaretNumber: View {
+    let text: String
+    /// True for typed decimals ("5,5"): every character counts, the comma too.
+    var commaCounts = false
+    @Binding var cursor: Int
+    var size: CGFloat = 40
+
+    private func counts(_ c: Character) -> Bool { c.isNumber || (commaCounts && c == ",") }
+
+    var body: some View {
+        let chars = Array(text)
+        let total = chars.filter(counts).count
+        // After which character the caret sits (-1 = before the first).
+        let caretAfter: Int = {
+            if cursor <= 0 { return chars.count - 1 }
+            if cursor >= total { return -1 }
+            var after = 0
+            for i in chars.indices.reversed() {
+                if counts(chars[i]) {
+                    if after == cursor { return i }
+                    after += 1
+                }
+            }
+            return -1
+        }()
+        // Biggest size that fits the line (long numbers shrink, like minimumScaleFactor).
+        ViewThatFits(in: .horizontal) {
+            ForEach([size, size * 0.85, size * 0.7, size * 0.6], id: \.self) { s in
+                row(chars, caretAfter: caretAfter, size: s)
+            }
+        }
+    }
+
+    private func row(_ chars: [Character], caretAfter: Int, size s: CGFloat) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 0) {
+            if caretAfter == -1 { caret(s) }
+            ForEach(chars.indices, id: \.self) { i in
+                Text(String(chars[i]))
+                    .padding(.vertical, Space.s8)
+                    .contentShape(.rect)
+                    .onTapGesture {
+                        withAnimation(.snappy(duration: 0.15)) {
+                            cursor = chars[(i + 1)...].filter(counts).count
+                        }
+                    }
+                if i == caretAfter { caret(s) }
+            }
+        }
+        .font(AppFont.heading(s, .medium))
+        .monospacedDigit()
+        .fixedSize()
+    }
+
+    private func caret(_ size: CGFloat) -> some View {
+        Capsule().fill(Tokens.brand500)
+            .frame(width: 2.5, height: size * 0.8)
+            .padding(.horizontal, 1)
+            .alignmentGuide(.firstTextBaseline) { $0[.bottom] - size * 0.08 }
+            .phaseAnimator([1.0, 0.1]) { view, o in view.opacity(o) } animation: { _ in .easeInOut(duration: 0.55) }
+            .accessibilityHidden(true)
+    }
+}
+
 /// Category word under an entry title, in the category's colour.
 struct CategoryLabel: View {
     var category: Category

@@ -94,13 +94,7 @@ private struct HistoryList<Rows: View>: View {
             // The chips sit close under the title, not a whole section gap below it.
             .contentMargins(.top, Space.s8, for: .scrollContent)
             .listSectionSpacing(.compact)
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button { dismiss() } label: { Image(systemName: "xmark") }.accessibilityLabel("Close")
-                }
-            }
+            .sheetHeader(title)
         }
     }
 }

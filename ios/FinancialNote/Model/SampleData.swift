@@ -225,7 +225,6 @@ enum SampleData {
         let usdIns: [(Int, String)] = [(2_600_000, "2023-08-10"), (4_500_000, "2025-04-10"), (13_000_000, "2026-02-26")]
         let saveIns: [(Int, String)] = [(1_000_000, d(-88))]
         let coinIns: [(Int, String)] = [(200_000, "2026-02-20")]
-        let lentIns: [(Int, String)] = [(12_265_000, d(-40))]
         var holdings: [Holding] = []
         holdings.append(("vnd", "VND", .available, .cash, vndIns, 4_000_000))
         holdings.append(("usd", "USD", .available, .usd, usdIns, 20_000_000))
@@ -234,7 +233,6 @@ enum SampleData {
         holdings.append(("fund", "Fund", .growing, .fund, fundIns, 110_000_000))
         holdings.append(("stock", "Stock", .growing, .stock, stockIns, 75_000_000))
         holdings.append(("coin", "Coin", .growing, .coin, coinIns, 200_000))
-        holdings.append(("lent", "Lent to Minh", .owed, .lent, lentIns, 12_265_000))
         // Only what has happened by today, oldest first.
         for i in holdings.indices {
             holdings[i].ins = holdings[i].ins.filter { $0.1 <= today }.sorted { $0.1 < $1.1 }
@@ -245,7 +243,15 @@ enum SampleData {
             let assetId = id(h.key)
             let put = h.ins.reduce(0) { $0 + $1.0 }
             let valued = h.now != put ? d(-3) : (h.ins.map(\.1).max() ?? today)
-            assets.append(Asset(id: assetId, name: h.name, kind: h.kind, icon: h.icon, amount: h.now, updated: valued, sample: true))
+            let asset = Asset(id: assetId, name: h.name, kind: h.kind, icon: h.icon, amount: h.now, updated: valued, sample: true)
+            // Gold, dollars and coins are kept in their own unit; prices turn them into đồng.
+            switch h.key {
+            case "gold": (asset.quantity, asset.unit) = (6, .chi)
+            case "usd": (asset.quantity, asset.unit) = (780, .usd)
+            case "coin": (asset.quantity, asset.unit) = (0.00013, .btc)
+            default: break
+            }
+            assets.append(asset)
             for (k, (amount, day)) in h.ins.enumerated() {
                 moves.append(AssetMove(id: id("m-\(h.key)-\(k)"), title: h.name, icon: h.icon, amount: amount,
                                        date: day, sample: true, assetId: assetId, kind: amount < 0 ? .takeOut : .putIn))

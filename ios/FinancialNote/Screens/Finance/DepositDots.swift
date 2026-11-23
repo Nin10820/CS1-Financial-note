@@ -1,9 +1,10 @@
 import SwiftUI
 
 /// How often money went in, like Saving goal's dots: one row a year, one dot a month, against
-/// that year's monthly plan (tap the year to set it). Four looks: an empty ring = nothing went in, then three
-/// greens, dim to bright = less than the plan, about the plan, more than the plan. Months
-/// before the first deposit and months to come are faint. Tap a dot to read that month.
+/// that year's monthly plan (tap the year to set it). Rounded squares, like a contribution grid:
+/// grey = nothing went in, then three greens, pale to deep = less than the plan, about the plan,
+/// more than the plan. Months before the first deposit and months to come are fainter. Tap a
+/// square to read that month.
 struct DepositDots: View {
     var moves: [AssetMove]
     var today: String
@@ -35,17 +36,16 @@ struct DepositDots: View {
         if let data = try? JSONEncoder().encode(set) { plansRaw = String(decoding: data, as: UTF8.self) }
     }
 
-    /// Less than the plan, about the plan, more than the plan: three solid greens that read apart.
-    /// On dark they brighten toward the chart pill's pale green; on light they deepen.
+    /// Less than the plan, about the plan, more than the plan: three greens far apart in lightness,
+    /// so each step reads at a glance. On dark they brighten; on light they deepen.
     static let greens: [Color] = [
-        // Far apart in lightness: dim, the full brand green, nearly white.
-        Color(light: 0xDCF0CC, dark: 0x2A4A1E),
-        Color(light: 0x6DB83B, dark: 0x5FA82F),
-        Color(light: 0x2C5A14, dark: 0xD6F5BC),
+        Color(light: 0xB9E09A, dark: 0x2F5A1C),
+        Color(light: 0x5FA82F, dark: 0x6DB83B),
+        Color(light: 0x24480F, dark: 0xCDEFB0),
     ]
+    /// A month with nothing put in: a quiet filled square, not a ring.
+    static let empty = Color(light: 0xE9ECF0, dark: 0x2B2F36)
     private static let names = ["Less", "On plan", "More"]
-
-    private static let letters = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
 
     var body: some View {
         let ins = moves.filter { $0.kind == .putIn && $0.amount > 0 && $0.date <= today }
@@ -73,58 +73,25 @@ struct DepositDots: View {
                 stat("\(Self.streak(sums.keys, now: now))", "months in a row, best")
             }
             VStack(spacing: Space.s6) {
-                HStack(spacing: 0) {
-                    // Over the year column: the number under each year is its monthly plan (tap to set).
-                    Text("Plan").font(AppFont.main(9, .medium)).foregroundStyle(Tokens.grey400).lineLimit(1)
-                        .frame(width: 36, alignment: .leading)
-                    ForEach(Self.letters.indices, id: \.self) { i in
-                        Text(Self.letters[i]).font(AppFont.main(11)).foregroundStyle(Tokens.grey400)
-                            .frame(maxWidth: .infinity)
-                    }
-                }
                 ForEach(years, id: \.self) { y in
                     HStack(spacing: 0) {
-                        // The year and its plan; tap to set the plan.
-                        Button { draft = plans[String(y)] ?? plan(for: y); editing = y } label: {
-                            VStack(alignment: .leading, spacing: 0) {
-                                Text(String(y)).font(AppFont.main(11, .medium)).foregroundStyle(Tokens.text700)
-                                Text(hidden ? "•••" : AnalyticsView.compact(plan(for: y)))
-                                    .font(AppFont.main(9, .medium))
-                                    .foregroundStyle(plans[String(y)] == nil ? Tokens.grey300 : Tokens.brand600)
-                            }
-                            .frame(width: 36, alignment: .leading)
-                            .contentShape(.rect)
+                        // The year on the left, its monthly plan on the right; tap either to set the plan.
+                        planButton(y) {
+                            Text(String(y)).font(AppFont.main(12)).foregroundStyle(Tokens.text700)
+                                .frame(width: 42, alignment: .leading)
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("\(y) plan, \(hidden ? "hidden" : Money.format(plan(for: y)) + " dong a month")")
-                        .accessibilityHint("Sets the monthly plan for \(y)")
                         ForEach(1...12, id: \.self) { m in
                             let month = String(format: "%04d-%02d", y, m)
                             dot(month, sum: sums[month], level: levels[month], future: month > now, before: month < first,
                                 on: month == focus)
                         }
+                        planButton(y) {
+                            planText(y).font(AppFont.main(12))
+                                .frame(width: 36, alignment: .trailing)
+                        }
                     }
                 }
             }
-            // What the four looks mean, against the plan.
-            HStack(spacing: Space.s12) {
-                HStack(spacing: Space.s4) {
-                    Circle().strokeBorder(Tokens.grey400, lineWidth: 1).frame(width: 10, height: 10)
-                    Text("None")
-                }
-                ForEach(Self.greens.indices, id: \.self) { i in
-                    HStack(spacing: Space.s4) {
-                        Circle().fill(Self.greens[i]).frame(width: 10, height: 10)
-                        Text(Self.names[i])
-                    }
-                }
-                Spacer(minLength: 0)
-            }
-            .font(AppFont.main(11))
-            .foregroundStyle(Tokens.grey400)
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
-            .accessibilityElement(children: .combine)
             // The picked month (this month until you tap one).
             let n = byMonth[focus]?.count ?? 0
             Text(FinanceText.monthLabel(focus) + " · " + (n == 0 ? "nothing put in"
@@ -146,20 +113,39 @@ struct DepositDots: View {
         }
     }
 
+    /// The year's monthly plan, green when set for that year, grey when carried over.
+    private func planText(_ y: Int) -> some View {
+        Text(hidden ? "•••" : AnalyticsView.compact(plan(for: y)))
+            .foregroundStyle(plans[String(y)] == nil ? Tokens.grey300 : Tokens.brand600)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+    }
+
+    /// Tap the year (or its plan) to set that year's monthly plan.
+    private func planButton(_ y: Int, @ViewBuilder _ label: () -> some View) -> some View {
+        Button { draft = plans[String(y)] ?? plan(for: y); editing = y } label: {
+            label().contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(y) plan, \(hidden ? "hidden" : Money.format(plan(for: y)) + " dong a month")")
+        .accessibilityHint("Sets the monthly plan for \(y)")
+    }
+
     private func dot(_ month: String, sum: Int?, level: Int?, future: Bool, before: Bool, on: Bool) -> some View {
         Button {
             withAnimation(.snappy) { picked = month == picked ? nil : month }
         } label: {
             ZStack {
                 if let level {
-                    Circle().fill(Self.greens[level])
+                    RoundedRectangle(cornerRadius: 5).fill(Self.greens[level])
                 } else {
-                    Circle().strokeBorder(Tokens.bd1, lineWidth: 1).opacity(future || before ? 0.4 : 1)
+                    RoundedRectangle(cornerRadius: 5).fill(Self.empty).opacity(future || before ? 0.45 : 1)
                 }
-                if on { Circle().strokeBorder(Tokens.text900, lineWidth: 1.5).padding(-3) }
+                if on { RoundedRectangle(cornerRadius: 7).strokeBorder(Tokens.text900, lineWidth: 1.5).padding(-2.5) }
             }
-            .frame(width: 18, height: 18)
-            .frame(maxWidth: .infinity, minHeight: 26)
+            .aspectRatio(1, contentMode: .fit)
+            .padding(2)
+            .frame(maxWidth: .infinity)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -238,17 +224,7 @@ private struct YearPlanSheet: View {
             }
             .padding(Space.s20)
             .safeAreaInset(edge: .bottom, spacing: 0) { AmountPad(value: $value) }
-            .navigationTitle("Plan for \(String(year))")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("Cancel", systemImage: "xmark") { dismiss() } }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save", systemImage: "checkmark") { onSave(value); dismiss() }
-                        .buttonStyle(.glassProminent)
-                        .tint(Tokens.brand600)
-                        .disabled((value ?? 0) <= 0)
-                }
-            }
+            .sheetHeader("Plan for \(String(year))", trailing: .save(enabled: (value ?? 0) > 0) { onSave(value); dismiss() })
         }
         .presentationDetents([.large])
     }

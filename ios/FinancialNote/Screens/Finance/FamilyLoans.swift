@@ -55,14 +55,7 @@ struct LoanPersonSheet: View {
                 .listRowBackground(Tokens.card)
             }
             .appListSurface()
-            .navigationTitle(who)
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("Close", systemImage: "xmark") { dismiss() } }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Add", systemImage: "plus") { adding = true }
-                }
-            }
+            .sheetHeader(who, leading: .icon("Add", systemImage: "plus") { adding = true })
             .sheet(isPresented: $adding) { AddLoanSheet(people: [who], who: who, today: today).sheetSurface() }
         }
     }
@@ -144,17 +137,7 @@ struct AddLoanSheet: View {
             .padding(.horizontal, Space.s20)
             .padding(.top, Space.s8)
             .safeAreaInset(edge: .bottom, spacing: 0) { AmountPad(value: $value) }
-            .navigationTitle("Family loan")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("Cancel", systemImage: "xmark") { dismiss() } }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save", systemImage: "checkmark") { save() }
-                        .buttonStyle(.glassProminent)
-                        .tint(Tokens.brand600)
-                        .disabled((value ?? 0) <= 0 || who.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
+            .sheetHeader("Family loan", trailing: .save(enabled: (value ?? 0) > 0 && !who.trimmingCharacters(in: .whitespaces).isEmpty, action: save))
         }
         .presentationDetents([.large])
     }

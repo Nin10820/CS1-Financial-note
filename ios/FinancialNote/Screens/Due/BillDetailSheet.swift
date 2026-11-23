@@ -42,13 +42,7 @@ struct BillDetailSheet: View {
             .background(alignment: .top) { glow }
             .background(Tokens.canvas)
             .safeAreaInset(edge: .bottom, spacing: 0) { footer(due: due, record: record) }
-            .navigationTitle(bill.kind == .installment ? "Installment" : "Bill")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Close", systemImage: "xmark") { dismiss() }
-                }
-            }
+            .sheetHeader(bill.kind == .installment ? "Installment" : "Bill")
         }
         .presentationDetents([.large])
         .onAppear { amountText = Money.format(record?.amount ?? bill.amount) }
@@ -432,13 +426,7 @@ struct PaidHistorySheet: View {
                 .listRowBackground(Tokens.card)
             }
             .appListSurface()
-            .navigationTitle("History")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Close", systemImage: "xmark") { dismiss() }
-                }
-            }
+            .sheetHeader("History")
         }
         .presentationDetents([.medium, .large])
     }

@@ -5,6 +5,7 @@ import UIKit
 @main
 struct FinancialNoteApp: App {
     let container: ModelContainer
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         // Everything lives in one SwiftData store on this phone. Nothing is synced or sent anywhere.
@@ -23,6 +24,9 @@ struct FinancialNoteApp: App {
         }
         #endif
         Self.styleNavigationTitles()
+        // System alerts draw their main button (e.g. Save) in the UIKit tint, which is blue
+        // unless set: make it the app's green.
+        UIView.appearance(whenContainedInInstancesOf: [UIAlertController.self]).tintColor = UIColor(Tokens.brand500)
     }
 
     /// Page names in Bricolage Grotesque (High Fi 2). SwiftUI has no API for the navigation
@@ -43,7 +47,20 @@ struct FinancialNoteApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                // The backup folder (Profile › Backup & restore) follows every saved change…
+                .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { _ in
+                    BackupFolder.shared.changed(container: container)
+                }
         }
         .modelContainer(container)
+        // …and settings too, once the app goes to the background.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background, BackupFolder.shared.isOn { BackupFolder.shared.saveNow(container: container) }
+            // Gold, dollars and coins follow today's price when the phone is online.
+            if phase == .active {
+                MarketSync.start(container)
+                Task { await MarketSync.run(container.mainContext, force: false) }
+            }
+        }
     }
 }

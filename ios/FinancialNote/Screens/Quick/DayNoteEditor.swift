@@ -50,17 +50,7 @@ struct DayNoteEditor: View {
             }
             .padding(Space.s20)
             .background(Tokens.canvas)
-            .navigationTitle("Notes of the day")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", systemImage: "checkmark", action: save)
-                        .disabled(lines.isEmpty)
-                }
-            }
+            .sheetHeader("Notes of the day", trailing: .save(enabled: !lines.isEmpty, action: save))
             .sheet(isPresented: $picking) { DayPickerSheet(day: $date).sheetSurface() }
             .onChange(of: date) { _, d in text = existing(d) }
         }

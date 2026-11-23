@@ -75,11 +75,16 @@ enum Tokens {
     /// The picked segment on a grey track (D/W/M/Y, All/out/in): white, and lighter than the
     /// track in dark mode.
     static let segmentOn = Color(light: 0xFFFFFF, dark: 0x364152)
-    static let bgGrouped = Color(light: 0xEAECF0, dark: 0x0C1019)
+    static let bgGrouped = Color(light: 0xF2F3F6, dark: 0x0C1019)
     /// Number pad tray tint: the system keyboard's grey (#DFE1E6), dark #2B2F37.
     static let keypadTray = Color(light: 0xDFE1E6, dark: 0x272A32)
     /// Number pad keys, white like the system keyboard's.
     static let keypadKey = Color(light: 0xFFFFFF, dark: 0x364152)
+    /// The delete key: a quiet grey a step darker than the tray.
+    static let keypadDelete = Color(light: 0xCDD5DF, dark: 0x4B5565)
+    /// The ✓ / next key: the primary green.
+    static let keypadConfirm = brand500
+    static let onKeypadConfirm = Color.white
 
     // Borders
     static let bd0 = Color(light: 0xEEF2F6, dark: 0x1D2533) // row dividers

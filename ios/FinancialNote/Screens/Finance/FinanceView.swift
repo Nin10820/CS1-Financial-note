@@ -169,10 +169,9 @@ struct FinanceView: View {
             // Every month money went in, year by year.
             if moves.contains(where: { $0.kind == .putIn }) {
                 // The plan is the saving goal set on Today (or its suggestion).
-                DepositDots(moves: moves, today: app.today,
-                            plan: savingGoal > 0 ? savingGoal
-                                : SavingPlan(month: Month.of(app.today), today: app.today, entries: entries, goalSetting: 0).suggested,
-                            hidden: app.assetsHidden)
+                let depositPlan = savingGoal > 0 ? savingGoal
+                    : SavingPlan(month: Month.of(app.today), today: app.today, entries: entries, goalSetting: 0).suggested
+                DepositDots(moves: moves, today: app.today, plan: depositPlan, hidden: app.assetsHidden)
                     .padding(.top, Space.s8)
             }
 
@@ -583,7 +582,6 @@ private struct TotalAssetsSection: View {
     var hidden: Bool
     /// The page's top already shows net worth (both layouts), so this card can step aside.
     var onAdd: () -> Void
-    @State private var quick: QuickMove?
     /// The group picked on the pie's legend: the list below shows only it.
     @State private var group: AssetKind?
     @State private var showHistory = false
@@ -612,12 +610,9 @@ private struct TotalAssetsSection: View {
                 .padding(.top, Space.s8 - Space.s24) // 8 pt under the card above
 
             HoldingsTable(assets: group.map { g in assets.filter { $0.kind == g } } ?? assets, moves: moves, hidden: hidden,
-                          editable: true, title: group?.label ?? "Assets") { asset, kind in
-                quick = QuickMove(asset: asset, kind: kind)
-            }
+                          editable: true, title: group?.label ?? "Assets")
 
         }
-        .sheet(item: $quick) { q in QuickMoveSheet(move: q, moves: moves, today: today).sheetSurface() }
         .sheet(isPresented: $showHistory) { AssetHistorySheet(moves: moves, hidden: hidden).sheetSurface() }
     }
 
@@ -629,15 +624,18 @@ private struct TotalAssetsSection: View {
 }
 
 /// The asset sheet as a list (like a subscriptions list): a round tile, the name with its gain
-/// or loss under it, and what it's worth now with what went in under that. Read-only on
-/// Overview (a row opens the asset); on Total Asset the amount is a button for a quick update.
+/// or loss under it, and what it's worth now with what went in under that. Tap a row to open
+/// the asset in a sheet (half height, drag up for full), where money goes in, out or gets updated.
 struct HoldingsTable: View {
     var assets: [Asset]
     var moves: [AssetMove]
     var hidden: Bool
     var editable = false
     var title = "Assets"
-    var onQuick: (Asset, AssetMoveKind) -> Void = { _, _ in }
+    @State private var open: AssetSheetID?
+    @Environment(\.modelContext) private var context
+    @State private var syncing = false
+    @State private var syncFailed = false
 
     var body: some View {
         let rows = assets.map { a in (asset: a, putIn: AssetMath.growth(a, moves: moves)?.putIn ?? a.amount) }
@@ -646,6 +644,29 @@ struct HoldingsTable: View {
                 if !editable {
                     Text("\(rows.count) \(rows.count == 1 ? "asset" : "assets")")
                         .font(AppFont.table(12)).foregroundStyle(Tokens.grey400)
+                } else {
+                    // One Sync for everything held in gold, dollars or coins: today's prices for all.
+                    Button {
+                        Task {
+                            syncing = true
+                            let ok = await MarketSync.run(context, force: true)
+                            syncing = false
+                            if !ok { syncFailed = true }
+                        }
+                    } label: {
+                        HStack(spacing: Space.s4) {
+                            Image(systemName: "arrow.trianglehead.2.clockwise")
+                                .symbolEffect(.rotate, options: .repeat(.continuous), isActive: syncing)
+                            Text(syncing ? "Syncing…" : "Sync")
+                        }
+                        .font(AppFont.main(14, .semibold))
+                        .foregroundStyle(Tokens.brand600)
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(syncing)
+                    .accessibilityLabel(syncing ? "Syncing prices" : "Sync prices")
+                    .accessibilityHint(Market.updatedAt.map { "Last synced " + $0.formatted(.dateTime.day().month().hour().minute()) } ?? "")
                 }
             }
             VStack(spacing: 0) {
@@ -660,25 +681,25 @@ struct HoldingsTable: View {
             .padding(.horizontal, Space.s16)
             .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
         }
+        .sheet(item: $open) { AssetSheet(assetId: $0.id) }
+        .alert("Couldn't get prices", isPresented: $syncFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Check Wi-Fi or mobile data and try again. The last prices are kept.")
+        }
     }
 
     private func row(_ a: Asset, putIn: Int) -> some View {
-        HStack(spacing: Space.s12) {
-            NavigationLink(value: FinanceView.Route.asset(a.id)) {
-                HStack(spacing: Space.s12) {
-                    AssetTile(icon: a.icon, size: 40, round: true)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(a.name).font(AppFont.table(15, .semibold)).foregroundStyle(Tokens.text900).lineLimit(1)
-                        Text("\(hidden ? "" : "in " + AnalyticsView.compact(putIn) + " · ")\(HoldingsTable.shortDay(a.updatedOn))")
-                            .font(AppFont.table(12)).foregroundStyle(Tokens.grey400).lineLimit(1)
-                    }
-                    Spacer(minLength: Space.s4)
+        Button { open = AssetSheetID(id: a.id) } label: {
+            HStack(spacing: Space.s12) {
+                AssetTile(icon: a.icon, size: 40, round: true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(a.name).font(AppFont.table(15, .semibold)).foregroundStyle(Tokens.text900).lineLimit(1)
+                    // Held in units: "5 chỉ · 22 Nov"; in đồng: "in 30M · 22 Nov".
+                    Text(Self.subline(a, putIn: putIn, hidden: hidden))
+                        .font(AppFont.table(12)).foregroundStyle(Tokens.grey400).lineLimit(1)
                 }
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint("Opens its history")
-            Button { onQuick(a, .value) } label: {
+                Spacer(minLength: Space.s4)
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(hidden ? "•••" : Money.format(a.amount) + "đ")
                         .font(AppFont.heading(16, .semibold)).foregroundStyle(Tokens.text900)
@@ -686,15 +707,13 @@ struct HoldingsTable: View {
                 }
                 .monospacedDigit()
                 .lineLimit(1).minimumScaleFactor(0.8)
-                .contentShape(.rect)
             }
-            .buttonStyle(.plain)
-            // Read-only on Overview without greying the amount out.
-            .allowsHitTesting(editable)
-            .accessibilityLabel("\(a.name), " + (hidden ? "amount hidden" : "worth \(Money.format(a.amount)) dong, put in \(Money.format(putIn)) dong"))
-            .accessibilityHint(editable ? "Update what it's worth" : "")
+            .padding(.vertical, Space.s12)
+            .contentShape(.rect)
         }
-        .padding(.vertical, Space.s12)
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens the asset: its history, add money, take out or update what it's worth")
     }
 
     /// "+22.2M · +25%" in green, "−33.3M · −31%" in grey (no red alarms), "No change" when flat.
@@ -709,6 +728,14 @@ struct HoldingsTable: View {
             .monospacedDigit()
     }
 
+    static func subline(_ a: Asset, putIn: Int, hidden: Bool) -> String {
+        let day = HoldingsTable.shortDay(a.updatedOn)
+        if let q = a.quantity, let unit = a.unit {
+            return (hidden ? "•••" : AssetDetailView.quantityText(q, unit)) + " · " + day
+        }
+        return (hidden ? "" : "in " + AnalyticsView.compact(putIn) + " · ") + day
+    }
+
     /// "16 Nov" — this year's dates without the year.
     static func shortDay(_ iso: String) -> String {
         let (y, m, d) = Day.parts(iso)
@@ -716,36 +743,178 @@ struct HoldingsTable: View {
     }
 }
 
-/// What the quick sheet is for: today's worth of an asset, or money put in.
+/// What the number-pad sheet starts on: new worth, money put in or taken out.
 struct QuickMove: Identifiable {
     var asset: Asset
     var kind: AssetMoveKind
     var id: String { asset.id + kind.rawValue }
 }
 
-/// Quick update from the table: pick what happened — new worth, money put in or taken out —
-/// see the asset's put in / now / gain change as you type, pick the day (today by default),
-/// and save. It goes into the asset's history like any other move.
+/// Add money, take out or update value: a panel that slides up inside the asset sheet, down to
+/// the bottom edge, with the amount, the day (today by default) and what the move changes (put
+/// in, or worth and gain) as you type. Save with ✓; ✕ or a tap above closes it. It goes into
+/// the asset's history like any other move.
 struct QuickMoveSheet: View {
     var move: QuickMove
     var moves: [AssetMove]
     var today: String
+    /// Closes the panel, with the move just saved (nil when closed without saving).
+    var onClose: (AssetMove?) -> Void
     @Environment(\.modelContext) private var context
-    @Environment(\.dismiss) private var dismiss
     @State private var kind: AssetMoveKind
     @State private var value: Int?
     @State private var date: Date
+    /// For an asset held in units (gold, dollars, coins): what's typed in that unit, "2,5".
+    @State private var unitText = ""
+    /// Gold can be typed in chỉ or in phân, whichever the asset is kept in.
+    @State private var entryUnit: HoldingUnit?
+    /// Where the number pad types, in characters from the right (0 = at the end).
+    @State private var cursor = 0
 
-    init(move: QuickMove, moves: [AssetMove], today: String) {
+    init(move: QuickMove, moves: [AssetMove], today: String, onClose: @escaping (AssetMove?) -> Void) {
         self.move = move
         self.moves = moves
         self.today = today
+        self.onClose = onClose
         _kind = State(initialValue: move.kind)
         _date = State(initialValue: Day.date(today))
+        // Update starts from what's there now, so you fix a digit or two instead of typing it all.
+        if move.kind == .value {
+            _value = State(initialValue: move.asset.amount)
+            if let q = move.asset.quantity, move.asset.unit != nil {
+                _unitText = State(initialValue: Self.plain(q))
+            }
+        }
     }
 
     var body: some View {
         let a = move.asset
+        if let unit = a.unit, let held = a.quantity, let price = Market.price(unit) {
+            unitBody(a, unit: unit, held: held, price: price)
+        } else {
+            dongBody(a)
+        }
+    }
+
+    /// Held in units: you type 2 phân or 100 $, and see what that is in đồng.
+    private func unitBody(_ a: Asset, unit: HoldingUnit, held: Double, price: Double) -> some View {
+        let putIn = AssetMath.growth(a, moves: moves)?.putIn ?? a.amount
+        let entry = entryUnit ?? unit
+        // What's typed (in chỉ or phân), in the asset's own unit.
+        let q = Double(unitText.replacingOccurrences(of: ",", with: ".")).map { $0 * entry.chiEach / unit.chiEach }
+        let typed = q ?? 0
+        let after: Double = switch kind {
+        case .putIn: held + typed
+        case .takeOut: max(0, held - typed)
+        case .value: q ?? held
+        }
+        let dong = Int((typed * price).rounded())
+        let canSave = typed > 0 && !(kind == .value && typed == held) && !(kind == .takeOut && held == 0)
+        return VStack(spacing: 0) {
+            // Saved with the ✓ on the number pad.
+            SheetHeaderBar(title: title(a.name),
+                           leading: .icon("Close", systemImage: "xmark") { onClose(nil) },
+                           trailing: .none)
+            VStack(alignment: .leading, spacing: Space.s12) {
+                HStack(alignment: .center, spacing: Space.s8) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        // In the unit you think in; for Update, how many you hold now.
+                        HStack(alignment: .firstTextBaseline, spacing: Space.s6) {
+                            if unitText.isEmpty {
+                                Text(kind == .value ? Self.plain(held) : "0")
+                                    .font(AppFont.heading(40, .medium))
+                                    .foregroundStyle(Tokens.grey300)
+                                    .monospacedDigit()
+                            } else {
+                                CaretNumber(text: unitText, commaCounts: true, cursor: $cursor)
+                                    .foregroundStyle(Tokens.text900)
+                            }
+                            Text(entry.label).font(AppFont.heading(24)).foregroundStyle(Tokens.grey400)
+                                .contentTransition(.opacity)
+                        }
+                        Text("≈ " + Money.format(kind == .value ? Int((after * price).rounded()) : dong) + " đ")
+                            .font(AppFont.main(14, .medium)).foregroundStyle(Tokens.grey400)
+                            .monospacedDigit()
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(kind == .value ? "How many \(unit.label) you hold now" : prompt(a.name))
+                    Spacer(minLength: Space.s4)
+                    DatePicker("Day", selection: $date, in: ...Day.date(today), displayedComponents: .date)
+                        .labelsHidden()
+                }
+
+                // How much you hold, before → after; and the money side of it.
+                HStack(spacing: Space.s8) {
+                    summaryText("You hold", AssetDetailView.quantityText(held, unit), AssetDetailView.quantityText(after, unit),
+                                changed: unitText.isEmpty ? false : after != held)
+                    switch kind {
+                    case .value:
+                        summary("Now", a.amount, Int((after * price).rounded()))
+                    case .putIn:
+                        summary("Put in so far", putIn, putIn + dong)
+                    case .takeOut:
+                        summary("Put in so far", putIn, putIn - min(dong, a.amount))
+                    }
+                }
+                .padding(Space.s12)
+                .background(Tokens.bg4.opacity(0.6), in: .rect(cornerRadius: Corner.c16, style: .continuous))
+            }
+            .padding(.horizontal, Space.s20)
+            .padding(.top, Space.s8)
+            .padding(.bottom, Space.s16)
+            AmountPad(value: $value, onDone: {
+                onClose(LocalStore(context: context).moveUnits(a, kind, units: typed, price: price, date: Day.iso(date)))
+            }, unitText: $unitText, unitLabel: entry.label,
+                      unitDecimals: [.btc, .eth].contains(unit) ? 6 : 2, doneEnabled: canSave,
+                      onUnitTap: unit.isGold ? { switchGold(from: entry) } : nil, cursor: $cursor)
+        }
+        .padding(.top, Space.s16)
+        .background {
+            UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28, style: .continuous)
+                .fill(Tokens.canvas)
+                .shadow(color: .black.opacity(0.12), radius: 16, y: -4)
+                .ignoresSafeArea(edges: .bottom)
+        }
+    }
+
+    /// chỉ ⇄ phân, keeping what's typed the same amount of gold (2 chỉ → 20 phân).
+    private func switchGold(from entry: HoldingUnit) {
+        let next: HoldingUnit = entry == .phan ? .chi : .phan
+        if let n = Double(unitText.replacingOccurrences(of: ",", with: ".")) {
+            unitText = Self.plain(n * entry.chiEach / next.chiEach)
+        }
+        cursor = 0
+        withAnimation(.snappy) { entryUnit = next }
+    }
+
+    private static func plain(_ d: Double) -> String {
+        let f = NumberFormatter()
+        f.locale = Locale(identifier: "vi")
+        f.numberStyle = .decimal
+        f.usesGroupingSeparator = false
+        f.maximumFractionDigits = 6
+        return f.string(from: NSNumber(value: d)) ?? String(d)
+    }
+
+    /// "5 chỉ", or "5 chỉ → 5,2 chỉ" while what you type would change it.
+    private func summaryText(_ label: String, _ before: String, _ after: String, changed: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(AppFont.main(11)).foregroundStyle(Tokens.grey400)
+            HStack(spacing: Space.s4) {
+                Text(before).foregroundStyle(changed ? Tokens.grey400 : Tokens.text900)
+                if changed {
+                    Image(systemName: "arrow.right").font(.system(size: 10, weight: .bold)).foregroundStyle(Tokens.grey400)
+                    Text(after).foregroundStyle(Tokens.text900)
+                }
+            }
+            .font(AppFont.main(14, .semibold))
+            .lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func dongBody(_ a: Asset) -> some View {
         let putIn = AssetMath.growth(a, moves: moves)?.putIn ?? a.amount
         let typed = value ?? 0
         // What the asset would look like after saving.
@@ -754,63 +923,72 @@ struct QuickMoveSheet: View {
         case .putIn: (putIn + typed, a.amount + typed)
         case .takeOut: (putIn - min(typed, a.amount), a.amount - min(typed, a.amount))
         }
-        NavigationStack {
-            VStack(alignment: .leading, spacing: Space.s16) {
-                Picker("What happened", selection: $kind) {
-                    Text("Update value").tag(AssetMoveKind.value)
-                    Text("Put in").tag(AssetMoveKind.putIn)
-                    Text("Take out").tag(AssetMoveKind.takeOut)
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: kind) { _, _ in value = nil }
-
-                VStack(alignment: .leading, spacing: Space.s4) {
-                    Text(prompt(a.name)).font(AppFont.main(14)).foregroundStyle(Tokens.grey400)
-                    // The current worth shows greyed until you type; typing starts a fresh number.
+        let canSave = !(typed <= 0 || (kind == .value && typed == a.amount) || (kind == .takeOut && a.amount == 0))
+        return VStack(spacing: 0) {
+            SheetHeaderBar(title: title(a.name),
+                           leading: .icon("Close", systemImage: "xmark") { onClose(nil) },
+                           trailing: .none)
+            VStack(alignment: .leading, spacing: Space.s12) {
+                // The amount, and the day on the same line. The current worth shows greyed
+                // until you type; typing starts a fresh number.
+                HStack(alignment: .center, spacing: Space.s8) {
                     HStack(alignment: .firstTextBaseline, spacing: Space.s4) {
-                        Text(Money.format(value ?? (kind == .value ? a.amount : 0)))
-                            .font(AppFont.heading(40, .medium))
-                            .foregroundStyle(value == nil ? Tokens.grey300 : Tokens.text900)
-                            .monospacedDigit().contentTransition(.numericText())
-                            .lineLimit(1).minimumScaleFactor(0.6)
+                        if let value {
+                            // Tap a digit to change it there.
+                            CaretNumber(text: Money.format(value), cursor: $cursor)
+                                .foregroundStyle(Tokens.text900)
+                        } else {
+                            Text(Money.format(kind == .value ? a.amount : 0))
+                                .font(AppFont.heading(40, .medium))
+                                .foregroundStyle(Tokens.grey300)
+                                .monospacedDigit()
+                                .lineLimit(1).minimumScaleFactor(0.6)
+                        }
                         Text("đ").font(AppFont.heading(28)).foregroundStyle(Tokens.grey400)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(prompt(a.name))
+                    Spacer(minLength: Space.s4)
+                    DatePicker("Day", selection: $date, in: ...Day.date(today), displayedComponents: .date)
+                        .labelsHidden()
                 }
 
-                // Put in / Now / Gain, before → after.
+                // Only what this move changes, before → after: money put in for Put in and
+                // Take out; worth and gain for Update value.
                 HStack(spacing: Space.s8) {
-                    summary("Put in", putIn, after.putIn)
-                    summary("Now", a.amount, after.now)
-                    summary("Gain", a.amount - putIn, after.now - after.putIn, signed: true)
+                    if kind == .value {
+                        summary("Now", a.amount, after.now)
+                        summary("Gain", a.amount - putIn, after.now - after.putIn, signed: true)
+                    } else {
+                        summary("Put in so far", putIn, after.putIn)
+                    }
                 }
                 .padding(Space.s12)
                 .background(Tokens.bg4.opacity(0.6), in: .rect(cornerRadius: Corner.c16, style: .continuous))
-
-                DatePicker("Day", selection: $date, in: ...Day.date(today), displayedComponents: .date)
-                    .font(AppFont.main(14, .medium))
-                    .foregroundStyle(Tokens.text700)
-
-                Spacer(minLength: 0)
             }
             .padding(.horizontal, Space.s20)
             .padding(.top, Space.s8)
-            .safeAreaInset(edge: .bottom, spacing: 0) { AmountPad(value: $value) }
-            .navigationTitle(a.name)
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("Cancel", systemImage: "xmark") { dismiss() } }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save", systemImage: "checkmark") {
-                        LocalStore(context: context).move(a, kind, amount: typed, date: Day.iso(date))
-                        dismiss()
-                    }
-                    .buttonStyle(.glassProminent)
-                    .tint(Tokens.brand600)
-                    .disabled(typed <= 0 || (kind == .value && typed == a.amount) || (kind == .takeOut && a.amount == 0))
-                }
-            }
+            .padding(.bottom, Space.s16)
+            AmountPad(value: $value, onDone: {
+                onClose(LocalStore(context: context).move(a, kind, amount: typed, date: Day.iso(date)))
+            }, doneEnabled: canSave, cursor: $cursor)
         }
-        .presentationDetents([.large])
+        .padding(.top, Space.s16)
+        .background {
+            UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28, style: .continuous)
+                .fill(Tokens.canvas)
+                .shadow(color: .black.opacity(0.12), radius: 16, y: -4)
+                .ignoresSafeArea(edges: .bottom)
+        }
+    }
+
+    /// "Put in · Gold": what's happening, on the sheet's top.
+    private func title(_ name: String) -> String {
+        switch kind {
+        case .value: "Update · \(name)"
+        case .putIn: "Put in · \(name)"
+        case .takeOut: "Take out · \(name)"
+        }
     }
 
     private func prompt(_ name: String) -> String {
@@ -1031,147 +1209,6 @@ private struct DebtSection: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
-    }
-}
-
-// MARK: - Add asset
-
-/// New asset, or (with `editing`) its name and group. A change of worth goes through
-/// Add money / Take out / Update value on the asset, so its history stays right.
-struct AddAssetSheet: View {
-    var editing: Asset? = nil
-    @Environment(AppState.self) private var app
-    @Environment(\.modelContext) private var context
-    @Environment(\.dismiss) private var dismiss
-    @State private var name = ""
-    @State private var amount: Int?
-    @State private var kind: AssetKind = .available
-    /// When the money went in: today, or back when you started (it shows on the line from then).
-    @State private var since = Date.now
-    /// New asset starts on the quick pick (Figma-style step 1); editing goes straight to the form.
-    @State private var picked = false
-
-    var body: some View {
-        NavigationStack {
-            Group {
-                if editing == nil && !picked { groupPicker } else { form }
-            }
-            .background(editing == nil && !picked ? Tokens.bg3 : Color.clear)
-            .navigationTitle(editing == nil ? "New asset" : "Edit asset")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                if editing == nil && picked {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button("Change group", systemImage: "chevron.left") { animate { picked = false } }
-                    }
-                } else {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Close", systemImage: "xmark") { dismiss() }
-                    }
-                }
-                if editing != nil || picked {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save", systemImage: "checkmark", action: save)
-                            .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty || (editing == nil && (amount ?? 0) <= 0))
-                    }
-                }
-            }
-        }
-        .onAppear {
-            if let a = editing {
-                name = a.name
-                kind = a.kind
-            }
-        }
-    }
-
-    /// Step 1: "Adding new [kind of] — tell us what you know:", the four groups, or one sentence.
-    private var groupPicker: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            AddingLead(label: "kind of", chosen: false)
-                .padding(.horizontal, Space.s20).padding(.vertical, Space.s16)
-            Spacer(minLength: 0)
-            QuickPickCard(
-                title: "Which group?",
-                options: AssetKind.allCases.map {
-                    QuickPickOption(id: $0, title: $0.label, hint: FinanceText.hint($0), mark: Tokens.assetKind($0))
-                },
-                sayPlaceholder: "e.g. vàng SJC 15tr, tiết kiệm TPBank 50tr",
-                onPick: { kind = $0; picked = true },
-                onSay: { text in
-                    let read = AssetSentence.read(text, today: app.today)
-                    name = read.name
-                    amount = read.amount
-                    kind = read.kind
-                    picked = true
-                })
-            .padding(.horizontal, Space.s12)
-            .padding(.top, Space.s24)
-            .padding(.bottom, Space.s16)
-        }
-    }
-
-    private var form: some View {
-            Form {
-                Section("What is it?") {
-                    TextField("Gold, Saving - TP Bank, Fund…", text: $name)
-                }
-                .listRowBackground(Tokens.card)
-                if editing == nil {
-                let past = Day.iso(since) < app.today
-                Section {
-                    HStack {
-                        TextField("0", text: Binding(
-                            get: { amount.map(Money.format) ?? "" },
-                            set: { amount = Int($0.filter(\.isNumber)) }))
-                            .keyboardType(.numberPad)
-                            .monospacedDigit()
-                        Text("đ").foregroundStyle(Tokens.grey400)
-                    }
-                    DatePicker("Put in on", selection: $since, in: ...Date.now, displayedComponents: .date)
-                        .tint(Tokens.brand600)
-                } header: {
-                    Text(past ? "How much did you put in then?" : "How much is it worth now?")
-                } footer: {
-                    if past {
-                        Text("Add later deposits with Add money on the asset, each on its own day, then Update value for what it's worth now.")
-                    }
-                }
-                .listRowBackground(Tokens.card)
-                }
-                Section {
-                    Picker("Which group?", selection: $kind) {
-                        ForEach(AssetKind.allCases, id: \.self) { k in
-                            Label {
-                                Text(k.label)
-                            } icon: {
-                                Image(systemName: "square.fill").foregroundStyle(Tokens.assetKind(k))
-                            }
-                            .tag(k)
-                        }
-                    }
-                    .pickerStyle(.inline)
-                } header: {
-                    Text("Which group?")
-                } footer: {
-                    Text(FinanceText.hint(kind))
-                }
-                .listRowBackground(Tokens.card)
-            }
-            .appListSurface()
-            .font(AppFont.main(16))
-    }
-
-    private func save() {
-        let n = name.trimmingCharacters(in: .whitespaces)
-        if let a = editing {
-            LocalStore(context: context).editAsset(a, name: n, kind: kind)
-            dismiss()
-            return
-        }
-        LocalStore(context: context).addAsset(
-            Asset(name: n, kind: kind, icon: AssetMath.guessIcon(n, kind: kind), amount: amount ?? 0, updated: min(Day.iso(since), app.today)))
-        dismiss()
     }
 }
 

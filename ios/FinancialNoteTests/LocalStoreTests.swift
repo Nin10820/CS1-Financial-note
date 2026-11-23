@@ -15,8 +15,17 @@ final class LocalStoreTests: XCTestCase {
         store = LocalStore(context: container.mainContext)
     }
 
-    func testFirstLaunchLoadsTheSampleOnce() {
+    func testFirstLaunchStartsEmpty() {
         store.prepareOnLaunch(today: today)
+        XCTAssertNotNil(store.profile)
+        XCTAssertTrue(store.all(Entry.self).isEmpty)
+        XCTAssertTrue(store.all(Asset.self).isEmpty)
+        XCTAssertFalse(store.hasSample)
+    }
+
+    func testLoadingTheSampleOnce() {
+        store.prepareOnLaunch(today: today)
+        store.loadSample(today: today)
         XCTAssertNotNil(store.profile)
         XCTAssertEqual(store.all(Entry.self).count, 22)
         XCTAssertEqual(store.all(Bill.self).count, 6)
@@ -25,11 +34,13 @@ final class LocalStoreTests: XCTestCase {
         XCTAssertTrue(store.hasSample)
         // Opening the app again doesn't add it twice.
         store.prepareOnLaunch(today: today)
+        store.loadSample(today: today)
         XCTAssertEqual(store.all(Entry.self).count, 22)
     }
 
     func testRemovingTheSampleKeepsTheUsersOwnData() {
         store.prepareOnLaunch(today: today)
+        store.loadSample(today: today)
         let drafts = NoteParser.parse("cơm tấm 35k, cafe 40k", day: today)
         store.addEntries(drafts.map {
             Entry(date: $0.date, title: $0.title, amount: $0.amount ?? 0, flow: $0.flow, category: $0.category,

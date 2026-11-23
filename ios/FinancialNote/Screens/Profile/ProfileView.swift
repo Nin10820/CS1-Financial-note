@@ -1,3 +1,4 @@
+import LocalAuthentication
 import SwiftData
 import SwiftUI
 
@@ -6,6 +7,8 @@ import SwiftUI
 /// rather than shown as switches that do nothing.
 struct ProfileView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var unlockProblem: String?
     @AppStorage("appearance") private var appearance = "system"
     @Query private var profiles: [Profile]
     @Query private var entries: [Entry]
@@ -57,8 +60,8 @@ struct ProfileView: View {
                                     Image(systemName: "chevron.up.chevron.down").font(.system(size: 12, weight: .semibold))
                                 }
                                 .foregroundStyle(Tokens.grey400)
-                                .frame(minHeight: 44)
-                                .contentShape(.rect)
+                                // Same height as the other rows; the tap area still reaches past the text.
+                                .contentShape(.rect.inset(by: -12))
                             }
                         }
                         Toggle("Hide amounts when the app opens", isOn: Binding(get: { p.hideOnOpen }, set: { p.hideOnOpen = $0; save() }))
@@ -73,11 +76,15 @@ struct ProfileView: View {
                     .listRowBackground(Tokens.card)
 
                     Section {
+                        // The app starts empty. Nin's data set comes in only after Face ID or the
+                        // iPhone passcode; off takes it out again and leaves anything typed by hand.
+                        Toggle(isOn: Binding(get: { hasSample }, set: { setDataNin($0) })) {
+                            row("Data Nin", hasSample ? "Loaded on this phone" : "Face ID or passcode to load it")
+                        }
                         NavigationLink { YourDataView() } label: { row("Your data", "See what the app keeps") }
                         NavigationLink { AIInfoView() } label: { row("What the AI does with notes", "Only reads what you write") }
-                        ExportLink(label: "Download your data")
-                        Toggle(isOn: sampleBinding) {
-                            row("Sample data", hasSample ? "Showing made-up notes, bills and assets" : "Fill every screen with made-up data")
+                        NavigationLink { BackupView() } label: {
+                            row("Backup & restore", BackupFolder.shared.folderName.map { "Saving to \($0)" } ?? "Keep a copy in a folder")
                         }
                     } header: {
                         Text("Data & privacy")
@@ -90,8 +97,14 @@ struct ProfileView: View {
                 }
             }
             .appListSurface()
+            .contentMargins(.top, Space.s8, for: .scrollContent)
             .font(AppFont.main(14, .medium))
-            .navigationTitle("Profile")
+            .sheetHeader("Profile")
+            .alert("Can't unlock Data Nin", isPresented: Binding(get: { unlockProblem != nil }, set: { if !$0 { unlockProblem = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(unlockProblem ?? "")
+            }
             .tint(Tokens.brand600)
         }
     }
@@ -100,12 +113,19 @@ struct ProfileView: View {
         entries.contains(where: \.sample) || assets.contains(where: \.sample) || bills.contains(where: \.sample)
     }
 
-    /// One switch: on loads the made-up data, off removes it and leaves the user's own alone.
-    private var sampleBinding: Binding<Bool> {
-        Binding(get: { hasSample }, set: { on in
-            let store = LocalStore(context: context)
-            if on { store.loadSample() } else { store.clearSample() }
-        })
+    /// On asks for Face ID or the iPhone passcode first; off just takes the data out.
+    private func setDataNin(_ on: Bool) {
+        let store = LocalStore(context: context)
+        guard on else { store.clearSample(); return }
+        let auth = LAContext()
+        var error: NSError?
+        guard auth.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
+            unlockProblem = "Set a passcode on this iPhone first, then try again."
+            return
+        }
+        auth.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Load Data Nin on this phone") { ok, _ in
+            Task { @MainActor in if ok { store.loadSample() } }
+        }
     }
 
     private func row(_ title: String, _ sub: String) -> some View {
@@ -201,19 +221,11 @@ private struct ProfileDetail: View {
                     .listRowBackground(Tokens.card)
                 }
                 .appListSurface()
-                .navigationTitle("Edit profile")
-                .toolbarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Cancel") { editing = false } }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save", systemImage: "checkmark") {
-                            profile.name = name.trimmingCharacters(in: .whitespaces)
-                            try? context.save()
-                            editing = false
-                        }
-                        .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
-                    }
-                }
+                .sheetHeader("Edit profile", trailing: .save(enabled: !name.trimmingCharacters(in: .whitespaces).isEmpty) {
+                    profile.name = name.trimmingCharacters(in: .whitespaces)
+                    try? context.save()
+                    editing = false
+                })
             }
             .presentationDetents([.medium])
         }.sheetSurface() }
@@ -257,7 +269,7 @@ private struct YourDataView: View {
             }
             .listRowBackground(Tokens.card)
             Section {
-                ExportLink(label: "Download everything")
+                ExportLink(label: "Download your data")
                 NavigationLink { DeleteAllView() } label: {
                     Text("Delete everything").foregroundStyle(Tokens.text900)
                 }

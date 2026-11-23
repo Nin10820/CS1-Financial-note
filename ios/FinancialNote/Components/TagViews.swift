@@ -132,15 +132,7 @@ struct TagPickerSheet: View {
                 .padding(Space.s20)
             }
             .background(Tokens.canvas)
-            .navigationTitle("Select tag")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                        .font(AppFont.main(14, .semibold))
-                        .foregroundStyle(Tokens.brand700)
-                }
-            }
+            .sheetHeader("Select tag", trailing: .done())
             .alert("New tag", isPresented: $naming) {
                 TextField("Name", text: $newName)
                 Button("Add") { addTag() }

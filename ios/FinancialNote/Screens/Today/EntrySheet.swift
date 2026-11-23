@@ -73,17 +73,7 @@ struct EntrySheet: View {
             }
             // Typing in a text field swaps the number pad for the keyboard.
             .onChange(of: focus) { _, f in if f != nil { animate { padOpen = false } } }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Close", systemImage: "xmark") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", systemImage: "checkmark", action: save)
-                        .buttonStyle(.glassProminent)
-                        .tint(Tokens.action)
-                        .disabled(!d.isValid || (!isNew && d == start))
-                }
-            }
+            .sheetHeader("", trailing: .save(enabled: d.isValid && (isNew || d != start), action: save))
             .sheet(isPresented: $pickingTags) {
                 TagPickerSheet(selected: $d.tags, suggestion: Tags.suggest(title: d.title, category: d.category))
                     .sheetSurface()
@@ -123,11 +113,8 @@ struct EntrySheet: View {
                     focus = nil
                     animate { padOpen = true }
                 } label: {
-                    Text(d.amount.map(Money.format) ?? "0")
-                        .font(AppFont.amount(44))
-                        .monospacedDigit()
+                    BigAmount(value: d.amount)
                         .foregroundStyle(d.amount == nil ? Tokens.grey300 : Tokens.text900)
-                        .contentTransition(.numericText())
                         .padding(.horizontal, Space.s4)
                         // A green underline while the number pad is typing here.
                         .overlay(alignment: .bottom) {
@@ -455,35 +442,13 @@ struct EntrySheet: View {
 struct EntryDateSheet: View {
     @Binding var date: String
     var onPick: () -> Void
-    @State private var picked = Date.now
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            DatePicker("Date", selection: $picked, in: ...Date.now, displayedComponents: .date)
-                .datePickerStyle(.graphical)
-                .tint(Tokens.brand500)
-                .padding(.horizontal)
-                .navigationTitle("Date")
-                .toolbarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Close", systemImage: "xmark") { dismiss() }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done", systemImage: "checkmark") {
-                            date = Day.iso(picked)
-                            onPick()
-                            dismiss()
-                        }
-                        .tint(Tokens.action)
-                    }
-                }
-        }
-        .presentationDetents([.medium, .large])
-        .onAppear { picked = Day.date(date) }
+        DateSheet(date: $date, title: "Date", latest: Day.today())
+            .onChange(of: date) { onPick() }
     }
 }
+
 
 /// Everything the entry sheet can change, compared with the saved entry to enable Save.
 struct EntryEdit: Equatable {

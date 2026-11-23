@@ -1,21 +1,21 @@
 import SwiftUI
 
 /// "Adding new [kind of] — tell us what you know:" (Figma Due 943:25329), shared by New bill
-/// and New asset: Montserrat SemiBold 26, the chosen kind in a pill (grey until picked, then green).
+/// and New asset: Montserrat SemiBold 20 in text900, the chosen kind in a pill (grey until picked, then green).
 struct AddingLead: View {
     var label: String
     var chosen: Bool
 
     var body: some View {
-        FlowLayout(spacing: 6) {
-            Text("Adding new").font(AppFont.main(26, .semibold, relativeTo: .title)).foregroundStyle(Tokens.text700)
+        FlowLayout(spacing: 5) {
+            Text("Adding new").font(AppFont.main(20, .semibold, relativeTo: .title2)).foregroundStyle(Tokens.text900)
             Text(label)
-                .font(AppFont.main(24, .semibold, relativeTo: .title))
+                .font(AppFont.main(19, .semibold, relativeTo: .title2))
                 .foregroundStyle(chosen ? Tokens.brand600 : Tokens.grey400)
                 .padding(.horizontal, 10)
-                .frame(minHeight: 36)
+                .frame(minHeight: 30)
                 .background(chosen ? Color(hex: 0x0D121C).opacity(0.04) : Tokens.bg4, in: .capsule)
-            Text("— tell us what you know:").font(AppFont.main(26, .semibold, relativeTo: .title)).foregroundStyle(Tokens.text700)
+            Text("— tell us what you know:").font(AppFont.main(20, .semibold, relativeTo: .title2)).foregroundStyle(Tokens.text900)
         }
         .accessibilityElement(children: .combine)
     }

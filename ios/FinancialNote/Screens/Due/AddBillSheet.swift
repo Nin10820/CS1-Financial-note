@@ -83,27 +83,10 @@ struct AddBillSheet: View {
                 // Picked a kind (or said it): start typing straight away.
                 if k != nil { startTyping() }
             }
-            .navigationTitle("New bill")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                if draft.kind != nil && startKind == nil {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button("Change kind", systemImage: "chevron.left") {
-                            animate { draft.kind = nil }
-                        }
-                    }
-                } else {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Close", systemImage: "xmark") { dismiss() }
-                    }
-                }
-                if draft.kind != nil {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Save bill", systemImage: "checkmark", action: save)
-                            .disabled(!draft.isValid)
-                    }
-                }
-            }
+            .sheetHeader("New bill",
+                         leading: draft.kind != nil && startKind == nil
+                            ? .icon("Change kind", systemImage: "arrow.left") { animate { draft.kind = nil } } : .none,
+                         trailing: draft.kind != nil ? .save(enabled: draft.isValid, action: save) : .close)
         }
         .onAppear {
             guard !ready else { return }
@@ -177,7 +160,7 @@ struct AddBillSheet: View {
             .animation(.snappy, value: active)
         }
         .sheet(item: $pickingDate, onDismiss: { go(next(after: active)) }) { which in
-            BillDateSheet(date: $draft.due, title: which == .due ? "Due" : "Starting from")
+            DateSheet(date: $draft.due, title: which == .due ? "Due" : "Starting from")
                 .sheetSurface()
         }
         .onAppear { startTyping() }
@@ -445,27 +428,34 @@ struct AddBillSheet: View {
     }
 }
 
-/// Due / starting date for a bill: any day, past or future (a calendar, then Done).
-struct BillDateSheet: View {
+/// The one date sheet (Figma Modal top + system calendar): title, Done, and "Today" on the left
+/// when asked. The sheet is exactly as tall as the header and the calendar.
+struct DateSheet: View {
     @Binding var date: String
     var title: String
-    @Environment(\.dismiss) private var dismiss
+    /// The last day you can pick (today, for money already spent); nil for any day.
+    var latest: String? = nil
+    /// Shows "Today" on the left, which jumps back to this day.
+    var today: String? = nil
+    @State private var height: CGFloat = 420
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            SheetHeaderBar(title: title,
+                           leading: today.map { t in .text("Today") { date = t } } ?? .none,
+                           trailing: .done())
             DatePicker(title, selection: Binding(get: { Day.date(date) }, set: { date = Day.iso($0) }),
-                       displayedComponents: .date)
+                       in: ...Day.date(latest ?? "2100-12-31"), displayedComponents: .date)
                 .datePickerStyle(.graphical)
+                .labelsHidden()
                 .tint(Tokens.brand500)
                 .padding(.horizontal)
-                .navigationTitle(title)
-                .toolbarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { dismiss() }.foregroundStyle(Tokens.brand700)
-                    }
-                }
         }
-        .presentationDetents([.medium])
+        .padding(.top, Space.s20)
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
+        .frame(maxHeight: .infinity, alignment: .top)
+        .presentationDetents([.height(height)])
     }
 }
+

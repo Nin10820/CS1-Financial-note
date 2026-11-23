@@ -113,21 +113,14 @@ struct AnalyticsView: View {
         // The bar sits on white, flush with the chart under it.
         .toolbarBackground(Tokens.bgWhite, for: .navigationBar)
         .toolbarBackgroundVisibility(.visible, for: .navigationBar)
-        .navigationTitle("View Analysis")
-        .toolbarTitleDisplayMode(.inline)
+        .sheetHeader("View Analysis",
+                     leading: pushed ? .none : .icon("Open as a page", systemImage: "arrow.up.forward.square") { onExpand?() },
+                     trailing: pushed ? .none : .close)
         .toolbar {
             if pushed {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { onAdd?() } label: { AppIcon(.plus, size: 20) }
                         .accessibilityLabel("Add")
-                }
-            } else {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button { onExpand?() } label: { AppIcon(.arrowSquareOut, size: 20) }
-                        .accessibilityLabel("Open as a page")
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Close", systemImage: "xmark") { dismiss() }
                 }
             }
         }

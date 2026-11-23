@@ -25,13 +25,7 @@ struct ComingUpSheet: View {
                 .padding(Space.s20)
             }
             .background(Tokens.canvas)
-            .navigationTitle("Coming up")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Close", systemImage: "xmark") { dismiss() }
-                }
-            }
+            .sheetHeader("Coming up")
         }
         .presentationDetents([.large])
         .onAppear { year = Day.parts(app.dueMonth + "-01").y }

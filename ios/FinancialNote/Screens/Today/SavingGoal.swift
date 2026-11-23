@@ -144,17 +144,7 @@ struct GoalSheet: View {
             }
             .padding(Space.s20)
             .safeAreaInset(edge: .bottom, spacing: 0) { AmountPad(value: $value) }
-            .navigationTitle("Saving goal")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("Cancel", systemImage: "xmark") { dismiss() } }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save", systemImage: "checkmark") { onSave(value); dismiss() }
-                        .buttonStyle(.glassProminent)
-                        .tint(Tokens.brand600)
-                        .disabled((value ?? 0) <= 0)
-                }
-            }
+            .sheetHeader("Saving goal", trailing: .save(enabled: (value ?? 0) > 0) { onSave(value); dismiss() })
         }
         .presentationDetents([.large])
     }
@@ -202,17 +192,7 @@ struct SaveSheet: View {
             }
             .padding(Space.s20)
             .safeAreaInset(edge: .bottom, spacing: 0) { AmountPad(value: $value) }
-            .navigationTitle("Put aside")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) { Button("Cancel", systemImage: "xmark") { dismiss() } }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save", systemImage: "checkmark") { onSave(value); dismiss() }
-                        .buttonStyle(.glassProminent)
-                        .tint(Tokens.brand600)
-                        .disabled((value ?? 0) <= 0)
-                }
-            }
+            .sheetHeader("Put aside", trailing: .save(enabled: (value ?? 0) > 0) { onSave(value); dismiss() })
         }
         .presentationDetents([.large])
     }

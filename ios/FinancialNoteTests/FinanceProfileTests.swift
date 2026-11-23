@@ -62,6 +62,7 @@ final class FinanceProfileTests: XCTestCase {
         let container = try ModelContainer(for: Schema(AppSchema.models), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let store = LocalStore(context: container.mainContext)
         store.prepareOnLaunch(today: "2026-10-29")
+        store.loadSample(today: "2026-10-29")
         let file = ExportFile(store: store)
         XCTAssertEqual(file.entries.count, 22)
         XCTAssertEqual(file.bills.count, 6)

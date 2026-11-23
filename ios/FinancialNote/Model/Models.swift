@@ -163,6 +163,18 @@ final class Asset {
     /// Not called `updated`: Core Data already uses that name for its own "has changes" flag.
     var updatedOn: String
     var sample: Bool
+    /// Anything the user wants to remember about it ("SJC ring, at home", "6-month term").
+    var note: String? = nil
+    /// What you hold, in its own unit: 5 (chỉ), 1000 ($), 0.05 (BTC). With a unit, the worth in
+    /// đồng follows today's price when prices sync. Nil for assets kept in đồng.
+    var quantity: Double? = nil
+    /// The unit of `quantity`, a `HoldingUnit` raw value ("chi", "usd", "btc"…).
+    var unitRaw: String? = nil
+
+    var unit: HoldingUnit? {
+        get { unitRaw.flatMap(HoldingUnit.init(rawValue:)) }
+        set { unitRaw = newValue?.rawValue }
+    }
 
     var kind: AssetKind {
         get { AssetKind(rawValue: kindRaw) ?? .available }

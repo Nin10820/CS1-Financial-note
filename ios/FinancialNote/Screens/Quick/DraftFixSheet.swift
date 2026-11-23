@@ -9,20 +9,7 @@ struct DraftFixSheet: View {
     var body: some View {
         NavigationStack {
             EntryForm(draft: $edit)
-                .navigationTitle("Fix this line")
-                .toolbarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { dismiss() }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done", systemImage: "checkmark") {
-                            edit.apply(to: &draft)
-                            dismiss()
-                        }
-                        .disabled(!edit.isValid)
-                    }
-                }
+                .sheetHeader("Fix this line", trailing: .save(enabled: edit.isValid) { edit.apply(to: &draft); dismiss() })
         }
         .onAppear { edit = EntryDraft(draft) }
     }

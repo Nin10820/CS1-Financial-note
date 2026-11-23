@@ -26,8 +26,8 @@ struct LocalStore {
     func prepareOnLaunch(today: String = Day.today()) {
         refreshAssetIcons()
         guard profile == nil else { return }
+        // A new phone starts empty; the made-up data comes in only from Profile › Load sample data.
         context.insert(Profile(joined: today))
-        loadSample(today: today)
         try? context.save()
     }
 
@@ -146,7 +146,9 @@ struct LocalStore {
 
     /// Money put in, taken out, or the value now. Records a move and keeps the asset's amount right.
     /// `amount` is what was put in or taken out, or for `.value` what the asset is worth now.
-    func move(_ asset: Asset, _ kind: AssetMoveKind, amount: Int, date: String) {
+    /// Returns the move it wrote, so it can be undone.
+    @discardableResult
+    func move(_ asset: Asset, _ kind: AssetMoveKind, amount: Int, date: String) -> AssetMove? {
         recordStart(asset)
         let change: Int
         switch kind {
@@ -154,11 +156,90 @@ struct LocalStore {
         case .takeOut: change = -min(amount, asset.amount)
         case .value: change = amount - asset.amount
         }
-        guard change != 0 else { return }
+        guard change != 0 else { return nil }
         asset.amount += change
         if date > asset.updatedOn { asset.updatedOn = date }
-        context.insert(AssetMove(title: asset.name, icon: asset.icon, amount: change, date: date, assetId: asset.id, kind: kind))
+        // Held in units (gold, dollars, coins): money in or out buys or sells some at today's price.
+        if kind != .value { shiftQuantity(asset, byDong: change) }
+        let m = AssetMove(title: asset.name, icon: asset.icon, amount: change, date: date, assetId: asset.id, kind: kind)
+        context.insert(m)
         shiftWorth(by: change, from: date)
+        try? context.save()
+        return m
+    }
+
+    /// Put in, take out or set what's held in the asset's own unit (2 phân, 100 $): the đồng
+    /// follow from today's price, and the quantity is set exactly.
+    @discardableResult
+    func moveUnits(_ asset: Asset, _ kind: AssetMoveKind, units: Double, price: Double, date: String) -> AssetMove? {
+        let held = asset.quantity ?? 0
+        let newQuantity: Double
+        let dong: Int
+        switch kind {
+        case .putIn:
+            newQuantity = held + units
+            dong = Int((units * price).rounded())
+        case .takeOut:
+            let out = min(units, held)
+            newQuantity = held - out
+            dong = Int((out * price).rounded())
+        case .value:
+            newQuantity = units
+            dong = Int((units * price).rounded())
+        }
+        let m = move(asset, kind, amount: dong, date: date)
+        asset.quantity = (newQuantity * 10_000).rounded() / 10_000
+        try? context.save()
+        return m
+    }
+
+    /// Deletes one line of an asset's history (or undoes the last one): the asset's amount and
+    /// the Total Asset line go back as if it never happened.
+    func removeMove(_ m: AssetMove) {
+        if let id = m.assetId, let asset = all(Asset.self).first(where: { $0.id == id }) {
+            asset.amount = max(0, asset.amount - m.amount)
+            if m.kind != .value { shiftQuantity(asset, byDong: -m.amount) }
+        }
+        shiftWorth(by: -m.amount, from: m.date)
+        context.delete(m)
+        try? context.save()
+    }
+
+    /// Changes how much of its unit an asset holds by this many đồng at today's price.
+    private func shiftQuantity(_ asset: Asset, byDong change: Int) {
+        guard let q = asset.quantity, let unit = asset.unit, let price = Market.price(unit), price > 0 else { return }
+        asset.quantity = max(0, ((q + Double(change) / price) * 10_000).rounded() / 10_000)
+    }
+
+    /// Sets every asset held in units to quantity × today's price. One "Value changed" line a
+    /// day per asset: a second sync the same day adjusts that line instead of adding another.
+    func revalueHoldings(today: String) {
+        let moves = all(AssetMove.self)
+        for asset in all(Asset.self) {
+            guard let q = asset.quantity, let unit = asset.unit, let price = Market.price(unit) else { continue }
+            let target = Int((q * price).rounded())
+            let delta = target - asset.amount
+            guard delta != 0 else { continue }
+            recordStart(asset)
+            let latest = moves.filter { $0.assetId == asset.id }.max { ($0.date, $0.id) < ($1.date, $1.id) }
+            if let m = latest, m.kind == .value, m.date == today {
+                m.amount += delta
+                if m.amount == 0 { context.delete(m) }
+            } else {
+                context.insert(AssetMove(title: asset.name, icon: asset.icon, amount: delta, date: today,
+                                         assetId: asset.id, kind: .value))
+            }
+            asset.amount = target
+            asset.updatedOn = max(asset.updatedOn, today)
+            shiftWorth(by: delta, from: today)
+        }
+        try? context.save()
+    }
+
+    /// Sets what an asset holds in its own unit (or clears it with nil).
+    func setHolding(_ asset: Asset, quantity: Double?, unit: HoldingUnit?) {
+        asset.quantity = unit == nil ? nil : quantity
+        asset.unit = quantity == nil ? nil : unit
         try? context.save()
     }
 
@@ -212,9 +293,10 @@ struct LocalStore {
     }
 
     /// Renames or regroups an asset; its history keeps up with the new name.
-    func editAsset(_ asset: Asset, name: String, kind: AssetKind) {
+    func editAsset(_ asset: Asset, name: String, kind: AssetKind, note: String? = nil) {
         asset.name = name
         asset.kind = kind
+        asset.note = note
         asset.icon = AssetMath.guessIcon(name, kind: kind)
         for m in all(AssetMove.self) where m.assetId == asset.id {
             m.title = name

@@ -36,14 +36,7 @@ struct TransferSheet: View {
             }
             .padding(.bottom, noteFocused ? Space.s8 : 0)
             .background(Tokens.canvas)
-            .navigationTitle("Check payment")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Back") { dismiss() }
-                        .foregroundStyle(Tokens.brand700)
-                }
-            }
+            .sheetHeader("Check payment", leading: .back, trailing: .none)
         }
         .sheet(isPresented: $picking) { Group {
             PayFromSheet(selected: draft.from) { bank in
@@ -86,10 +79,7 @@ struct TransferSheet: View {
 
     private var amount: some View {
         HStack(alignment: .firstTextBaseline, spacing: 2) {
-            Text(Money.format(draft.amount))
-                .font(AppFont.amount(44))
-                .monospacedDigit()
-                .contentTransition(.numericText())
+            BigAmount(value: draft.amount)
             Text("đ").font(AppFont.currency(for: 44))
         }
         .foregroundStyle(draft.amount == 0 ? Tokens.grey300 : Tokens.text900)
@@ -354,8 +344,7 @@ struct PayFromSheet: View {
                 .padding(Space.s20)
             }
             .background(Tokens.canvas)
-            .navigationTitle("Pay from")
-            .toolbarTitleDisplayMode(.inline)
+            .sheetHeader("Pay from")
         }
         .presentationDetents([.medium, .large])
     }

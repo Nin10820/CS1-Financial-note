@@ -78,36 +78,12 @@ struct WeekStrip: View {
 /// month title opens the month / year wheel (964:33538) on its own.
 struct DayPickerSheet: View {
     @Binding var day: String
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationStack {
-            DatePicker(
-                "Day",
-                selection: Binding(get: { Day.date(day) }, set: { day = Day.iso($0) }),
-                in: ...Date.now,
-                displayedComponents: .date
-            )
-            .datePickerStyle(.graphical)
-            .tint(Tokens.brand500)
-            .padding(.horizontal)
-            .navigationTitle("Day")
-            .toolbarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Today") { day = Day.today() }
-                        .foregroundStyle(Tokens.text900)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                        .font(AppFont.main(14, .semibold))
-                        .foregroundStyle(Tokens.brand700)
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
+        DateSheet(date: $day, title: "Day", latest: Day.today(), today: Day.today())
     }
 }
+
 
 /// Monthly (Figma Today › Monthly): months side by side, each with what went out,
 /// "4,608K đ / October". The picked one sits in the middle; scroll sideways or tap one to change it.
