@@ -100,6 +100,26 @@
   --sp-24: 24px;
   --sp-32: 32px;
 
+  /* Type sizes — one scale, as in ios/FinancialNote/Design/Fonts.swift. Screens use these, never px. */
+  --fs-10: 10px;
+  --fs-11: 11px; /* tab labels, small captions */
+  --fs-12: 12px; /* Capture: dates under titles, counts, hints */
+  --fs-13: 13px; /* legend names, chips */
+  --fs-14: 14px; /* Text-body 14: rows, buttons, form labels */
+  --fs-15: 15px; /* list row titles */
+  --fs-16: 16px; /* Text-body 16: bigger body, row amounts */
+  --fs-17: 17px; /* bar titles */
+  --fs-18: 18px; /* H6, section titles over a card */
+  --fs-20: 20px;
+  --fs-22: 22px; /* section titles: Recent, Shortcuts */
+  --fs-24: 24px; /* page titles, the greeting */
+  --fs-26: 26px; /* the "Adding new …" lead */
+  --fs-28: 28px;
+  --fs-32: 32px;
+  --fs-36: 36px; /* big amounts */
+  --fs-40: 40px;
+  --fs-44: 44px; /* the date and month headers */
+
   /* Corners (Corner-*) */
   --corner-2: 2px;
   --corner-4: 4px;
@@ -157,17 +177,128 @@
   );
 
   /* Layers (ios/DESIGN.md): every page and sheet sits on the canvas; cards and rows are white. */
-  --canvas: #eaecf0;
+  --canvas: #f2f3f6;
   --card: var(--bg-white);
   --segment-on: #ffffff; /* picked pill on a grey track */
   --keypad-tray: #dfe1e6;
   --keypad-key: #ffffff;
+  --keypad-delete: #cdd5df; /* the ⌫ key */
   --action: #3b6922; /* prominent buttons with white text */
   --success: #079455; /* gain, done */
   --today-red: #d92d20; /* the only red: today's dot */
   --on-dark: #dce5d6;
   --on-dark-muted: #b3bfad;
   --brand-900: #14270c;
+  /* ── Palettes (iOS Tokens.billTile / assetKind / assetTile / category). Pick from these;
+     don't invent new hues in a screen. ── */
+  /* Bill tiles: solid, and soft background + ink for the statement list. */
+  --bill-house: #dd2590; /* pink, so purple stays for installments */
+  --bill-installment: #7a5af8; /* every installment on Due */
+  --bill-other: #4b5565; /* Other payments on Due */
+  --bill-drop: #1bacee;
+  --bill-gas-pump: #15b79e;
+  --bill-lightning: #ff4405;
+  --bill-phone: #5fa82f;
+  --bill-student: #1570ef;
+  --bill-monitor: #c85a34;
+  --bill-bell: #364152;
+  --bill-house-soft: #fce7f6;
+  --bill-house-ink: #c11574;
+  --bill-drop-soft: #dff2ff;
+  --bill-drop-ink: #0085ca;
+  --bill-gas-pump-soft: #ccfbef;
+  --bill-gas-pump-ink: #107569;
+  --bill-lightning-soft: #ffe6d5;
+  --bill-lightning-ink: #c4320a;
+  --bill-phone-soft: #e2f4d3;
+  --bill-phone-ink: #3b6922;
+  --bill-student-soft: #d1e9ff;
+  --bill-student-ink: #1570ef;
+  --bill-monitor-soft: #f8eadc;
+  --bill-monitor-ink: #c85a34;
+  --bill-bell-soft: #eaecf0;
+  --bill-bell-ink: #364152;
+  /* Asset groups (pies, legends). */
+  --asset-available: var(--brand-600);
+  --asset-growing: #eaaa08;
+  --asset-aside: #5d65ef;
+  --asset-owed: #e5562a;
+  /* Asset tiles (solid, white mark). */
+  --asset-gold: #f4b400;
+  --asset-fund: #1570ef;
+  --asset-bank: #6927da;
+  --asset-cash: #4c8a26;
+  --asset-lent: #e5562a;
+  --asset-usd: #12805c;
+  --asset-stock: #0e9384;
+  --asset-coin: #f79009;
+  --asset-piggy: #dd2590;
+  /* What a spend was for (Analytics), and how needed it was. */
+  --kind-housing: #7a5af8;
+  --kind-health: #f04438;
+  --kind-education: #0ba5ec;
+  --kind-technology: #475467;
+  --kind-hobbies: #e0a100;
+  --kind-shopping: #ee46bc;
+  --kind-travel: #00ba90;
+  --kind-social: #ff8000;
+  --kind-subscriptions: #6172f3;
+  --need-worthwhile: #2e90fa;
+  --need-optional: #98a2b3;
+  /* Chart accents: orange (money out cards), blue, gold (saving goal). */
+  --chart-orange: #ff8000;
+  --chart-blue: #2e90fa;
+  --chart-gold: #ffc400;
+  --chart-gold-ink: #e0a100;
+  --chart-gold-track: #fff3c4;
+  --chart-green: #00c900;
+  --chart-teal: #00ba90;
+  --chart-red: #ff4d00;
+  /* Who you still owe, in order. */
+  --debt-1: #f97066;
+  --debt-2: #fdb022;
+  --debt-3: #7a5af8;
+  --debt-4: #2e90fa;
+  --debt-5: #00ba90;
+  --debt-6: #ee46bc;
+  /* Money out / in signs on the cards. */
+  --flow-out: #e5562a;
+  /* Family loans: money received. Yourself: learning, moving, health. */
+  --loan-received: #7a5af8;
+  --self-learning: #2e90fa;
+  --self-moving: #0ba5ec;
+  --self-health: #6172f3;
+  /* The profile avatar. */
+  --avatar: #ec6531;
+  /* Category label backgrounds. */
+  --received-soft: #efeafd;
+  /* Delete buttons (system destructive red) and their soft fill. */
+  --danger: #d92d20;
+  --danger-soft: #fee4e2;
+  /* Quiet amber note (the report-a-problem warning). */
+  --warn-bg: #fffaeb;
+  --warn-bd: #fedf89;
+  --warn-ink: #b54708;
+  /* Surfaces that stay the same in both modes. */
+  --white: #ffffff; /* marks on coloured tiles and the dark card */
+  --hero-from: #345824; /* the dark green card */
+  --hero-to: #14270c;
+  --camera-bg: #0d121c; /* Scan, always dark */
+  --camera-surface: #1d2433;
+  /* Tag fills (Select tag). */
+  --tag-food: #f8eadc;
+  --tag-drinks: #bde7fa;
+  --tag-transit: #ccfbef;
+  --tag-health: #c11574;
+  --tag-housing: #e0eaff;
+  --tag-education: #c7d7fe;
+  --tag-snacks: #b42318;
+  --tag-gas: #ffe6d5;
+  --tag-shopping: #fce7f6;
+  --tag-internet: #e2f4d3;
+  --tag-clothing: #fef0c7;
+  --tag-medical: #fee4e2;
+
   /* Invested in people: family leans pink, yourself blue. */
   --life-family: #dd2590;
   --life-self: #1570ef;
@@ -222,10 +353,12 @@
   --blue-700: #4fb8f0;
   --teal-200: #0e3b33;
   --teal-500: #2ed3b7;
+  --lime-500: #85c443;
   --canvas: #0c1019;
   --segment-on: #364152;
   --keypad-tray: #272a32;
   --keypad-key: #364152;
+  --keypad-delete: #4b5565;
   --success: #47cd89;
   --today-red: #f97066;
   --dark-2: rgb(0 0 0 / 10%);
@@ -233,6 +366,33 @@
   --dark-6: rgb(255 255 255 / 6%);
   --dark-8: rgb(255 255 255 / 8%);
   --page-glow: linear-gradient(180deg, #13240c 0%, var(--canvas) 100%);
+  /* Palettes lift a step on dark (iOS Tokens dark values). */
+  --bill-house-soft: #4a1036;
+  --bill-house-ink: #f670c7;
+  --bill-drop-soft: #0b2c40;
+  --bill-drop-ink: #4fb8f0;
+  --bill-gas-pump-soft: #0e3b33;
+  --bill-gas-pump-ink: #2ed3b7;
+  --bill-lightning-soft: #4a1e0a;
+  --bill-lightning-ink: #ff8a5c;
+  --bill-phone-soft: #1c3314;
+  --bill-phone-ink: #9cd472;
+  --bill-student-soft: #0f2a4d;
+  --bill-student-ink: #5b9bf5;
+  --bill-monitor-soft: #3d2618;
+  --bill-monitor-ink: #e5875f;
+  --bill-bell-soft: #1d2533;
+  --bill-bell-ink: #cdd5df;
+  --asset-growing: #fac515;
+  --asset-aside: #8b91f5;
+  --asset-owed: #f07a55;
+  --chart-gold-track: #3d3310;
+  --received-soft: #2a1f4d;
+  --danger: #f97066;
+  --danger-soft: #3f1512;
+  --warn-bg: #2b2006;
+  --warn-bd: #5c4210;
+  --warn-ink: #fdb022;
   --life-family: #f670c7;
   --life-self: #53b1fd;
   --life-family-bg: linear-gradient(135deg, #3d0f2e, #1e0a18);

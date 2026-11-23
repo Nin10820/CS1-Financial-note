@@ -12,18 +12,18 @@ export type TagInfo = {
 }
 
 export const DEFAULT_TAGS: TagInfo[] = [
-  { name: "Food", mark: "🍴", fill: "#F8EADC" },
-  { name: "Drinks", mark: "☕", fill: "#BDE7FA" },
-  { name: "Public Transit", mark: "🚌", fill: "#CCFBEF" },
-  { name: "Health", mark: "♥", fill: "#C11574", whiteText: true },
-  { name: "Housing", mark: "🏠", fill: "#E0EAFF" },
-  { name: "Education", mark: "🎓", fill: "#C7D7FE" },
-  { name: "Snacks", mark: "🧁", fill: "#B42318", whiteText: true },
-  { name: "Gas", mark: "⛽", fill: "#FFE6D5" },
-  { name: "Shopping", mark: "🛍", fill: "#FCE7F6" },
-  { name: "Internet & Phone", mark: "📶", fill: "#E2F4D3" },
-  { name: "Clothing", mark: "👕", fill: "#FEF0C7" },
-  { name: "Medical", mark: "✚", fill: "#FEE4E2" },
+  { name: "Food", mark: "🍴", fill: "var(--tag-food)" },
+  { name: "Drinks", mark: "☕", fill: "var(--tag-drinks)" },
+  { name: "Public Transit", mark: "🚌", fill: "var(--tag-transit)" },
+  { name: "Health", mark: "♥", fill: "var(--tag-health)", whiteText: true },
+  { name: "Housing", mark: "🏠", fill: "var(--tag-housing)" },
+  { name: "Education", mark: "🎓", fill: "var(--tag-education)" },
+  { name: "Snacks", mark: "🧁", fill: "var(--tag-snacks)", whiteText: true },
+  { name: "Gas", mark: "⛽", fill: "var(--tag-gas)" },
+  { name: "Shopping", mark: "🛍", fill: "var(--tag-shopping)" },
+  { name: "Internet & Phone", mark: "📶", fill: "var(--tag-internet)" },
+  { name: "Clothing", mark: "👕", fill: "var(--tag-clothing)" },
+  { name: "Medical", mark: "✚", fill: "var(--tag-medical)" },
 ]
 
 export const tagInfo = (name: string) => DEFAULT_TAGS.find((t) => t.name === name)

@@ -334,7 +334,7 @@ export function BillTile({ bill, size = 36, soft, color }: { bill: Bill; size?: 
   return (
     <span
       className="bill-tile"
-      style={{ width: size, height: size, background: soft ? t.soft : color ?? t.solid, color: soft ? t.ink : "#fff", borderRadius: size >= 36 ? 12 : 10 }}
+      style={{ width: size, height: size, background: soft ? t.soft : color ?? t.solid, color: soft ? t.ink : "var(--white)", borderRadius: size >= 36 ? 12 : 10 }}
     >
       <Icon name={bill.icon} size={Math.round(size * 0.56)} />
     </span>

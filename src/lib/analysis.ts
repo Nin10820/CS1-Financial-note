@@ -154,16 +154,16 @@ export type SpendKind =
 
 export const KIND_LOOK: Record<SpendKind, { icon: IconName; color: string }> = {
   "Food & Drinks": { icon: "fork-knife", color: "var(--category-food)" },
-  "Housing & Utilities": { icon: "house", color: "#7a5af8" },
+  "Housing & Utilities": { icon: "house", color: "var(--kind-housing)" },
   Transportation: { icon: "motorcycle", color: "var(--category-transport)" },
-  "Health & Fitness": { icon: "heartbeat", color: "#f04438" },
-  Education: { icon: "graduation-cap", color: "#0ba5ec" },
-  Technology: { icon: "device-mobile", color: "#475467" },
-  Hobbies: { icon: "game-controller", color: "#e0a100" },
-  Shopping: { icon: "shopping-bag", color: "#ee46bc" },
-  Travel: { icon: "airplane", color: "#00ba90" },
-  "Social & Gifts": { icon: "gift", color: "#ff8000" },
-  Subscriptions: { icon: "repeat", color: "#6172f3" },
+  "Health & Fitness": { icon: "heartbeat", color: "var(--kind-health)" },
+  Education: { icon: "graduation-cap", color: "var(--kind-education)" },
+  Technology: { icon: "device-mobile", color: "var(--kind-technology)" },
+  Hobbies: { icon: "game-controller", color: "var(--kind-hobbies)" },
+  Shopping: { icon: "shopping-bag", color: "var(--kind-shopping)" },
+  Travel: { icon: "airplane", color: "var(--kind-travel)" },
+  "Social & Gifts": { icon: "gift", color: "var(--kind-social)" },
+  Subscriptions: { icon: "repeat", color: "var(--kind-subscriptions)" },
   Other: { icon: "dots-three-circle", color: "var(--grey-400)" },
 }
 
@@ -210,7 +210,7 @@ export function spendKind(e: Entry): SpendKind {
 /** How needed a spend is — a soft read for the user, never a judgement shown in red. */
 export type Need = "Essential" | "Worthwhile" | "Optional"
 export const NEEDS: Need[] = ["Essential", "Worthwhile", "Optional"]
-export const NEED_COLOR: Record<Need, string> = { Essential: "var(--brand-500)", Worthwhile: "#2e90fa", Optional: "#98a2b3" }
+export const NEED_COLOR: Record<Need, string> = { Essential: "var(--brand-500)", Worthwhile: "var(--need-worthwhile)", Optional: "var(--need-optional)" }
 export const NEED_HINT: Record<Need, string> = {
   Essential: "Home, meals, getting around and health — the things that keep the month running.",
   Worthwhile: "Things that make life better: learning, people, trips, tools. Worth it, and easy to trim a little.",
@@ -230,11 +230,11 @@ export function spendNeed(e: Entry): Need {
 export type IncomeKind = "Salary" | "Business & selling" | "Rent" | "Freelance" | "Interest & investing" | "Paid back" | "Other"
 export const INCOME_COLOR: Record<IncomeKind, string> = {
   Salary: "var(--brand-500)",
-  "Business & selling": "#ff8000",
-  Rent: "#7a5af8",
-  Freelance: "#00ba90",
-  "Interest & investing": "#e0a100",
-  "Paid back": "#2e90fa",
+  "Business & selling": "var(--chart-orange)",
+  Rent: "var(--kind-housing)",
+  Freelance: "var(--chart-teal)",
+  "Interest & investing": "var(--chart-gold-ink)",
+  "Paid back": "var(--chart-blue)",
   Other: "var(--grey-400)",
 }
 export function incomeKind(e: Entry): IncomeKind {

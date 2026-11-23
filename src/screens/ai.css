@@ -7,7 +7,7 @@
   margin: 0;
   color: var(--text-900);
   font-family: var(--font-heading);
-  font-size: 32px;
+  font-size: var(--fs-32);
   font-weight: var(--weight-m);
 }
 .ai__body {
@@ -26,18 +26,18 @@
   margin: var(--sp-8) 0 0;
   color: var(--text-900);
   font-family: var(--font-heading);
-  font-size: 24px;
+  font-size: var(--fs-24);
   font-weight: var(--weight-m);
 }
 .ai__hello p {
   margin: 0;
   color: var(--grey-400);
-  font-size: 14px;
+  font-size: var(--fs-14);
 }
 .ai__label {
   margin: 0 0 var(--sp-8);
   color: var(--grey-400);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: var(--weight-s);
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -65,7 +65,7 @@
 }
 .ai__shortcut span {
   color: var(--text-900);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: var(--weight-s);
   line-height: 1.3;
 }
@@ -91,7 +91,7 @@
   border-radius: var(--rounded);
   background: var(--bg-white);
   color: var(--text-700);
-  font-size: 13px;
+  font-size: var(--fs-13);
   font-weight: var(--weight-m);
 }
 .ai__chip:active {
@@ -100,7 +100,7 @@
 .ai__none {
   margin: 0;
   color: var(--grey-400);
-  font-size: 14px;
+  font-size: var(--fs-14);
 }
 .ai__recents {
   display: flex;
@@ -134,14 +134,14 @@
   flex: 1;
   overflow: hidden;
   color: var(--text-900);
-  font-size: 14px;
+  font-size: var(--fs-14);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ai__recent-meta {
   flex-shrink: 0;
   color: var(--grey-400);
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 /* The composer sits just above the tab bar. */
 .ai__composer {
@@ -166,6 +166,6 @@
   background: var(--bg-white);
   box-shadow: 0 0 0 0.5px var(--dark-6), 0 1px 8px var(--dark-4);
   color: var(--grey-400);
-  font-size: 15px;
+  font-size: var(--fs-15);
   text-align: left;
 }

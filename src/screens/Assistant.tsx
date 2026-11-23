@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react"
-import { Button, ChatBubble, IconButton, LogoMark, TransItem } from "../components/ui"
+import { Button, ChatBubble, IconButton, LogoMark } from "../components/ui"
+import { ListRow, Tile } from "../components/kit"
 import { Icon } from "../components/Icon"
 import { greeting, longDate, money, shortDate, today } from "../lib/format"
 import { parseNote, type Draft } from "../lib/parse"
-import { CATEGORIES, categoryTone, uid, type CategoryName, type Entry } from "../lib/store"
+import { CATEGORIES, uid, type CategoryName, type Entry } from "../lib/store"
 import { answer, askedFor, type Report } from "../lib/answers"
 import type { Bill } from "../lib/bills"
 import ModalSheet, { ModalHeader } from "./ModalSheet"
@@ -431,14 +432,15 @@ function Reply({
           editing === d.key ? (
             <DraftEditor key={d.key} draft={d} onPatch={(p) => onPatch(d.key, p)} onDone={() => onEdit(null)} onRemove={() => onRemove(d.key)} />
           ) : d.amount ? (
-            <TransItem
+            <ListRow
               key={d.key}
+              tile={<Tile bg={d.flow === "in" ? "var(--brand-600)" : "var(--flow-out)"} icon={d.flow === "in" ? "arrow-down-right" : "arrow-up-right"} size={36} />}
               title={d.title}
-              category={d.assumedThousands ? `${d.category} · read as ${money(d.amount)}` : d.category}
-              categoryTone={categoryTone(d.category)}
-              amount={money(d.amount)}
-              flow={d.flow}
-              onEdit={() => onEdit(d.key)}
+              sub={d.assumedThousands ? `${d.category} · read as ${money(d.amount)}` : d.category}
+              amount={`${d.flow === "out" ? "-" : "+"}${money(d.amount)}đ`}
+              label={`Edit ${d.title}`}
+              onClick={() => onEdit(d.key)}
+              trailing={<IconButton icon="edit" label={`Edit ${d.title}`} variant="plain" size={32} iconSize={14} onClick={() => onEdit(d.key)} />}
             />
           ) : (
             <div key={d.key} className="fn-trans fn-trans--confirm confirm-card__missing">

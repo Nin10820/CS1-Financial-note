@@ -170,9 +170,9 @@ export function FamilyPage({ care, entries, birthYear, hidden, onBack }: { care:
 
 type SelfGroup = "Learning" | "Moving" | "Health"
 const SELF: Record<SelfGroup, { icon: IconName; color: string; words: string[] }> = {
-  Learning: { icon: "graduation-cap", color: "#2e90fa", words: ["khoa hoc", "course", "sach", "book", "ielts", "toeic", "workshop", "tai lieu", "udemy", "lop hoc", "class", "hoc phi"] },
-  Moving: { icon: "heartbeat", color: "#0ba5ec", words: ["gym", "boi", "yoga", "cau long", "chay bo", "swim", "tennis", "bong da", "pilates"] },
-  Health: { icon: "heart", color: "#6172f3", words: ["kham", "thuoc", "vitamin", "nha khoa", "nieng rang", "tram rang"] },
+  Learning: { icon: "graduation-cap", color: "var(--self-learning)", words: ["khoa hoc", "course", "sach", "book", "ielts", "toeic", "workshop", "tai lieu", "udemy", "lop hoc", "class", "hoc phi"] },
+  Moving: { icon: "heartbeat", color: "var(--self-moving)", words: ["gym", "boi", "yoga", "cau long", "chay bo", "swim", "tennis", "bong da", "pilates"] },
+  Health: { icon: "heart", color: "var(--self-health)", words: ["kham", "thuoc", "vitamin", "nha khoa", "nieng rang", "tram rang"] },
 }
 type SelfLine = { id: string; group: SelfGroup; title: string; date: string; amount: number }
 
@@ -325,7 +325,7 @@ export function AssetDetail({ asset, moves, hidden, today, onBack, ...act }: { a
           {mine.map((m) => (
             <ListRow
               key={m.id}
-              tile={<Tile bg={m.kind === "value" ? "var(--grey-400)" : m.amount < 0 ? "#e5562a" : "var(--brand-600)"} icon={m.kind === "value" ? "chart-line-up" : m.amount < 0 ? "arrow-up-right" : "arrow-down-right"} />}
+              tile={<Tile bg={m.kind === "value" ? "var(--grey-400)" : m.amount < 0 ? "var(--flow-out)" : "var(--brand-600)"} icon={m.kind === "value" ? "chart-line-up" : m.amount < 0 ? "arrow-up-right" : "arrow-down-right"} />}
               title={MOVE_LABEL[m.kind ?? "in"]}
               trailing={
                 <button type="button" className="hist__del" aria-label={`Delete this ${MOVE_LABEL[m.kind ?? "in"].toLowerCase()} line`} onClick={() => act.onRemoveMove(m.id)}>
@@ -872,7 +872,7 @@ export function DebtHistorySheet({ bills, loans, hidden, onClose }: { bills: Bil
     )
   const fam = loans.map((l) => ({
     id: l.id,
-    tile: <Tile bg={l.kind === "received" ? "#7a5af8" : "var(--brand-600)"} mark={l.who.slice(0, 1).toUpperCase()} />,
+    tile: <Tile bg={l.kind === "received" ? "var(--loan-received)" : "var(--brand-600)"} mark={l.who.slice(0, 1).toUpperCase()} />,
     title: l.title,
     sub: `${LOAN_LABEL[l.kind]} · ${shortDay(l.date)}`,
     amount: hidden ? "•••" : `${l.kind === "received" ? "+" : "−"}${money(l.amount)}đ`,
@@ -938,7 +938,7 @@ export function LoanPersonSheet({
           {rows.map((l) => (
             <ListRow
               key={l.id}
-              tile={<Tile bg={l.kind === "received" ? "#7a5af8" : "var(--brand-600)"} icon={l.kind === "received" ? "arrow-down-right" : "arrow-up-right"} />}
+              tile={<Tile bg={l.kind === "received" ? "var(--loan-received)" : "var(--brand-600)"} icon={l.kind === "received" ? "arrow-down-right" : "arrow-up-right"} />}
               title={l.title}
               sub={`${LOAN_LABEL[l.kind]} · ${shortDay(l.date)}`}
               amount={hidden ? "•••" : `${money(l.amount)}đ`}

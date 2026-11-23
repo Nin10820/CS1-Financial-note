@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
-import { Amount, Button, IconButton, MonthCard, SegmentedTabs, GlassGroup } from "../components/ui"
+import { Amount, Button, IconButton, MonthCard } from "../components/ui"
+import { Segmented } from "../components/kit"
 import StickyHeader from "../components/StickyHeader"
 import { Icon } from "../components/Icon"
 import { money, today } from "../lib/format"
@@ -52,13 +53,13 @@ export function ComingUp({
     >
       <div className="coming" ref={root}>
         <div className="coming__tabs">
-          <SegmentedTabs
+          <Segmented
             label="View"
             value={view}
             onChange={setView}
             options={[
-              { value: "card", label: "Card", icon: "align-left" },
-              { value: "month", label: "Month", icon: "squares-four" },
+              { value: "card", label: "Card" },
+              { value: "month", label: "Month" },
             ]}
           />
         </div>
@@ -204,9 +205,7 @@ export function Installments({
           </>
         }
         right={
-          <GlassGroup aria-label="Installment actions" className="pill-group__glass">
-            <IconButton icon="plus-18" label="Add an installment" variant="plain" iconSize={18} onClick={onAdd} />
-          </GlassGroup>
+          <IconButton icon="plus" label="Add an installment" variant="glass" size={44} onClick={onAdd} />
         }
       />
       <div className="screen__card due-card-wrap">

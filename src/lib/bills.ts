@@ -32,17 +32,16 @@ export type Bill = {
 
 export type BillIcon = Extract<IconName, "house" | "drop" | "gas-pump" | "lightning" | "phone" | "student" | "monitor" | "bell">
 
-/** Tile colours from the Figma bill list (solid) and statement list (soft). */
+/** Tile colours from the Figma bill list (solid) and statement list (soft) — tokens.css › Palettes. */
 export const TILE: Record<BillIcon, { solid: string; soft: string; ink: string }> = {
-  // Pink, so purple stays for installments on Due.
-  house: { solid: "#dd2590", soft: "#fce7f6", ink: "#c11574" },
-  drop: { solid: "#1bacee", soft: "#dff2ff", ink: "#0085ca" },
-  "gas-pump": { solid: "#15b79e", soft: "#ccfbef", ink: "#107569" },
-  lightning: { solid: "#ff4405", soft: "#ffe6d5", ink: "#c4320a" },
-  phone: { solid: "#5fa82f", soft: "#e2f4d3", ink: "#3b6922" },
-  student: { solid: "#1570ef", soft: "#d1e9ff", ink: "#1570ef" },
-  monitor: { solid: "#c85a34", soft: "#f8eadc", ink: "#c85a34" },
-  bell: { solid: "#364152", soft: "#eaecf0", ink: "#364152" },
+  house: { solid: "var(--bill-house)", soft: "var(--bill-house-soft)", ink: "var(--bill-house-ink)" },
+  drop: { solid: "var(--bill-drop)", soft: "var(--bill-drop-soft)", ink: "var(--bill-drop-ink)" },
+  "gas-pump": { solid: "var(--bill-gas-pump)", soft: "var(--bill-gas-pump-soft)", ink: "var(--bill-gas-pump-ink)" },
+  lightning: { solid: "var(--bill-lightning)", soft: "var(--bill-lightning-soft)", ink: "var(--bill-lightning-ink)" },
+  phone: { solid: "var(--bill-phone)", soft: "var(--bill-phone-soft)", ink: "var(--bill-phone-ink)" },
+  student: { solid: "var(--bill-student)", soft: "var(--bill-student-soft)", ink: "var(--bill-student-ink)" },
+  monitor: { solid: "var(--bill-monitor)", soft: "var(--bill-monitor-soft)", ink: "var(--bill-monitor-ink)" },
+  bell: { solid: "var(--bill-bell)", soft: "var(--bill-bell-soft)", ink: "var(--bill-bell-ink)" },
 }
 
 /** Due's names for the kinds. */
@@ -53,8 +52,8 @@ export const KIND_LABEL: Record<BillKind, string> = { recurring: "Bill", install
  * is the same purple; other payments are slate.
  */
 export function billColor(b: Bill): string {
-  if (b.kind === "installment") return "#7a5af8"
-  if (b.kind === "oneoff") return "#4b5565"
+  if (b.kind === "installment") return "var(--bill-installment)"
+  if (b.kind === "oneoff") return "var(--bill-other)"
   return TILE[b.icon].solid
 }
 

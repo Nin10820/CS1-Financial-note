@@ -72,24 +72,24 @@ export const LOAN_LABEL: Record<LoanMove, string> = { received: "Received", back
 export const SAVINGS_ID = "saving-goal"
 
 export const KINDS: { kind: AssetKind; label: string; color: string; hint: string }[] = [
-  { kind: "available", label: "Available", color: "var(--brand-600)", hint: "Money you can use right away — cash, your main account." },
-  { kind: "growing", label: "Growing", color: "#eaaa08", hint: "Put somewhere to grow — gold, a fund, stocks." },
-  { kind: "aside", label: "Set aside", color: "#5d65ef", hint: "Locked away for later — a savings deposit." },
-  { kind: "owed", label: "Owed", color: "#e5562a", hint: "Money someone owes you." },
+  { kind: "available", label: "Available", color: "var(--asset-available)", hint: "Money you can use right away — cash, your main account." },
+  { kind: "growing", label: "Growing", color: "var(--asset-growing)", hint: "Put somewhere to grow — gold, a fund, stocks." },
+  { kind: "aside", label: "Set aside", color: "var(--asset-aside)", hint: "Locked away for later — a savings deposit." },
+  { kind: "owed", label: "Owed", color: "var(--asset-owed)", hint: "Money someone owes you." },
 ]
 export const kindOf = (k: AssetKind) => KINDS.find((x) => x.kind === k)!
 
 /** Solid round tile per asset: its colour and an icon, or a short mark ("Au", "₫", "$"). */
 export const ASSET_TILE: Record<AssetIcon, { bg: string; icon?: IconName; mark?: string }> = {
-  gold: { bg: "#f4b400", mark: "Au" },
-  fund: { bg: "#1570ef", icon: "chart-pie-slice" },
-  bank: { bg: "#6927da", icon: "wallet" },
-  cash: { bg: "#4c8a26", mark: "₫" },
-  lent: { bg: "#e5562a", icon: "arrow-up-right" },
-  usd: { bg: "#12805c", mark: "$" },
-  stock: { bg: "#0e9384", icon: "chart-line-up" },
-  coin: { bg: "#f79009", mark: "₿" },
-  piggy: { bg: "#dd2590", icon: "piggy-bank" },
+  gold: { bg: "var(--asset-gold)", mark: "Au" },
+  fund: { bg: "var(--asset-fund)", icon: "chart-pie-slice" },
+  bank: { bg: "var(--asset-bank)", icon: "wallet" },
+  cash: { bg: "var(--asset-cash)", mark: "₫" },
+  lent: { bg: "var(--asset-lent)", icon: "arrow-up-right" },
+  usd: { bg: "var(--asset-usd)", mark: "$" },
+  stock: { bg: "var(--asset-stock)", icon: "chart-line-up" },
+  coin: { bg: "var(--asset-coin)", mark: "₿" },
+  piggy: { bg: "var(--asset-piggy)", icon: "piggy-bank" },
 }
 
 export const guessAssetIcon = (name: string, kind: AssetKind): AssetIcon => {

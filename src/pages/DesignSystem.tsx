@@ -1,249 +1,236 @@
 import { useState, type ReactNode } from "react"
-import {
-  Amount,
-  BottomBar,
-  Button,
-  ChatBubble,
-  DatePill,
-  FilterChips,
-  GlassGroup,
-  IconButton,
-  LogoMark,
-  MonthCard,
-  PageTitle,
-  SegmentedTabs,
-  Sheet,
-  SpendCard,
-  Switch,
-  TransItem,
-} from "../components/ui"
+import { Amount, Button, ChatBubble, IconButton, LogoMark, MonthCard, Switch } from "../components/ui"
+import { AddingLead, AmountPad, AssetTile, HistoryLink, JoinedCard, Legend, ListCard, ListRow, Pie, PieCard, QuickPickCard, Segmented, StatCard, TickMark, Tile } from "../components/kit"
 import { Icon } from "../components/Icon"
+import { applyAppearance } from "../lib/theme"
 import "./design-system.css"
 
-/* Living reference for the Financial Note design system.
-   Left: tokens and components one by one. Right: the Final "Transaction" screen (Figma 765:19666)
-   rebuilt only from those components, to check the pieces add up to the design. */
+/*
+ * #/design-system — the web app's design system as it is now: the tokens in styles/tokens.css
+ * (the same names and values as ios/FinancialNote/Design/Tokens.swift) and the shared parts in
+ * components/kit.tsx and components/ui.tsx. Change a value in Figma first, then tokens.css, then
+ * Tokens.swift; every screen follows.
+ */
 
-const COLORS: { group: string; items: [string, string][] }[] = [
-  {
-    group: "Brand",
-    items: [
-      ["brand-50", "#f2faeb"],
-      ["brand-100", "#e2f4d3"],
-      ["brand-200", "#c8e9ad"],
-      ["brand-300", "#a4da7c"],
-      ["brand-400", "#83c853"],
-      ["brand-500", "#5fa82f"],
-      ["brand-700", "#3b6922"],
-      ["brand-800", "#2c481f"],
-    ],
-  },
-  {
-    group: "Grey",
-    items: [
-      ["grey-200", "#e3e8ef"],
-      ["grey-300", "#9aa4b2"],
-      ["grey-400", "#697586"],
-      ["grey-500", "#364152"],
-      ["grey-700", "#202939"],
-      ["grey-800", "#121926"],
-      ["grey-900", "#0d121c"],
-    ],
-  },
-  {
-    group: "Surfaces & borders",
-    items: [
-      ["bg-1", "#fcfcfd"],
-      ["bg-2", "#f9fafb"],
-      ["bg-3", "#f3f4f6"],
-      ["bg-4", "#eaecf0"],
-      ["bd-0", "#eef2f6"],
-      ["bd-1", "#e3e8ef"],
-      ["bd-3", "#cdd5df"],
-    ],
-  },
-  {
-    group: "Secondary & categories",
-    items: [
-      ["secondary-100", "#f8eadc"],
-      ["secondary-300", "#e5b28c"],
-      ["category-food", "#c85a34"],
-      ["category-transport", "#1570ef"],
-      ["category-received", "#4a1fb8"],
-      ["text-error", "#f04438"],
-    ],
-  },
+const swatch = (names: string[]) => names.map((n) => ({ name: n, v: `var(--${n})` }))
+const COLOURS: { group: string; items: { name: string; v: string }[] }[] = [
+  { group: "Lớp nền (ios/DESIGN.md §1)", items: swatch(["canvas", "card", "bg-4", "segment-on", "keypad-tray", "keypad-key", "keypad-delete"]) },
+  { group: "Brand", items: swatch(["brand-50", "brand-100", "brand-200", "brand-300", "brand-400", "brand-500", "brand-600", "brand-700", "brand-800", "brand-900", "action"]) },
+  { group: "Chữ", items: swatch(["text-900", "text-700", "grey-400", "grey-300", "on-dark", "on-dark-muted"]) },
+  { group: "Viền", items: swatch(["bd-0", "bd-1", "bd-2"]) },
+  { group: "Ý nghĩa", items: swatch(["success", "today-red", "danger", "flow-out", "warn-ink", "category-food", "category-transport", "category-received"]) },
 ]
-
-const TYPE: [string, string, string][] = [
-  ["t-title", "Merriweather Bold 32 / 1.3", "Transaction"],
-  ["t-title-sub", "Merriweather Regular 20 / 32", "Note"],
-  ["t-amount-32", "Montserrat SemiBold 32", "547,000"],
-  ["t-body-18-s", "Text-body/18px/[S] · 18 / 26", "List"],
-  ["t-body-16-m", "Montserrat Medium 16", "Total Spend"],
-  ["t-body-14-s", "Text-body/14px/[S] · 14 / 20", "Today"],
-  ["t-body-14-m", "Text-body/14px/[M] · 14 / 20", "grab 42k to work"],
-  ["t-body-14-r", "Text-body/14px/[R] · 14 / 20", "e.g. coffee 24k, breakfast 35k…"],
-  ["t-capture-12-m", "Capture/12px/[M] · 12 / 16", "Food"],
-  ["t-capture-12-r", "Capture/12px/[R] · 12 / 16", "9 notes · updated 21:14"],
-  ["t-micro-10-s", "10 / 14 · 550", "3 statements"],
+const PALETTES: { group: string; items: { name: string; v: string }[] }[] = [
+  { group: "Ô bill", items: swatch(["bill-house", "bill-drop", "bill-gas-pump", "bill-lightning", "bill-phone", "bill-student", "bill-monitor", "bill-bell"]) },
+  { group: "Nhóm tài sản", items: swatch(["asset-available", "asset-growing", "asset-aside", "asset-owed"]) },
+  { group: "Ô tài sản", items: swatch(["asset-gold", "asset-fund", "asset-bank", "asset-cash", "asset-lent", "asset-usd", "asset-stock", "asset-coin", "asset-piggy"]) },
+  { group: "Chi tiêu (Analytics)", items: swatch(["kind-housing", "kind-health", "kind-education", "kind-technology", "kind-hobbies", "kind-shopping", "kind-travel", "kind-social", "kind-subscriptions", "need-worthwhile", "need-optional"]) },
+  { group: "Biểu đồ & nợ", items: swatch(["chart-orange", "chart-blue", "chart-gold", "chart-teal", "debt-1", "debt-2", "debt-3", "debt-4", "debt-5", "debt-6"]) },
+  { group: "Người thân & bản thân", items: swatch(["life-family", "life-self", "loan-received", "self-learning", "self-moving", "self-health"]) },
 ]
-
-const SPACING = [2, 4, 6, 8, 12, 16, 20, 24, 32]
-const CORNERS = [2, 4, 6, 8, 12, 16, 20]
+const TYPE = [
+  [44, "Ngày và tháng ở đầu trang", "heading"],
+  [36, "Số tiền lớn", "heading"],
+  [28, "Số tiền trên thẻ nhỏ", "heading"],
+  [24, "Tiêu đề trang, lời chào", "heading"],
+  [22, "Tiêu đề mục: Recent, Shortcuts", "heading"],
+  [18, "Tiêu đề trên thẻ: Assets, Family loans", "heading"],
+  [16, "Chữ thân lớn, số tiền trên dòng", "main"],
+  [15, "Tên dòng trong danh sách", "main"],
+  [14, "Chữ thân: dòng, nút, nhãn", "main"],
+  [13, "Chú thích, chip", "main"],
+  [12, "Capture: ngày, số đếm, gợi ý", "main"],
+  [11, "Nhãn tab, chú thích nhỏ", "main"],
+] as const
 
 export default function DesignSystem() {
+  const [dark, setDark] = useState(document.documentElement.dataset.theme === "dark")
+  const [seg, setSeg] = useState<"overview" | "total" | "debt">("overview")
+  const [picked, setPicked] = useState<string | null>(null)
+  const [on, setOn] = useState(true)
   return (
     <div className="ds">
       <header className="ds-head">
-        <LogoMark size={28} />
         <div>
-          <h1 className="t-body-18-s">Financial Note — Design system</h1>
-          <p className="t-capture-12-r ds-muted">
-            Tokens và component lấy từ Figma “Finance App” (trang Final). Màn bên phải chỉ ghép từ các component này.
-          </p>
+          <h1>Financial Note — Design system</h1>
+          <p className="ds-muted">styles/tokens.css · components/kit.tsx · cùng tên và giá trị với ios/FinancialNote/Design/Tokens.swift</p>
         </div>
+        <label className="ds-theme">
+          Tối
+          <Switch
+            label="Dark mode"
+            checked={dark}
+            onChange={(v) => {
+              setDark(v)
+              applyAppearance(v ? "dark" : "light")
+            }}
+          />
+        </label>
       </header>
 
-      <div className="ds-layout">
-        <main className="ds-main">
-          <Section title="Màu" note="Tên theo biến Figma, ví dụ Base/--grey/500-Main → --grey-500">
-            {COLORS.map((g) => (
-              <div key={g.group} className="ds-swatch-group">
-                <h3 className="t-capture-12-m ds-muted">{g.group}</h3>
-                <div className="ds-swatches">
-                  {g.items.map(([name, hex]) => (
-                    <div key={name} className="ds-swatch">
-                      <span className="ds-swatch__chip" style={{ background: `var(--${name})` }} />
-                      <span className="t-capture-12-m">--{name}</span>
-                      <span className="t-capture-12-r ds-muted">{hex}</span>
-                    </div>
-                  ))}
-                </div>
+      <main className="ds-main">
+        <Section title="Màu" note="Mỗi màu là một biến trong tokens.css, có bản sáng và bản tối.">
+          {COLOURS.map((g) => (
+            <Swatches key={g.group} title={g.group} items={g.items} />
+          ))}
+        </Section>
+
+        <Section title="Bảng màu" note="Chọn từ các bảng này; màn hình không tự đặt màu mới.">
+          {PALETTES.map((g) => (
+            <Swatches key={g.group} title={g.group} items={g.items} />
+          ))}
+        </Section>
+
+        <Section title="Chữ" note="Một thang cỡ chữ --fs-*, như Fonts.swift. Bricolage cho số và tiêu đề, Montserrat cho chữ thân.">
+          <div className="ds-type">
+            {TYPE.map(([size, use, font]) => (
+              <div key={size} className="ds-type__row">
+                <code>--fs-{size}</code>
+                <span style={{ fontSize: `var(--fs-${size})`, fontFamily: font === "heading" ? "var(--font-heading)" : "var(--font-main)", color: "var(--text-900)", fontWeight: 500 }}>{use}</span>
               </div>
             ))}
-          </Section>
+          </div>
+        </Section>
 
-          <Section title="Chữ" note="Montserrat cho mọi thứ, Merriweather chỉ cho tiêu đề trang và tên tháng">
-            <div className="ds-type">
-              {TYPE.map(([cls, spec, sample]) => (
-                <div key={cls} className="ds-type__row">
-                  <span className={cls} style={{ color: "var(--text-900)" }}>
-                    {sample}
-                  </span>
-                  <span className="t-capture-12-r ds-muted">
-                    .{cls} · {spec}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Section>
-
-          <Section title="Khoảng cách & bo góc" note="sp-* và Corner-* trong Figma">
-            <div className="ds-scale">
-              {SPACING.map((s) => (
-                <div key={s} className="ds-scale__item">
-                  <span className="ds-scale__bar" style={{ width: s * 2 }} />
-                  <span className="t-capture-12-r ds-muted">sp-{s}</span>
-                </div>
-              ))}
-            </div>
-            <div className="ds-corners">
-              {CORNERS.map((c) => (
-                <div key={c} className="ds-corner" style={{ borderRadius: c }}>
-                  <span className="t-capture-12-r ds-muted">{c}</span>
-                </div>
-              ))}
-              <div className="ds-corner" style={{ borderRadius: 999 }}>
-                <span className="t-capture-12-r ds-muted">full</span>
+        <Section title="Khoảng cách & bo góc" note="--sp-* và --corner-*">
+          <div className="ds-scale">
+            {[4, 6, 8, 12, 16, 20, 24, 32].map((n) => (
+              <div key={n} className="ds-scale__item">
+                <span className="ds-scale__bar" style={{ width: `var(--sp-${n})` }} />
+                <code>--sp-{n}</code>
               </div>
-            </div>
-          </Section>
-
-          <Section
-            title="Bề mặt & nút"
-            note="Bản web dùng style cơ bản, không blur: nền trắng đặc, viền mảnh 0.5px, bóng nhẹ (Button/Light 1). Kính Liquid Glass để dành cho bản SwiftUI."
-          >
-            <LiquidGlassDemo />
-          </Section>
-
-          <Section title="Nút" note="Button và Button--Icon">
-            <div className="ds-row">
-              <Button variant="confirm" size="sm">
-                Confirm
-              </Button>
-              <Button variant="outline" size="sm">
-                Discard
-              </Button>
-              <Button variant="primary" size="lg">
-                Done
-              </Button>
-              <div className="ds-on-dark">
-                <Button variant="on-dark" icon="chart-pie">
-                  Summary
-                </Button>
-                <IconButton icon="eye-slash" label="Ẩn số tiền" variant="on-dark" size={32} iconSize={16} />
+            ))}
+          </div>
+          <div className="ds-corners">
+            {[8, 12, 14, 16, 20].map((n) => (
+              <div key={n} className="ds-corner" style={{ borderRadius: `var(--corner-${n})` }}>
+                <code>--corner-{n}</code>
               </div>
-            </div>
-            <div className="ds-row ds-row--tinted">
-              <IconButton icon="calendar" label="Lịch" variant="glass" />
-              <IconButton icon="user" label="Tài khoản" variant="glass" iconSize={24} />
-              <IconButton icon="history" label="Lịch sử" variant="glass-strong" />
-              <IconButton icon="close" label="Đóng" variant="glass-strong" />
-              <IconButton icon="plus" label="Thêm" variant="soft" iconSize={20} />
-              <IconButton icon="send-up" label="Gửi" variant="dark" iconSize={24} />
-              <IconButton icon="wallet" label="Ví" variant="glass-80" size={48} />
-              <IconButton icon="file-edit" label="Ghi chú" variant="white" size={48} />
-              <DatePill label="August 07, 2026" />
-            </div>
-          </Section>
+            ))}
+          </div>
+        </Section>
 
-          <Section title="Lựa chọn" note="Chip lọc danh sách và tabs">
-            <ChipDemo />
-            <TabsDemo />
-          </Section>
+        <Section title="Thẻ lớn & thẻ số liệu" note="JoinedCard + StatCard + PieCard (Finance › Total Asset)">
+          <div className="ds-narrow">
+            <JoinedCard
+              top={
+                <StatCard
+                  label="Total asset"
+                  amount={287_804_500}
+                  stats={[
+                    { label: "Put in", value: "264M" },
+                    { label: "Gain", value: "+23.9M", gain: true },
+                    { label: "Change", value: "+9.0%", gain: true },
+                  ]}
+                />
+              }
+              bottom={
+                <PieCard
+                  title="Where your money is"
+                  chart={
+                    <Pie
+                      picked={picked}
+                      slices={[
+                        { id: "a", value: 24, color: "var(--asset-available)" },
+                        { id: "g", value: 250, color: "var(--asset-growing)" },
+                        { id: "s", value: 13, color: "var(--asset-aside)" },
+                        { id: "o", value: 12, color: "var(--asset-owed)" },
+                      ]}
+                    >
+                      <b style={{ color: "var(--asset-growing)" }}>84%</b>
+                      <small>growing</small>
+                    </Pie>
+                  }
+                  legend={[
+                    ["a", "Available", "var(--asset-available)", "8%"],
+                    ["g", "Growing", "var(--asset-growing)", "84%"],
+                    ["s", "Set aside", "var(--asset-aside)", "4%"],
+                    ["o", "Owed", "var(--asset-owed)", "4%"],
+                  ].map(([id, name, color, p]) => (
+                    <Legend key={id} color={color} name={name} pct={p} on={picked === id} onClick={() => setPicked(picked === id ? null : id)} />
+                  ))}
+                />
+              }
+            />
+          </div>
+        </Section>
 
-          <Section title="Dòng giao dịch" note="__trans-item: ra, vào, và dạng trong thẻ xác nhận">
-            <div className="ds-card ds-narrow">
-              <TransItem title="grab 42k to work" category="Food" categoryTone="food" amount="42,000" />
-              <TransItem title="Transaction" category="Transport" categoryTone="transport" amount="45,000" />
-              <TransItem title="Peter paid me back 45k" category="Received" categoryTone="received" amount="45,000" flow="in" />
-            </div>
-            <div className="ds-card ds-narrow ds-confirm">
-              <TransItem title="Cơm tấm" category="Food" amount="35.000" onEdit={() => {}} />
-              <TransItem title="Cafe" category="Food" amount="40.000" onEdit={() => {}} />
-            </div>
-          </Section>
+        <Section title="Dòng danh sách" note="ListRow: ô tròn 40, tên trên dòng xám, số tiền bên phải (ios/DESIGN.md §6b)">
+          <div className="ds-narrow">
+            <ListCard>
+              <ListRow tile={<AssetTile icon="gold" />} title="Vàng" sub="10 chỉ · in 121M · 23 Nov" amount="129,844,994đ" amountSub="+8.5M · +7%" amountSubTone="gain" />
+              <ListRow tile={<Tile bg="var(--bill-house)" icon="house" />} title="Rent" sub="Nov 5" amount="2,500,000đ" trailing={<span className="due2-tick"><TickMark on={on} /></span>} onClick={() => setOn(!on)} done={on} />
+              <ListRow tile={<Tile bg="var(--debt-1)" mark="M" />} title="Mom" sub="got 40M · 6% a year" amount="41,093,151đ" amountSub="+1.1M interest" />
+            </ListCard>
+            <HistoryLink sub="17 changes · last 20 Nov" onClick={() => {}} />
+          </div>
+        </Section>
 
-          <Section title="Thẻ tháng" note="__inner-month: đang chọn · thường · trống · đã đánh dấu">
+        <Section title="Lựa chọn" note="Segmented (iOS segmented control) và thẻ tháng">
+          <div className="ds-narrow">
+            <Segmented
+              label="Finance view"
+              value={seg}
+              onChange={setSeg}
+              options={[
+                { value: "overview", label: "Overview" },
+                { value: "total", label: "Total Asset" },
+                { value: "debt", label: "Debt" },
+              ]}
+            />
             <div className="ds-row">
-              <MonthCard month="Jan" amount="367,000" count="3 statements" state="selected" />
-              <MonthCard month="Jan" amount="367,000" count="3 statements" state="idle" />
-              <MonthCard month="Jan" state="empty" />
-              <MonthCard month="Jan" amount="367,000" count="3 statements" state="picked" />
+              <MonthCard month="Nov" amount="4,715K" count="6 bills" state="selected" onClick={() => {}} />
+              <MonthCard month="Dec" amount="4,360K" count="5 bills" state="idle" onClick={() => {}} />
+              <MonthCard month="Jan" amount="—" count="0 bills" state="empty" onClick={() => {}} />
             </div>
-          </Section>
+          </div>
+        </Section>
 
-          <Section title="Tin nhắn" note="__chat-send">
-            <div className="ds-narrow">
-              <ChatBubble>Hôm nay ăn sáng cơm tấm 35k, cafe 40k, ăn trưa với team 58k/1ng</ChatBubble>
-            </div>
-          </Section>
+        <Section title="Chọn nhanh" note="AddingLead + QuickPickCard (New bill, New asset)">
+          <div className="ds-narrow ds-canvas">
+            <AddingLead label="kind of" chosen={false} />
+            <QuickPickCard
+              title="What kind is this?"
+              options={[
+                { id: "recurring", title: "Recurring bill", hint: "Electricity, water, internet — every month" },
+                { id: "installment", title: "Installment", hint: "Fixed parts until it's paid off" },
+              ]}
+              placeholder="e.g. Internet 250k every month on the 5th"
+              onPick={() => {}}
+              onSay={() => {}}
+            />
+          </div>
+        </Section>
 
-          <Section title="Số tiền" note="__amount ở các cỡ">
-            <div className="ds-row">
-              <Amount value="42,000" />
-              <Amount value="367,000" size={18} />
-              <Amount value="2,647,000" size={28} />
-            </div>
-          </Section>
-        </main>
+        <Section title="Bàn phím số" note="AmountPad: khay, phím và phím ⌫ dùng --keypad-*">
+          <div className="ds-narrow">
+            <AmountPad onChange={() => {}} onDone={() => {}} />
+          </div>
+        </Section>
 
-        <aside className="ds-phone-wrap" aria-label="Màn Transaction ghép từ component">
-          <p className="t-capture-12-m ds-muted">Transaction · Final (765:19666) · 402px</p>
-          <TransactionScreen />
-        </aside>
-      </div>
+        <Section title="Nút & ký hiệu" note="Button, IconButton, Tile, TickMark, Amount, ChatBubble">
+          <div className="ds-row">
+            <Button variant="primary">Save</Button>
+            <Button variant="outline">Not yet</Button>
+            <IconButton icon="user" label="Profile" variant="glass" size={44} />
+            <IconButton icon="close" label="Close" variant="glass-strong" />
+            <span className="k-btn">
+              <Icon name="plus" size={16} /> Add money
+            </span>
+            <span className="k-btn k-btn--soft">Take out</span>
+          </div>
+          <div className="ds-row">
+            <Tile bg="var(--asset-gold)" mark="Au" />
+            <Tile bg="var(--asset-coin)" mark="₿" />
+            <Tile bg="var(--self-learning)" icon="graduation-cap" />
+            <TickMark on={false} />
+            <TickMark on />
+            <LogoMark size={28} />
+            <Amount value="1,250,000" />
+          </div>
+          <ChatBubble>Coffee 25k, grab 42k</ChatBubble>
+        </Section>
+      </main>
     </div>
   )
 }
@@ -252,192 +239,25 @@ function Section({ title, note, children }: { title: string; note?: string; chil
   return (
     <section className="ds-section">
       <div className="ds-section__head">
-        <h2 className="t-body-18-s">{title}</h2>
-        {note && <p className="t-capture-12-r ds-muted">{note}</p>}
+        <h2>{title}</h2>
+        {note && <p className="ds-muted">{note}</p>}
       </div>
       <div className="ds-section__body">{children}</div>
     </section>
   )
 }
 
-function LiquidGlassDemo() {
-  const [seg, setSeg] = useState<"card" | "month">("card")
-  const [on, setOn] = useState(true)
-  const [off, setOff] = useState(false)
+function Swatches({ title, items }: { title: string; items: { name: string; v: string }[] }) {
   return (
-    <div className="ds-lg">
-      <div className="ds-lg__stage" aria-hidden="true">
-        <span className="ds-lg__blob ds-lg__blob--a" />
-        <span className="ds-lg__blob ds-lg__blob--b" />
-        <span className="ds-lg__lines">
-          {Array.from({ length: 7 }, (_, i) => (
-            <i key={i} />
-          ))}
-        </span>
-      </div>
-
-      <div className="ds-lg__grid">
-        <div className="ds-lg__cell">
-          <span className="ds-lg__swatch lg">Regular</span>
-          <span className="t-capture-12-r ds-muted">.lg · nút, thanh tab</span>
-        </div>
-        <div className="ds-lg__cell">
-          <span className="ds-lg__green">
-            <span className="ds-lg__swatch lg lg--clear">Clear</span>
-          </span>
-          <span className="t-capture-12-r ds-muted">.lg--clear · trên nền màu</span>
-        </div>
-        <div className="ds-lg__cell">
-          <span className="ds-lg__swatch lg lg--tint">Tint</span>
-          <span className="t-capture-12-r ds-muted">.lg--tint · một hành động chính</span>
-        </div>
-        <div className="ds-lg__cell">
-          <span className="ds-lg__swatch lg lg--thick">Thick</span>
-          <span className="t-capture-12-r ds-muted">.lg--thick · menu, popover</span>
-        </div>
-      </div>
-
-      <div className="ds-lg__row">
-        <IconButton icon="calendar" label="Lịch" variant="glass" />
-        <DatePill label="October 26, 2026" />
-        <GlassGroup aria-label="Thao tác" className="ds-lg__group">
-          <IconButton icon="dots-three" label="Thêm" variant="plain" iconSize={24} />
-          <IconButton icon="plus-18" label="Thêm hoá đơn" variant="plain" iconSize={18} />
-        </GlassGroup>
-        <button type="button" className="lg lg--tint lg-press lg-round" aria-label="Ghi chú mới">
-          <Icon name="file-edit" size={22} />
-        </button>
-      </div>
-      <p className="t-capture-12-r ds-muted">Bấm: nút co lại một chút. Các nút cùng việc nằm chung một viên.</p>
-
-      <div className="ds-lg__row">
-        <div style={{ width: 240 }}>
-          <SegmentedTabs
-            label="Kiểu xem"
-            value={seg}
-            onChange={setSeg}
-            options={[
-              { value: "card", label: "Card", icon: "align-left" },
-              { value: "month", label: "Month", icon: "squares-four" },
-            ]}
-          />
-        </div>
-        <Switch label="Bật" checked={on} onChange={setOn} />
-        <Switch label="Tắt" checked={off} onChange={setOff} />
-      </div>
-      <p className="t-capture-12-r ds-muted">Segmented và công tắc: núm trắng trượt qua lại.</p>
-
-      <div className="ds-lg__row">
-        <div className="note-menu lg lg--thick ds-lg__menu" role="menu" aria-label="Ví dụ menu">
-          <button type="button" role="menuitem" className="note-menu__item">
-            <Icon name="note" size={20} />
-            New note
-          </button>
-          <button type="button" role="menuitem" className="note-menu__item" disabled>
-            <Icon name="scan" size={20} />
-            Scan <span className="note-menu__soon">soon</span>
-          </button>
-        </div>
-      </div>
-      <p className="t-capture-12-r ds-muted">Menu mở ra từ chính nút bấm. Mỗi mục có icon.</p>
-    </div>
-  )
-}
-
-function ChipDemo() {
-  const [v, setV] = useState<"all" | "expense" | "receive">("all")
-  return (
-    <FilterChips
-      label="Lọc"
-      value={v}
-      onChange={setV}
-      options={[
-        { value: "all", label: "All" },
-        { value: "expense", label: "Expense" },
-        { value: "receive", label: "Receive" },
-      ]}
-    />
-  )
-}
-
-function TabsDemo() {
-  const [v, setV] = useState<"card" | "month">("card")
-  return (
-    <div className="ds-narrow ds-tinted-box">
-      <SegmentedTabs
-        label="Kiểu xem"
-        value={v}
-        onChange={setV}
-        options={[
-          { value: "card", label: "Card", icon: "align-left" },
-          { value: "month", label: "Month", icon: "squares-four" },
-        ]}
-      />
-    </div>
-  )
-}
-
-/** Figma 765:19666 rebuilt from the components above (sample data copied from the design). */
-function TransactionScreen() {
-  const [filter, setFilter] = useState<"all" | "expense" | "receive">("all")
-  const [hidden, setHidden] = useState(false)
-  const rows = [
-    { title: "grab 42k to work", category: "Food", tone: "food" as const, amount: "42,000", flow: "out" as const },
-    { title: "coffee 24k, sandwich 25k", category: "Food", tone: "food" as const, amount: "50,000", flow: "out" as const },
-    { title: "Transaction", category: "Transport", tone: "transport" as const, amount: "-45,000", flow: "out" as const },
-    {
-      title: "Peter paid me back 45k for lunch yesterday",
-      category: "Received",
-      tone: "received" as const,
-      amount: "45,000",
-      flow: "in" as const,
-    },
-  ].filter((r) => filter === "all" || (filter === "expense" ? r.flow === "out" : r.flow === "in"))
-
-  return (
-    <div className="phone">
-      <span className="phone__glow" aria-hidden="true" />
-      <div className="phone__header">
-        <IconButton icon="calendar" label="Lịch" variant="glass" />
-        <DatePill label="August 07, 2026" />
-        <IconButton icon="user" label="Tài khoản" variant="glass" iconSize={24} style={{ color: "var(--brand-500)" }} />
-      </div>
-      <PageTitle title="Transaction" sub="Note" />
-      <div className="phone__card">
-        <SpendCard
-          label="Spent on 07 Aug"
-          amount="547,000"
-          meta="9 notes · updated 21:14"
-          out="547,000"
-          in="45,000"
-          hidden={hidden}
-          onToggleHidden={() => setHidden(!hidden)}
-        />
-      </div>
-      <Sheet className="phone__sheet">
-        <div className="phone__list-head">
-          <h2 className="t-body-18-s" style={{ color: "var(--text-900)", lineHeight: 1.4 }}>
-            List
-          </h2>
-          <FilterChips
-            label="Lọc danh sách"
-            value={filter}
-            onChange={setFilter}
-            options={[
-              { value: "all", label: "All" },
-              { value: "expense", label: "Expense" },
-              { value: "receive", label: "Receive" },
-            ]}
-          />
-        </div>
-        <div>
-          {rows.map((r) => (
-            <TransItem key={r.title} title={r.title} category={r.category} categoryTone={r.tone} amount={r.amount} flow={r.flow} />
-          ))}
-        </div>
-      </Sheet>
-      <div className="phone__bottom">
-        <BottomBar />
+    <div className="ds-swatch-group">
+      <h3>{title}</h3>
+      <div className="ds-swatches">
+        {items.map((c) => (
+          <div key={c.name} className="ds-swatch">
+            <span className="ds-swatch__chip" style={{ background: c.v }} />
+            <code>--{c.name}</code>
+          </div>
+        ))}
       </div>
     </div>
   )

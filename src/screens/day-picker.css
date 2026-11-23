@@ -21,12 +21,12 @@
   border-radius: var(--rounded);
   background: none;
   color: var(--text-900);
-  font-size: 16px;
+  font-size: var(--fs-16);
   font-weight: var(--weight-s);
   line-height: 24px;
 }
 .day-picker__month:hover {
-  background: var(--white-48, rgb(255 255 255 / 48%));
+  background: var(--white-48, var(--white-48));
 }
 /* CaretDown (Figma): points right while closed, down while the wheel is open. */
 /* CaretDown: points down, open or closed (as in the design). */
@@ -58,7 +58,7 @@
   place-items: center;
   height: 36px;
   color: var(--text-disabled);
-  font-size: 16px;
+  font-size: var(--fs-16);
   font-weight: var(--weight-m);
   line-height: 20px;
 }
@@ -72,7 +72,7 @@
   border-radius: var(--rounded);
   background: none;
   color: var(--grey-500);
-  font-size: 16px;
+  font-size: var(--fs-16);
   font-weight: var(--weight-m);
   line-height: 20px;
   font-variant-numeric: tabular-nums;
@@ -99,7 +99,7 @@
 .day-picker__day.is-today {
   border: 0.5px solid rgb(13 18 28 / 64%);
   background: var(--brand-500);
-  box-shadow: inset 0 -1px 2px var(--brand-200), inset 0 0.5px 0 rgb(255 255 255 / 90%), inset 0 -0.5px 0 rgb(255 255 255 / 80%);
+  box-shadow: inset 0 -1px 2px var(--brand-200), inset 0 0.5px 0 var(--white-90), inset 0 -0.5px 0 var(--white-80);
   color: var(--text-white);
 }
 /* Has notes: light green disc. */
@@ -159,7 +159,7 @@
 }
 .wheel__row.is-center {
   color: var(--text-900);
-  font-size: 20px;
+  font-size: var(--fs-20);
 }
 .wheel__row.is-disabled {
   color: var(--bd-1);

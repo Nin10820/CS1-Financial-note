@@ -106,7 +106,7 @@
 }
 .home-empty__hello {
   font-family: var(--font-title);
-  font-size: 24px;
+  font-size: var(--fs-24);
   font-weight: var(--weight-b);
   line-height: 1.3;
   color: var(--text-900);
@@ -129,7 +129,7 @@
   border-radius: var(--corner-8);
   background: none;
   color: var(--grey-400);
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-weight: var(--weight-m);
   line-height: 1.4;
 }
@@ -215,7 +215,7 @@
   color: var(--text-900);
   white-space: nowrap;
   transform: translateX(-50%);
-  font-size: 16px;
+  font-size: var(--fs-16);
   line-height: 24px;
 }
 .modal__body {
@@ -261,7 +261,7 @@
 }
 .chat__hello-title {
   font-family: var(--font-title);
-  font-size: 24px;
+  font-size: var(--fs-24);
   font-weight: var(--weight-b);
   line-height: 1.4;
   color: var(--text-900);
@@ -369,7 +369,7 @@
   border-radius: var(--corner-8);
   background: var(--bg-white);
   color: var(--grey-900);
-  font-size: 14px;
+  font-size: var(--fs-14);
   line-height: 20px;
 }
 .field:focus {
@@ -391,7 +391,7 @@
   border-radius: var(--corner-6);
   background: none;
   color: var(--grey-500);
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-weight: var(--weight-m);
 }
 .segmented .is-active {
@@ -404,7 +404,7 @@
   border: 0;
   background: none;
   color: var(--text-error);
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-weight: var(--weight-m);
 }
 
@@ -433,7 +433,7 @@
   border-radius: var(--corner-8);
   background: var(--brand-50);
   color: var(--grey-700);
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-weight: 550;
   line-height: 20px;
 }
@@ -447,7 +447,7 @@
   background: none;
   color: var(--grey-700);
   font-family: var(--font-title);
-  font-size: 16px;
+  font-size: var(--fs-16);
   line-height: 24px;
   resize: none;
   outline: none;
@@ -457,7 +457,7 @@
 .composer__input::placeholder {
   color: var(--grey-400);
   font-family: var(--font-main);
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-weight: var(--weight-m);
 }
 .composer__actions {
@@ -489,7 +489,7 @@
   border-radius: var(--corner-8);
   background: var(--bg-2);
   color: var(--text-700);
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-weight: var(--weight-m);
   line-height: 20px;
   white-space: nowrap;
@@ -561,7 +561,7 @@
   padding: 0 var(--sp-12);
   border-radius: var(--corner-8);
   background: var(--bg-4);
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-weight: var(--weight-m);
 }
 .entry__tag.is-food {
@@ -573,7 +573,7 @@
   color: var(--category-transport);
 }
 .entry__tag.is-received {
-  background: #efeafd;
+  background: var(--received-soft);
   color: var(--category-received);
 }
 .entry__tag.is-other {
@@ -597,7 +597,7 @@
   gap: var(--sp-16);
   padding: var(--sp-12) 0;
   border-bottom: 1px solid var(--bd-0);
-  font-size: 14px;
+  font-size: var(--fs-14);
 }
 .entry__facts > div:last-child {
   border-bottom: 0;

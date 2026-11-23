@@ -32,8 +32,8 @@ import "./analytics.css"
 
 type Flow = "all" | "out" | "in"
 type Series = "Income" | "Expenses" | "Kept"
-const SERIES_COLOR: Record<Series, string> = { Income: "var(--brand-500)", Expenses: "#ff8000", Kept: "#2e90fa" }
-const ORANGE = "#ff8000"
+const SERIES_COLOR: Record<Series, string> = { Income: "var(--brand-500)", Expenses: "var(--chart-orange)", Kept: "var(--chart-blue)" }
+const ORANGE = "var(--chart-orange)"
 
 /**
  * View Analysis — from the chart button on Today's green card. D / W / M / Y / All, the picked
@@ -554,18 +554,18 @@ function Kept({
   const savedToday = saves.filter((m) => m.date === today).reduce((t, m) => t + m.amount, 0)
   const leftToday = Math.max(0, plan.dailyBudget - plan.spent(today))
   const share = plan.goal ? Math.min(1, Math.max(0, putAside / plan.goal)) : 0
-  const gold = "#ffc400"
+  const gold = "var(--chart-gold)"
   const m = (v: number) => (hidden ? "••••" : compact(v))
   const [yy, mm] = month.split("-").map(Number)
   const lead = (new Date(yy, mm - 1, 1).getDay() + 6) % 7
   const R = 55
   const C = 2 * Math.PI * R
   return (
-    <Card icon="piggy-bank" tint="#e0a100" title="Saving goal">
+    <Card icon="piggy-bank" tint="var(--chart-gold-ink)" title="Saving goal">
       <div className="ana-goal">
         <div className="ana-ring">
           <svg viewBox="0 0 138 138" aria-hidden="true">
-            <circle cx="69" cy="69" r={R} fill="none" stroke="#fff3c4" strokeWidth="14" />
+            <circle cx="69" cy="69" r={R} fill="none" stroke="var(--chart-gold-track)" strokeWidth="14" />
             <circle cx="69" cy="69" r={R} fill="none" stroke={gold} strokeWidth="14" strokeLinecap="round" strokeDasharray={`${share * C} ${C}`} transform="rotate(-90 69 69)" />
           </svg>
           <span>
@@ -659,7 +659,7 @@ function Kept({
 function Biggest({ lines, hidden }: { lines: Entry[]; hidden: boolean }) {
   const top = [...lines].sort((a, b) => b.amount - a.amount).slice(0, 4)
   const max = top[0]?.amount ?? 1
-  const colors = ["#00ba90", "#00c900", ORANGE, "#ff4d00"]
+  const colors = ["var(--chart-teal)", "var(--chart-green)", ORANGE, "var(--chart-red)"]
   return (
     <Card icon="receipt" tint={ORANGE} title="Biggest spends">
       {!top.length && <p className="k-note">No spending yet</p>}
