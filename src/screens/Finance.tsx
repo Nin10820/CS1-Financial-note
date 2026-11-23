@@ -4,11 +4,14 @@ import { Icon } from "../components/Icon"
 import StickyHeader from "../components/StickyHeader"
 import { AmountText, AssetTile, HistoryLink, JoinedCard, Legend, ListCard, ListRow, Pie, PieCard, SectionTitle, Segmented, StatCard, TickMark, maskC, pct, pctText } from "../components/kit"
 import { usePageSwipe } from "../lib/pageSwipe"
-import { compact, money, monthTitle, shortDay, today as todayIso } from "../lib/format"
+import { addMonthsYm, compact, money, monthTitle, shortDay, today as todayIso } from "../lib/format"
+import { savingPlan, monthsShort as monthsShortList } from "../lib/analysis"
+import { holdingText, pricesAt, SOURCES, type HoldingUnit } from "../lib/market"
+import NumberSheet from "./NumberSheet"
 import { kindOf, loanPeople, loansOwed, putInOf, shares, type Asset, type AssetKind, type AssetMove, type AssetMoveKind, type CareGift, type FamilyLoan, type WorthPoint } from "../lib/assets"
 import { dueIn, monthSummary, ym, type Bill } from "../lib/bills"
 import type { Entry } from "../lib/store"
-import { AddAssetSheet, AddLoanSheet, AssetDetail, DebtHistorySheet, AssetHistorySheet, FamilyPage, LifeCard, LoanPersonSheet, QuickMoveSheet, RevealPage, YourselfPage, selfLines, sinceText } from "./FinancePages"
+import { AddAssetSheet, AddLoanSheet, AssetDetail, AssetImportSheet, DebtHistorySheet, AssetHistorySheet, FamilyPage, LifeCard, LoanPersonSheet, QuickMoveSheet, RevealPage, YourselfPage, selfLines, sinceText } from "./FinancePages"
 import "./finance.css"
 
 type View = "overview" | "total" | "debt"
@@ -30,6 +33,17 @@ export type FinanceActions = {
   onAddLoan: (l: FamilyLoan) => void
   onRemoveLoan: (id: string) => void
   onToggleBill: (bill: Bill, paid: boolean) => void
+  /** Put in, take out or set what's held in the asset's own unit (2 phân, 100 $). */
+  onMoveUnits: (id: string, kind: AssetMoveKind, units: number, date: string) => void
+  onSetHolding: (id: string, quantity?: number, unit?: HoldingUnit) => void
+  onRemoveMove: (id: string) => void
+  /** Downloads today's prices and revalues what's held in units; false when offline. */
+  onSync: () => Promise<boolean>
+  goldPremium: number
+  onGoldPremium: (pct: number) => void
+  depositPlans: Record<string, number>
+  onDepositPlans: (p: Record<string, number>) => void
+  savingGoal: number
 }
 
 /** Installments still owed: per bill, how many paid and what's left. */
@@ -94,22 +108,22 @@ export default function Finance({
   birthYear?: number
   hidden: boolean
   onToggleHidden: () => void
-  /** Goes up by one each time the tab bar's + asks to add an asset. */
-  addRequest: number
+  /** Goes up by one each time the tab bar's + menu asks for New asset or Quick note. */
+  addRequest: { n: number; mode: "new" | "note" }
 } & FinanceActions) {
   const today = todayIso()
   const [view, setView] = useState<View>("overview")
   const [route, setRoute] = useState<Route>(null)
-  const [adding, setAdding] = useState(false)
+  const [adding, setAdding] = useState<"new" | "note" | null>(null)
   const [menu, setMenu] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
-  const seenAdd = useRef(addRequest)
+  const seenAdd = useRef(addRequest.n)
 
   useEffect(() => {
     // Only a new press of the tab bar's + opens it, not coming back to the tab.
-    if (addRequest !== seenAdd.current) {
-      seenAdd.current = addRequest
-      setAdding(true)
+    if (addRequest.n !== seenAdd.current) {
+      seenAdd.current = addRequest.n
+      setAdding(addRequest.mode)
     }
   }, [addRequest])
   useEffect(() => {
@@ -179,6 +193,7 @@ export default function Finance({
         {view === "overview" && (
           <Overview
             assets={assets}
+            moves={moves}
             worth={worth}
             bills={bills}
             loans={loans}
@@ -187,14 +202,32 @@ export default function Finance({
             birthYear={birthYear}
             hidden={hidden}
             today={today}
-            onAdd={() => setAdding(true)}
+            onAdd={() => setAdding("new")}
             onRoute={setRoute}
+            plans={act.depositPlans}
+            onPlans={act.onDepositPlans}
+            fallbackPlan={act.savingGoal || savingPlan(today.slice(0, 7), today, entries, 0, false).suggested}
           />
         )}
-        {view === "total" && <TotalAssets assets={assets} moves={moves} hidden={hidden} today={today} onOpen={(id) => setRoute({ kind: "asset", id })} onMove={act.onMoveAsset} />}
+        {view === "total" && <TotalAssets assets={assets} moves={moves} hidden={hidden} today={today} onOpen={(id) => setRoute({ kind: "asset", id })} {...act} />}
         {view === "debt" && <Debt bills={bills} loans={loans} hidden={hidden} today={today} {...act} />}
       </div>
-      {adding && <AddAssetSheet onClose={() => setAdding(false)} onSave={act.onAddAsset} />}
+      {adding === "new" && <AddAssetSheet goldPremium={act.goldPremium} onClose={() => setAdding(null)} onSave={act.onAddAsset} />}
+      {adding === "note" && (
+        <AssetImportSheet
+          assets={assets}
+          goldPremium={act.goldPremium}
+          today={today}
+          onClose={() => setAdding(null)}
+          onAdd={act.onAddAsset}
+          onUpdate={(id, d) => {
+            const a = assets.find((x) => x.id === id)
+            if (d.quantity && d.unit && a?.unit === d.unit) return act.onMoveUnits(id, "value", d.quantity, today)
+            if (d.quantity && d.unit) act.onSetHolding(id, d.quantity, d.unit)
+            if (d.amount) act.onMoveAsset(id, "value", d.amount, today)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -213,7 +246,15 @@ function Overview({
   today,
   onAdd,
   onRoute,
+  moves,
+  plans,
+  onPlans,
+  fallbackPlan,
 }: {
+  moves: AssetMove[]
+  plans: Record<string, number>
+  onPlans: (p: Record<string, number>) => void
+  fallbackPlan: number
   assets: Asset[]
   worth: WorthPoint[]
   bills: Bill[]
@@ -243,7 +284,10 @@ function Overview({
   const sh = shares(assets)
   const growth = worthGrowth(worth)
   const owed = monthSummary(bills, ym(today)).totalRemaining + loansOwed(loans, today)
-  const point = worth.find((p) => p.month === picked)
+  const series = fillMonths(worth, today.slice(0, 7))
+  const deposits = depositsByMonth(moves, today)
+  const point = series.find((p) => p.month === picked)
+  const putIn = point ? deposits[point.month] : undefined
   const selfTotal = selfLines(entries, bills).reduce((t, l) => t + l.amount, 0)
   return (
     <>
@@ -252,6 +296,7 @@ function Overview({
           <div>
             <p className={point ? "is-picked" : ""}>{point ? `Total Asset · ${monthTitle(point.month)}` : "Total Asset"}</p>
             <AmountText value={point?.value ?? sh.total} hidden={hidden} />
+            {point && putIn != null && !hidden && <span className="fin2-badge">Put in {compact(putIn)}</span>}
             {!point && growth != null && !hidden && (
               <span className="fin2-badge">
                 <Icon name={growth < 0 ? "arrow-down-right" : "arrow-up-right"} size={12} />
@@ -278,13 +323,16 @@ function Overview({
             <Icon name="caret-up-down" size={14} />
           </label>
         </div>
-        {worth.length > 1 ? (
-          <WorthChart points={range ? worth.slice(-range) : worth} picked={picked} hidden={hidden} onPick={setPicked} />
+        {series.length > 1 ? (
+          <WorthChart points={range ? series.slice(-range) : series} deposits={deposits} picked={picked} hidden={hidden} onPick={setPicked} />
         ) : (
           <p className="k-note fin2-total__none">The line appears after your second month of updates.</p>
         )}
         <NetWorthBar assets={sh.total} owed={owed} hidden={hidden} />
       </div>
+
+      {/* Every month money went in, year by year. */}
+      {moves.some((m) => m.kind !== "value" && m.amount > 0) && <DepositDots moves={moves} today={today} hidden={hidden} plans={plans} onPlans={onPlans} fallback={fallbackPlan} />}
 
       <div className="fin2-card">
         <AssetsPie assets={assets} hidden={hidden} picked={group} onPick={setGroup} />
@@ -319,19 +367,57 @@ function worthGrowth(worth: WorthPoint[]) {
   return base.value ? Math.round(((last.value - base.value) / base.value) * 100) : null
 }
 
-/** Total assets month by month, edge to edge: a soft line over a fading fill; touch a month to read it. */
-function WorthChart({ points, picked, hidden, onPick }: { points: WorthPoint[]; picked: string | null; hidden: boolean; onPick: (m: string | null) => void }) {
+/** Every month from the first point to now; a month nobody wrote down keeps the one before. */
+export function fillMonths(points: WorthPoint[], now: string): WorthPoint[] {
+  const sorted = [...points].sort((a, b) => a.month.localeCompare(b.month))
+  if (!sorted.length) return []
+  const out: WorthPoint[] = []
+  let i = 0
+  let value = sorted[0].value
+  const end = sorted[sorted.length - 1].month > now ? sorted[sorted.length - 1].month : now
+  for (let m = sorted[0].month; m <= end; m = addMonthsYm(m, 1)) {
+    while (i < sorted.length && sorted[i].month <= m) value = sorted[i++].value
+    out.push({ month: m, value })
+  }
+  return out
+}
+
+/** Money put in, summed by month ("2024-03": 4000000). Money taken out and value changes don't count. */
+export function depositsByMonth(moves: AssetMove[], today: string) {
+  const out: Record<string, number> = {}
+  for (const m of moves) if (m.amount > 0 && m.kind !== "value" && m.kind !== "out" && m.date <= today) out[m.date.slice(0, 7)] = (out[m.date.slice(0, 7)] ?? 0) + m.amount
+  return out
+}
+
+/**
+ * Total assets month by month, edge to edge: a soft line over a fading fill, floored at 0đ;
+ * a dot on the bar under it for each month money went in; touch a month to read it.
+ */
+function WorthChart({
+  points,
+  deposits,
+  picked,
+  hidden,
+  onPick,
+}: {
+  points: WorthPoint[]
+  deposits: Record<string, number>
+  picked: string | null
+  hidden: boolean
+  onPick: (m: string | null) => void
+}) {
   const W = 360
   const H = 150
-  const max = Math.max(...points.map((p) => p.value))
+  const max = Math.max(...points.map((p) => p.value), 1)
   const min = Math.min(...points.map((p) => p.value))
-  const lo = min - (max - min) * 0.15
+  const lo = Math.max(0, min - (max - min) * 0.12)
   const x = (i: number) => (points.length === 1 ? W / 2 : (i / (points.length - 1)) * W)
-  const y = (v: number) => H - 8 - ((v - lo) / (max - lo || 1)) * (H - 24)
+  const y = (v: number) => H - 6 - ((v - lo) / (max - lo || 1)) * (H - 16)
   const line = points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(p.value).toFixed(1)}`).join(" ")
   const pi = Math.max(0, points.findIndex((p) => p.month === picked))
   const at = picked ? pi : points.length - 1
   const p = points[at]
+  const years = points.length > 24
   const labelEvery = Math.ceil(points.length / 8)
   const box = useRef<HTMLDivElement>(null)
   const pickAt = (clientX: number) => {
@@ -341,6 +427,7 @@ function WorthChart({ points, picked, hidden, onPick }: { points: WorthPoint[]; 
     const k = Math.min(points.length - 1, Math.max(0, i))
     onPick(k === points.length - 1 ? null : points[k].month)
   }
+  const anyDeposit = points.some((pt) => deposits[pt.month])
   return (
     <div
       className="fin2-chart"
@@ -368,14 +455,156 @@ function WorthChart({ points, picked, hidden, onPick }: { points: WorthPoint[]; 
           {compact(p.value)}
         </span>
       )}
-      <div className="fin2-chart__x">
-        {points.map((pt, i) => (
-          <small key={pt.month} className={i === at ? "is-on" : ""}>
-            {i % labelEvery === (points.length - 1) % labelEvery ? monthTitle(pt.month).slice(0, 3) : ""}
-          </small>
+      {/* The bar under the line: a dot for every month money went in. */}
+      {anyDeposit && (
+        <div className="fin2-chart__deposits" aria-hidden="true">
+          {points.map((pt, i) =>
+            deposits[pt.month] ? <i key={pt.month} className={i === at ? "is-on" : ""} style={{ left: `${(x(i) / W) * 100}%` }} /> : null,
+          )}
+        </div>
+      )}
+      {years ? (
+        <div className="fin2-chart__years">
+          {points.map((pt, i) =>
+            pt.month.endsWith("-01") ? (
+              <small key={pt.month} style={{ left: `${(x(i) / W) * 100}%` }}>
+                {pt.month.slice(0, 4)}
+              </small>
+            ) : null,
+          )}
+        </div>
+      ) : (
+        <div className="fin2-chart__x">
+          {points.map((pt, i) => (
+            <small key={pt.month} className={i === at ? "is-on" : ""}>
+              {i % labelEvery === (points.length - 1) % labelEvery ? monthTitle(pt.month).slice(0, 3) : ""}
+            </small>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const LEVELS = ["Less", "On plan", "More"] as const
+/** 0 less than the plan, 1 about the plan (90–120%), 2 more than the plan. */
+const level = (sum: number, plan: number) => (plan <= 0 ? 1 : sum / plan < 0.9 ? 0 : sum / plan <= 1.2 ? 1 : 2)
+
+/**
+ * How often money went in: one row a year, one square a month, against that year's monthly plan
+ * (tap the year to set it). Grey = nothing went in, then three greens: less, on plan, more.
+ * A year with no plan uses the nearest earlier year's, else the saving goal.
+ */
+function DepositDots({
+  moves,
+  today,
+  hidden,
+  plans,
+  onPlans,
+  fallback,
+}: {
+  moves: AssetMove[]
+  today: string
+  hidden: boolean
+  plans: Record<string, number>
+  onPlans: (p: Record<string, number>) => void
+  fallback: number
+}) {
+  const [picked, setPicked] = useState<string | null>(null)
+  const [editing, setEditing] = useState<number | null>(null)
+  const sums = depositsByMonth(moves, today)
+  const now = today.slice(0, 7)
+  const months = Object.keys(sums).sort()
+  const first = months[0] ?? now
+  const y0 = Number(first.slice(0, 4))
+  const y1 = Number(now.slice(0, 4))
+  const years = Array.from({ length: y1 - y0 + 1 }, (_, i) => y1 - i)
+  const span = (y1 - y0) * 12 + Number(now.slice(5, 7)) - Number(first.slice(5, 7)) + 1
+  const planFor = (y: number) => {
+    if (plans[y] != null) return plans[y]
+    const earlier = Object.keys(plans)
+      .map(Number)
+      .filter((k) => k < y)
+      .sort((a, b) => b - a)[0]
+    return earlier != null ? plans[earlier] : fallback
+  }
+  let best = 0
+  let run = 0
+  months.forEach((m, i) => {
+    run = i > 0 && addMonthsYm(months[i - 1], 1) === m ? run + 1 : 1
+    best = Math.max(best, run)
+  })
+  const focus = picked ?? now
+  const lvl = (m: string) => level(sums[m], planFor(Number(m.slice(0, 4))))
+  return (
+    <section className="fin2-card dots" aria-label="How often you put money in">
+      <p className="k-piecard__title">How often you put money in</p>
+      <div className="dots__stats">
+        <span>
+          <b className="tnum">
+            {months.length} of {span}
+          </b>
+          <small>months with money in</small>
+        </span>
+        <span>
+          <b className="tnum">{best}</b>
+          <small>months in a row, best</small>
+        </span>
+      </div>
+      <div className="dots__grid">
+        <span className="dots__head" />
+        {monthsShortList.map((m, i) => (
+          <span key={i} className="dots__head">
+            {m[0]}
+          </span>
+        ))}
+        {years.map((y) => (
+          <div key={y} className="dots__row">
+            <button type="button" className="dots__year" onClick={() => setEditing(y)} aria-label={`${y}: plan ${hidden ? "hidden" : money(planFor(y))} đ a month. Set the plan`}>
+              {y}
+              <small className={plans[y] != null ? "is-set" : ""}>{hidden ? "•••" : compact(planFor(y))}</small>
+            </button>
+            {monthsShortList.map((_, i) => {
+              const m = `${y}-${String(i + 1).padStart(2, "0")}`
+              const has = sums[m] != null
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  disabled={m > now}
+                  className={`dots__sq${has ? ` is-l${lvl(m)}` : ""}${m > now || m < first ? " is-off" : ""}${m === focus ? " is-on" : ""}`}
+                  aria-label={`${monthTitle(m)}: ${has ? `put in ${hidden ? "" : money(sums[m])}, ${LEVELS[lvl(m)].toLowerCase()}` : "nothing put in"}`}
+                  onClick={() => setPicked(m === picked ? null : m)}
+                />
+              )
+            })}
+          </div>
         ))}
       </div>
-    </div>
+      <div className="dots__legend" aria-hidden="true">
+        <span>
+          <i className="dots__sq" /> None
+        </span>
+        {LEVELS.map((n, i) => (
+          <span key={n}>
+            <i className={`dots__sq is-l${i}`} /> {n}
+          </span>
+        ))}
+      </div>
+      <p className="k-note">
+        {monthTitle(focus)} · {sums[focus] != null ? `put in ${hidden ? "•••" : `${compact(sums[focus])}đ`} · ${LEVELS[lvl(focus)].toLowerCase()}` : "nothing put in"}
+      </p>
+      {editing != null && (
+        <NumberSheet
+          title={`Plan for ${editing}`}
+          prompt={`How much do you plan to put in each month of ${editing}?`}
+          start={planFor(editing)}
+          note={`Each month of ${editing} is compared with this: less, on plan or more.`}
+          onClose={() => setEditing(null)}
+          onSave={(v) => onPlans({ ...plans, [editing]: v })}
+        />
+      )}
+    </section>
   )
 }
 
@@ -457,18 +686,18 @@ function TotalAssets({
   hidden,
   today,
   onOpen,
-  onMove,
+  ...act
 }: {
   assets: Asset[]
   moves: AssetMove[]
   hidden: boolean
   today: string
   onOpen: (id: string) => void
-  onMove: FinanceActions["onMoveAsset"]
-}) {
+} & FinanceActions) {
   const [group, setGroup] = useState<AssetKind | null>(null)
   const [quick, setQuick] = useState<Asset | null>(null)
   const [history, setHistory] = useState(false)
+  const held = assets.some((a) => a.unit && a.quantity)
   const worth = assets.reduce((t, a) => t + a.amount, 0)
   const putIn = assets.reduce((t, a) => t + (putInOf(a, moves) ?? a.amount), 0)
   const gain = worth - putIn
@@ -494,10 +723,58 @@ function TotalAssets({
       <div style={{ marginTop: -8 }}>
         <HistoryLink sub={historySub(moves.map((m) => m.date))} onClick={() => setHistory(true)} />
       </div>
+      {held && <PricesRow onSync={act.onSync} goldPremium={act.goldPremium} onGoldPremium={act.onGoldPremium} />}
       <Holdings title={group ? kindOf(group).label : "Assets"} assets={[...list].sort((a, b) => b.amount - a.amount)} moves={moves} hidden={hidden} onOpen={onOpen} onQuick={setQuick} />
-      {quick && <QuickMoveSheet key={quick.id} asset={quick} moves={moves} today={today} onClose={() => setQuick(null)} onSave={onMove} />}
+      {quick && <QuickMoveSheet key={quick.id} asset={quick} moves={moves} today={today} goldPremium={act.goldPremium} onClose={() => setQuick(null)} onSave={act.onMoveAsset} onSaveUnits={act.onMoveUnits} />}
       {history && <AssetHistorySheet moves={moves} hidden={hidden} onClose={() => setHistory(false)} />}
     </>
+  )
+}
+
+/**
+ * "Today's prices · updated 14:05 · Sync": gold, foreign money and coins follow public prices.
+ * Gold's premium over the world price (SJC is often 15–20% above) can be set here.
+ */
+function PricesRow({ onSync, goldPremium, onGoldPremium }: { onSync: () => Promise<boolean>; goldPremium: number; onGoldPremium: (p: number) => void }) {
+  const [state, setState] = useState<"idle" | "busy" | "offline">("idle")
+  const [at, setAt] = useState(pricesAt)
+  const [premium, setPremium] = useState(String(goldPremium))
+  const when = at ? new Date(at) : null
+  const stamp = when ? (todayIso() === when.toISOString().slice(0, 10) ? `${String(when.getHours()).padStart(2, "0")}:${String(when.getMinutes()).padStart(2, "0")}` : shortDay(when.toISOString().slice(0, 10))) : "not yet"
+  return (
+    <div className="prices">
+      <span className="prices__text">
+        <b>Today&apos;s prices</b>
+        <small>{state === "offline" ? "Couldn't reach the price lists — try again online." : `≈ updated ${stamp} · ${SOURCES}`}</small>
+      </span>
+      <button
+        type="button"
+        className="fin2-add"
+        disabled={state === "busy"}
+        onClick={async () => {
+          setState("busy")
+          const ok = await onSync()
+          setAt(pricesAt())
+          setState(ok ? "idle" : "offline")
+        }}
+      >
+        <Icon name="history" size={14} />
+        {state === "busy" ? "Syncing…" : "Sync"}
+      </button>
+      <label className="prices__premium">
+        <span>Gold above world price</span>
+        <span>
+          <input
+            inputMode="decimal"
+            value={premium}
+            aria-label="Gold premium, percent"
+            onChange={(e) => setPremium(e.target.value.replace(/[^\d.]/g, ""))}
+            onBlur={() => onGoldPremium(Number(premium) || 0)}
+          />
+          %
+        </span>
+      </label>
+    </div>
   )
 }
 
@@ -532,7 +809,7 @@ export function Holdings({
               key={a.id}
               tile={<AssetTile icon={a.icon} />}
               title={a.name}
-              sub={`${hidden ? "" : `in ${compact(put)} · `}${shortDay(a.updated)}`}
+              sub={`${a.unit && a.quantity ? `${holdingText(a.quantity, a.unit)} · ` : ""}${hidden ? "" : `in ${compact(put)} · `}${shortDay(a.updated)}`}
               amount={hidden ? "•••" : `${money(a.amount)}đ`}
               amountSub={line}
               amountSubTone={ch > 0 ? "gain" : "muted"}

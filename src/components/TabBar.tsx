@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from "react"
 import "./tabbar.css"
-import { Icon } from "./Icon"
+import { Icon, type IconName } from "./Icon"
 
 /** "expense" is the Today tab (its key predates the rename). */
 export type Tab = "expense" | "due" | "finance" | "ai"
@@ -137,11 +137,14 @@ export function ActionMenu({
   onTalk,
   onTemplate,
   onScan,
+  items,
 }: {
   onClose: () => void
-  onTalk: () => void
-  onTemplate: () => void
-  onScan: () => void
+  onTalk?: () => void
+  onTemplate?: () => void
+  onScan?: () => void
+  /** Other pills instead of Talk / Template / Scan (Finance: New asset, Quick note). */
+  items?: { icon: IconName; label: string; onClick: () => void }[]
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
@@ -152,6 +155,14 @@ export function ActionMenu({
     <div className="action-menu">
       <div className="action-menu__dim" onClick={onClose} aria-hidden="true" />
       <div className="action-menu__pills" role="menu" aria-label="Add">
+        {items?.map((it) => (
+          <button key={it.label} type="button" role="menuitem" className="action-pill" onClick={it.onClick}>
+            <Icon name={it.icon} size={20} />
+            {it.label}
+          </button>
+        ))}
+        {!items && (
+          <>
         <button type="button" role="menuitem" className="action-pill" onClick={onTalk}>
           <Icon name="mic" size={20} />
           Talk With AI
@@ -164,6 +175,8 @@ export function ActionMenu({
           <Icon name="tab-scan" size={20} />
           Scan
         </button>
+          </>
+        )}
       </div>
     </div>
   )

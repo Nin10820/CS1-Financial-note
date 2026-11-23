@@ -1,5 +1,6 @@
 /** What the user owns, as they choose to write it down. Nothing here talks to a bank. */
 import type { IconName } from "../components/Icon"
+import { price, readUnits, type HoldingUnit } from "./market"
 
 /** The four groups from Figma High Fi 2 › Asset (943:25860). */
 export type AssetKind = "available" | "growing" | "aside" | "owed"
@@ -15,6 +16,9 @@ export type Asset = {
   /** Last time the user updated the amount, "YYYY-MM-DD". */
   updated: string
   sample?: boolean
+  /** Held in its own unit (5 chỉ, 1,000 $, 0.05 BTC): the worth follows today's price. */
+  quantity?: number
+  unit?: HoldingUnit
 }
 
 export type AssetMoveKind = "in" | "out" | "value"
@@ -221,3 +225,60 @@ export function loanPeople(loans: FamilyLoan[], today: string): LoanPerson[] {
 }
 
 export const loansOwed = (loans: FamilyLoan[], today: string) => loanPeople(loans, today).reduce((s, p) => s + p.owed, 0)
+
+/* ── Reading assets from a note ───────────────────────── */
+
+/** One asset read from a quick note, to check before it is added. */
+export type AssetDraft = { id: string; name: string; kind: AssetKind; amount?: number; quantity?: number; unit?: HoldingUnit }
+
+const plain = (s: string) =>
+  s
+    .toLocaleLowerCase("vi")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+
+/** The group the words point to, when they say. */
+export function kindHint(name: string): AssetKind | null {
+  const n = plain(name)
+  if (/cho .*muon|cho muon|lent|owes|no toi/.test(n)) return "owed"
+  if (/tiet kiem|saving|deposit|ky han|gui gop/.test(n)) return "aside"
+  if (/vang|gold|sjc|pnj|doji|quy|fund|co phieu|stock|chung khoan|etf|crypto|bitcoin|btc|eth/.test(n)) return "growing"
+  if (/momo|zalopay|vnpay|shopeepay|tai khoan|account|tien mat|cash|vi /.test(n)) return "available"
+  return null
+}
+
+/** The same asset under another spelling: "Vàng SJC" and "vang sjc". */
+export const sameName = (a: string, b: string) => plain(a).replace(/\s+/g, " ").trim() === plain(b).replace(/\s+/g, " ").trim()
+
+/** One asset a line: "vàng 5 chỉ", "tiết kiệm TPBank 50tr", "USD 700", "MoMo 2.5tr". */
+export function readAssetLines(text: string, goldPremium = 0): AssetDraft[] {
+  return text
+    .split(/\n|;/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .flatMap((line, i): AssetDraft[] => {
+      const id = `d${i}`
+      const held = readUnits(line)
+      if (held) {
+        let rest = held.rest.replace(/[\s,.:;-]+/g, " ").trim()
+        const gold = held.unit === "chi" || held.unit === "phan" || held.unit === "luong"
+        if (!rest) rest = gold ? "Gold" : ["btc", "eth", "usdt"].includes(held.unit) ? "Coin" : held.unit.toUpperCase()
+        const p = price(held.unit, goldPremium)
+        const growing = gold || held.unit === "btc" || held.unit === "eth"
+        return [
+          {
+            id,
+            name: rest[0].toUpperCase() + rest.slice(1),
+            kind: growing ? "growing" : (kindHint(line) ?? "available"),
+            quantity: held.quantity,
+            unit: held.unit,
+            amount: p ? Math.round(p * held.quantity) : undefined,
+          },
+        ]
+      }
+      const r = readAssetSentence(line)
+      if (!r.amount) return []
+      return [{ id, name: r.name.charAt(0).toUpperCase() + r.name.slice(1), kind: kindHint(line) ?? r.kind, amount: r.amount }]
+    })
+}

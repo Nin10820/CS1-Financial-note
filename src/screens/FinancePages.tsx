@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react"
 import { Icon, type IconName } from "../components/Icon"
-import { AddingLead, AmountPad, AmountText, AssetTile, ListCard, ListRow, QuickPickCard, SectionTitle, Segmented, StatCard, Tile, maskC } from "../components/kit"
+import { AddingLead, AmountPad, AmountText, AssetTile, ListCard, ListRow, QuickPickCard, SectionTitle, Segmented, StatCard, TickMark, Tile, maskC } from "../components/kit"
+import { UNITS, guessUnit, holdingText, price, readNumber, readUnits, refreshPrices, unitLabel, type HoldingUnit } from "../lib/market"
 import StickyHeader from "../components/StickyHeader"
 import { IconButton } from "../components/ui"
 import { addDays, compact, money, monthTitle, shortDay, today as todayIso } from "../lib/format"
@@ -15,6 +16,9 @@ import {
   loanPerson,
   putInOf,
   readAssetSentence,
+  readAssetLines,
+  sameName,
+  type AssetDraft,
   valueLine,
   type Asset,
   type AssetKind,
@@ -323,14 +327,19 @@ export function AssetDetail({ asset, moves, hidden, today, onBack, ...act }: { a
               key={m.id}
               tile={<Tile bg={m.kind === "value" ? "var(--grey-400)" : m.amount < 0 ? "#e5562a" : "var(--brand-600)"} icon={m.kind === "value" ? "chart-line-up" : m.amount < 0 ? "arrow-up-right" : "arrow-down-right"} />}
               title={MOVE_LABEL[m.kind ?? "in"]}
+              trailing={
+                <button type="button" className="hist__del" aria-label={`Delete this ${MOVE_LABEL[m.kind ?? "in"].toLowerCase()} line`} onClick={() => act.onRemoveMove(m.id)}>
+                  <Icon name="trash" size={16} />
+                </button>
+              }
               sub={shortDay(m.date)}
               amount={hidden ? "•••" : `${m.amount > 0 ? "+" : "−"}${money(Math.abs(m.amount))}đ`}
             />
           ))}
         </ListCard>
       </section>
-      {sheet && sheet !== "edit" && <QuickMoveSheet asset={asset} moves={moves} today={today} start={sheet} onClose={() => setSheet(null)} onSave={act.onMoveAsset} />}
-      {sheet === "edit" && <AddAssetSheet editing={asset} onClose={() => setSheet(null)} onSave={() => {}} onEdit={act.onEditAsset} />}
+      {sheet && sheet !== "edit" && <QuickMoveSheet asset={asset} moves={moves} today={today} start={sheet} goldPremium={act.goldPremium} onClose={() => setSheet(null)} onSave={act.onMoveAsset} onSaveUnits={act.onMoveUnits} />}
+      {sheet === "edit" && <AddAssetSheet editing={asset} goldPremium={act.goldPremium} onClose={() => setSheet(null)} onSave={() => {}} onEdit={act.onEditAsset} onSetHolding={act.onSetHolding} />}
       {confirm && (
         <div className="confirm" role="alertdialog" aria-label="Delete asset">
           <div className="confirm__box">
@@ -374,34 +383,45 @@ function MiniLine({ points, color }: { points: number[]; color: string }) {
 
 /* ── Quick update ───────────────────────────────────────── */
 
-/** New worth, money put in or taken out — with put in / now / gain before → after, and the day. */
+/**
+ * New worth, money put in or taken out — with put in / now / gain before → after, and the day.
+ * An asset held in units (gold, dollars, coins) can be typed in its unit: 2 phân, 100 $.
+ */
 export function QuickMoveSheet({
   asset,
   moves,
   today,
   start = "value",
+  goldPremium = 0,
   onClose,
   onSave,
+  onSaveUnits,
 }: {
   asset: Asset
   moves: AssetMove[]
   today: string
   start?: AssetMoveKind
+  goldPremium?: number
   onClose: () => void
   onSave: FinanceActions["onMoveAsset"]
+  onSaveUnits?: FinanceActions["onMoveUnits"]
 }) {
   const [kind, setKind] = useState<AssetMoveKind>(start)
   const [value, setValue] = useState<number | null>(null)
   const [date, setDate] = useState(today)
+  const unitPrice = asset.unit ? price(asset.unit, goldPremium) : null
+  const [inUnits, setInUnits] = useState(!!(asset.unit && asset.quantity != null && unitPrice))
+  const [units, setUnits] = useState("")
   const put = putInOf(asset, moves) ?? asset.amount
-  const typed = value ?? 0
+  const q = readNumber(units) || 0
+  const typed = inUnits && unitPrice ? Math.round(q * unitPrice) : (value ?? 0)
   const after =
     kind === "value"
-      ? { put, now: value ?? asset.amount }
+      ? { put, now: inUnits ? (units ? typed : asset.amount) : (value ?? asset.amount) }
       : kind === "in"
         ? { put: put + typed, now: asset.amount + typed }
         : { put: put - Math.min(typed, asset.amount), now: asset.amount - Math.min(typed, asset.amount) }
-  const disabled = typed <= 0 || (kind === "value" && typed === asset.amount) || (kind === "out" && asset.amount === 0)
+  const disabled = typed <= 0 || (kind === "value" && typed === asset.amount && !inUnits) || (kind === "out" && asset.amount === 0)
   const fig = (label: string, before: number, aft: number, signed?: boolean) => {
     const f = (v: number) => (signed ? (v < 0 ? "−" : "+") : "") + compact(Math.abs(v))
     return (
@@ -419,26 +439,17 @@ export function QuickMoveSheet({
       </span>
     )
   }
+  const save = () => {
+    if (inUnits && onSaveUnits) onSaveUnits(asset.id, kind, q, date)
+    else onSave(asset.id, kind, typed, date)
+    onClose()
+  }
   return (
     <ModalSheet
       label={asset.name}
       onClose={onClose}
-      header={
-        <ModalHeader
-          title={asset.name}
-          left={<CloseBtn onClick={onClose} label="Cancel" />}
-          right={
-            <SaveBtn
-              disabled={disabled}
-              onClick={() => {
-                onSave(asset.id, kind, typed, date)
-                onClose()
-              }}
-            />
-          }
-        />
-      }
-      footer={<AmountPad onChange={(f) => setValue((v) => f(v ?? 0))} />}
+      header={<ModalHeader title={asset.name} left={<CloseBtn onClick={onClose} label="Cancel" />} right={<SaveBtn disabled={disabled} onClick={save} />} />}
+      footer={inUnits ? undefined : <AmountPad onChange={(f) => setValue((v) => f(v ?? 0))} />}
     >
       <div className="qm">
         <Segmented
@@ -447,6 +458,7 @@ export function QuickMoveSheet({
           onChange={(k) => {
             setKind(k)
             setValue(null)
+            setUnits("")
           }}
           options={[
             { value: "value", label: "Update value" },
@@ -454,12 +466,56 @@ export function QuickMoveSheet({
             { value: "out", label: "Take out" },
           ]}
         />
+        {asset.unit && unitPrice && (
+          <Segmented
+            small
+            label="Type in"
+            value={inUnits ? "units" : "dong"}
+            onChange={(v) => {
+              setInUnits(v === "units")
+              setValue(null)
+              setUnits("")
+            }}
+            options={[
+              { value: "units", label: `In ${unitLabel(asset.unit)}` },
+              { value: "dong", label: "In đồng" },
+            ]}
+          />
+        )}
         <div className="num-sheet" style={{ padding: 0 }}>
-          <p>{kind === "value" ? `What is ${asset.name} worth now?` : kind === "in" ? "How much did you put in?" : "How much did you take out?"}</p>
-          <span className={`tnum${value == null ? " is-ghost" : ""}`}>
-            {money(value ?? (kind === "value" ? asset.amount : 0))}
-            <small>đ</small>
-          </span>
+          <p>
+            {kind === "value"
+              ? inUnits
+                ? `How much ${asset.name} do you hold now?`
+                : `What is ${asset.name} worth now?`
+              : kind === "in"
+                ? "How much did you put in?"
+                : "How much did you take out?"}
+          </p>
+          {inUnits && asset.unit ? (
+            <>
+              <span className="qm__units">
+                <input
+                  autoFocus
+                  inputMode="decimal"
+                  value={units}
+                  placeholder={kind === "value" && asset.quantity != null ? String(asset.quantity) : "0"}
+                  aria-label={`Amount in ${unitLabel(asset.unit)}`}
+                  onChange={(e) => setUnits(e.target.value.replace(/[^\d.,]/g, ""))}
+                />
+                <small>{unitLabel(asset.unit)}</small>
+              </span>
+              <p className="k-note">
+                ≈ {money(typed)}đ at {money(unitPrice ?? 0)}đ a {unitLabel(asset.unit)}
+                {asset.quantity != null && ` · you hold ${holdingText(asset.quantity, asset.unit)}`}
+              </p>
+            </>
+          ) : (
+            <span className={`tnum${value == null ? " is-ghost" : ""}`}>
+              {money(value ?? (kind === "value" ? asset.amount : 0))}
+              <small>đ</small>
+            </span>
+          )}
         </div>
         <div className="qm__figs">
           {fig("Put in", put, after.put)}
@@ -477,18 +533,55 @@ export function QuickMoveSheet({
 
 /* ── New asset ───────────────────────────────────────────── */
 
-/** New asset: step 1 picks the group (or one sentence); then name and worth. With `editing`, name and group. */
-export function AddAssetSheet({ editing, onClose, onSave, onEdit }: { editing?: Asset; onClose: () => void; onSave: (a: Asset) => void; onEdit?: (id: string, name: string, kind: AssetKind) => void }) {
+/**
+ * New asset: step 1 picks the group (or one sentence); then name, worth — or how much is held in
+ * its unit (5 chỉ, 1,000 $) — and the day the money went in. With `editing`, name, group and holding.
+ */
+export function AddAssetSheet({
+  editing,
+  goldPremium = 0,
+  onClose,
+  onSave,
+  onEdit,
+  onSetHolding,
+}: {
+  editing?: Asset
+  goldPremium?: number
+  onClose: () => void
+  onSave: (a: Asset) => void
+  onEdit?: (id: string, name: string, kind: AssetKind) => void
+  onSetHolding?: (id: string, quantity?: number, unit?: HoldingUnit) => void
+}) {
   const [picked, setPicked] = useState(!!editing)
   const [name, setName] = useState(editing?.name ?? "")
   const [amount, setAmount] = useState<number | null>(null)
   const [kind, setKind] = useState<AssetKind>(editing?.kind ?? "available")
-  const ok = name.trim() && (editing || (amount ?? 0) > 0)
+  const [date, setDate] = useState(todayIso())
+  const [unit, setUnit] = useState<HoldingUnit | "">(editing?.unit ?? "")
+  const [qty, setQty] = useState(editing?.quantity != null ? String(editing.quantity) : "")
+  const q = readNumber(qty) || 0
+  const [, setFetched] = useState(0)
+  // Held in a unit with no price yet: fetch today's prices once.
+  useEffect(() => {
+    if (unit && !price(unit, goldPremium)) void refreshPrices().then((ok) => ok && setFetched((n) => n + 1))
+  }, [unit, goldPremium])
+  const unitPrice = unit ? price(unit, goldPremium) : null
+  const worth = unit ? (unitPrice && q ? Math.round(unitPrice * q) : 0) : (amount ?? 0)
+  const ok = name.trim() && (editing || worth > 0)
   const save = () => {
     if (!ok) return
-    if (editing) onEdit?.(editing.id, name.trim(), kind)
-    else onSave({ id: uid(), name: name.trim(), kind, icon: guessAssetIcon(name, kind), amount: amount ?? 0, updated: todayIso() })
+    if (editing) {
+      onEdit?.(editing.id, name.trim(), kind)
+      onSetHolding?.(editing.id, unit ? q : undefined, unit || undefined)
+    } else {
+      const icon = guessAssetIcon(name, kind)
+      onSave({ id: uid(), name: name.trim(), kind, icon, amount: worth, updated: date, ...(unit && q ? { quantity: q, unit } : {}) })
+    }
     onClose()
+  }
+  const pickUnit = (n: string) => {
+    const g = guessUnit(guessAssetIcon(n, kind))
+    if (g && !unit && !editing) setUnit(g)
   }
   return (
     <ModalSheet
@@ -508,16 +601,25 @@ export function AddAssetSheet({ editing, onClose, onSave, onEdit }: { editing?: 
           <QuickPickCard
             title="Which group?"
             options={KINDS.map((k) => ({ id: k.kind, title: k.label, hint: k.hint, mark: k.color }))}
-            placeholder="e.g. vàng SJC 15tr, tiết kiệm TPBank 50tr"
+            placeholder="e.g. vàng 5 chỉ, tiết kiệm TPBank 50tr"
             onPick={(k) => {
               setKind(k)
               setPicked(true)
             }}
             onSay={(text) => {
-              const r = readAssetSentence(text)
-              setName(r.name)
-              setAmount(r.amount ?? null)
-              setKind(r.kind)
+              const held = readUnits(text)
+              if (held) {
+                const d = readAssetLines(text, goldPremium)[0]
+                setName(d?.name ?? text)
+                setKind(d?.kind ?? "growing")
+                setUnit(held.unit)
+                setQty(String(held.quantity))
+              } else {
+                const r = readAssetSentence(text)
+                setName(r.name)
+                setAmount(r.amount ?? null)
+                setKind(r.kind)
+              }
               setPicked(true)
             }}
           />
@@ -526,21 +628,45 @@ export function AddAssetSheet({ editing, onClose, onSave, onEdit }: { editing?: 
         <div className="form-list">
           <label className="form-list__group">
             <span>What is it?</span>
-            <input value={name} placeholder="Gold, Saving - TP Bank, Fund…" onChange={(e) => setName(e.target.value)} autoFocus={!name} />
+            <input value={name} placeholder="Gold, Saving - TP Bank, Fund…" onChange={(e) => setName(e.target.value)} onBlur={(e) => pickUnit(e.target.value)} autoFocus={!name} />
           </label>
-          {!editing && (
+          <label className="form-list__group">
+            <span>Held as</span>
+            <span className="form-list__money">
+              <select value={unit} onChange={(e) => setUnit(e.target.value as HoldingUnit | "")} aria-label="Held as">
+                <option value="">Đồng</option>
+                {UNITS.map((u) => (
+                  <option key={u.unit} value={u.unit}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
+            </span>
+          </label>
+          {unit ? (
             <label className="form-list__group">
-              <span>How much is it worth now?</span>
+              <span>How much do you hold?</span>
               <span className="form-list__money">
-                <input
-                  className="tnum"
-                  inputMode="numeric"
-                  value={amount ? money(amount) : ""}
-                  placeholder="0"
-                  onChange={(e) => setAmount(Number(e.target.value.replace(/\D/g, "")) || null)}
-                />
-                <small>đ</small>
+                <input className="tnum" inputMode="decimal" value={qty} placeholder="0" onChange={(e) => setQty(e.target.value.replace(/[^\d.,]/g, ""))} />
+                <small>{unitLabel(unit)}</small>
               </span>
+              <small className="form-list__hint">{unitPrice ? `≈ ${money(worth)}đ at today's price (${money(unitPrice)}đ a ${unitLabel(unit)})` : "No price yet — it fills in once the app is online."}</small>
+            </label>
+          ) : (
+            !editing && (
+              <label className="form-list__group">
+                <span>How much is it worth now?</span>
+                <span className="form-list__money">
+                  <input className="tnum" inputMode="numeric" value={amount ? money(amount) : ""} placeholder="0" onChange={(e) => setAmount(Number(e.target.value.replace(/\D/g, "")) || null)} />
+                  <small>đ</small>
+                </span>
+              </label>
+            )
+          )}
+          {!editing && (
+            <label className="qm__day form-list__day">
+              <span>Put in on</span>
+              <input type="date" value={date} max={todayIso()} onChange={(e) => e.target.value && setDate(e.target.value)} />
             </label>
           )}
           <fieldset className="form-list__group">
@@ -554,6 +680,126 @@ export function AddAssetSheet({ editing, onClose, onSave, onEdit }: { editing?: 
             ))}
           </fieldset>
           <p className="k-note form-list__foot">{kindOf(kind).hint}</p>
+        </div>
+      )}
+    </ModalSheet>
+  )
+}
+
+/**
+ * Quick note: one asset a line ("vàng 5 chỉ", "tiết kiệm TPBank 50tr", "USD 700"). The app lists
+ * what it read; tick the ones to keep. A name you already have is updated, a new one is added.
+ */
+export function AssetImportSheet({
+  assets,
+  goldPremium,
+  today,
+  onClose,
+  onAdd,
+  onUpdate,
+}: {
+  assets: Asset[]
+  goldPremium: number
+  today: string
+  onClose: () => void
+  onAdd: (a: Asset) => void
+  onUpdate: (id: string, d: AssetDraft) => void
+}) {
+  const [text, setText] = useState("")
+  const [drafts, setDrafts] = useState<AssetDraft[] | null>(null)
+  const [off, setOff] = useState<Set<string>>(new Set())
+  const match = (d: AssetDraft) => assets.find((a) => sameName(a.name, d.name))
+  const chosen = (drafts ?? []).filter((d) => !off.has(d.id) && (d.amount || d.quantity))
+  const save = () => {
+    for (const d of chosen) {
+      const had = match(d)
+      if (had) onUpdate(had.id, d)
+      else
+        onAdd({
+          id: uid(),
+          name: d.name,
+          kind: d.kind,
+          icon: guessAssetIcon(d.name, d.kind),
+          amount: d.amount ?? 0,
+          updated: today,
+          ...(d.unit && d.quantity ? { unit: d.unit, quantity: d.quantity } : {}),
+        })
+    }
+    onClose()
+  }
+  return (
+    <ModalSheet
+      label="Quick note"
+      onClose={onClose}
+      header={
+        <ModalHeader
+          title="Quick note"
+          left={drafts ? <CloseBtn icon="arrow-left" label="Back to the note" onClick={() => setDrafts(null)} /> : <CloseBtn onClick={onClose} />}
+          right={drafts ? <SaveBtn disabled={!chosen.length} onClick={save} /> : undefined}
+        />
+      }
+    >
+      {!drafts ? (
+        <div className="form-list">
+          <label className="form-list__group">
+            <span>What do you hold? One a line</span>
+            <textarea
+              className="import__text"
+              rows={6}
+              autoFocus
+              value={text}
+              placeholder={"vàng 5 chỉ\ntiết kiệm TPBank 50tr\nUSD 700\nMoMo 2.5tr"}
+              onChange={(e) => setText(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className="k-btn"
+            disabled={!text.trim()}
+            onClick={async () => {
+              let read = readAssetLines(text, goldPremium)
+              // Gold, dollars or coins without a price yet: fetch today's prices, then read again.
+              if (read.some((d) => d.unit && !d.amount) && (await refreshPrices())) read = readAssetLines(text, goldPremium)
+              setDrafts(read)
+              setOff(new Set())
+            }}
+          >
+            Read it
+          </button>
+          <p className="k-note">Read on this device. Gold, dollars and coins use today&apos;s price.</p>
+        </div>
+      ) : (
+        <div className="hist">
+          {!drafts.length && <p className="k-empty">Nothing with an amount in that note. Try “vàng 5 chỉ” or “tiết kiệm 50tr”.</p>}
+          {drafts.length > 0 && (
+            <ListCard>
+              {drafts.map((d) => {
+                const had = match(d)
+                const on = !off.has(d.id)
+                return (
+                  <ListRow
+                    key={d.id}
+                    tile={<AssetTile icon={guessAssetIcon(d.name, d.kind)} />}
+                    title={d.name}
+                    sub={`${kindOf(d.kind).label}${d.unit && d.quantity ? ` · ${holdingText(d.quantity, d.unit)}` : ""} · ${had ? "updates yours" : "new"}`}
+                    amount={d.amount ? `${money(d.amount)}đ` : "no price yet"}
+                    onClick={() => setOff((s) => {
+                      const n = new Set(s)
+                      if (n.has(d.id)) n.delete(d.id)
+                      else n.add(d.id)
+                      return n
+                    })}
+                    trailing={
+                      <span className="due2-tick" aria-hidden="true">
+                        <TickMark on={on} />
+                      </span>
+                    }
+                  />
+                )
+              })}
+            </ListCard>
+          )}
+          <p className="k-note">Tick what to keep, then ✓.</p>
         </div>
       )}
     </ModalSheet>

@@ -692,3 +692,248 @@
 .asset-actions .k-btn .fn-icon {
   display: none;
 }
+
+/* Total Asset line: a dot under it for each month money went in; years on long ranges. */
+.fin2-chart__deposits {
+  position: relative;
+  height: 12px;
+  margin: 2px var(--sp-4) 0;
+  border-radius: var(--rounded);
+  background: color-mix(in srgb, var(--bg-4) 70%, transparent);
+}
+.fin2-chart__deposits i {
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-500);
+  transform: translate(-50%, -50%);
+}
+.fin2-chart__deposits i.is-on {
+  width: 9px;
+  height: 9px;
+  box-shadow: 0 0 0 2px var(--card);
+}
+.fin2-chart__years {
+  position: relative;
+  height: 20px;
+  margin-top: var(--sp-6);
+}
+.fin2-chart__years small {
+  position: absolute;
+  color: var(--grey-400);
+  font-size: 11px;
+  transform: translateX(-50%);
+}
+
+/* How often you put money in */
+.dots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  padding: var(--sp-16);
+}
+.dots__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-12);
+}
+.dots__stats span {
+  display: flex;
+  flex-direction: column;
+}
+.dots__stats b {
+  color: var(--text-900);
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: var(--weight-m);
+}
+.dots__stats small {
+  color: var(--grey-400);
+  font-size: 12px;
+}
+.dots__grid {
+  display: grid;
+  grid-template-columns: 52px repeat(12, 1fr);
+  gap: 4px;
+  align-items: center;
+}
+.dots__row {
+  display: contents;
+}
+.dots__head {
+  color: var(--grey-400);
+  font-size: 10px;
+  text-align: center;
+}
+.dots__year {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-900);
+  font-size: 12px;
+  font-weight: var(--weight-s);
+  line-height: 1.1;
+  text-align: left;
+}
+.dots__year small {
+  color: var(--grey-400);
+  font-size: 10px;
+  font-weight: var(--weight-m);
+}
+.dots__year small.is-set {
+  color: var(--brand-600);
+}
+.dots__sq {
+  display: inline-block;
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 22px;
+  justify-self: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: var(--bg-4);
+}
+.dots__sq.is-l0 {
+  background: color-mix(in srgb, var(--brand-500) 32%, var(--card));
+}
+.dots__sq.is-l1 {
+  background: color-mix(in srgb, var(--brand-500) 70%, var(--card));
+}
+.dots__sq.is-l2 {
+  background: var(--brand-700);
+}
+.dots__sq.is-off {
+  opacity: 0.35;
+}
+.dots__sq.is-on {
+  outline: 1.5px solid var(--text-900);
+  outline-offset: 1.5px;
+}
+.dots__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-12);
+  color: var(--grey-400);
+  font-size: 11px;
+}
+.dots__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+.dots__legend .dots__sq {
+  width: 12px;
+  height: 12px;
+}
+
+/* Today's prices */
+.prices {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--sp-8) var(--sp-12);
+  padding: var(--sp-12) var(--sp-16);
+  border-radius: var(--corner-20);
+  background: var(--card);
+}
+.prices__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.prices__text b {
+  color: var(--text-900);
+  font-size: 15px;
+  font-weight: var(--weight-s);
+}
+.prices__text small {
+  color: var(--grey-400);
+  font-size: 11px;
+  line-height: 15px;
+}
+.prices__premium {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--sp-8);
+  border-top: 0.5px solid var(--bd-0);
+  color: var(--text-700);
+  font-size: 13px;
+}
+.prices__premium input {
+  width: 52px;
+  min-height: 32px;
+  margin-right: 4px;
+  padding: 0 var(--sp-8);
+  border: 0;
+  border-radius: var(--corner-8);
+  background: var(--bg-4);
+  color: var(--text-900);
+  font-size: 15px;
+  text-align: right;
+}
+.fin2-add:disabled {
+  opacity: 0.5;
+}
+
+/* Units in the quick sheet and new asset */
+.qm__units {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-6);
+}
+.qm__units input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text-900);
+  font-family: var(--font-heading);
+  font-size: 40px;
+  font-weight: var(--weight-m);
+}
+.qm__units small {
+  color: var(--grey-400);
+  font-size: 24px;
+}
+.form-list__money select {
+  flex: 1;
+  min-height: 48px;
+  padding: 0 var(--sp-16);
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text-900);
+  font-size: 16px;
+}
+.form-list__hint {
+  padding: 0 var(--sp-16);
+  color: var(--grey-400);
+  font-size: 12px;
+}
+.form-list__day {
+  padding: 0 var(--sp-16);
+  border-radius: var(--corner-12);
+  background: var(--card);
+}
+.import__text {
+  min-height: 140px;
+  padding: var(--sp-12) var(--sp-16);
+  border: 0;
+  border-radius: var(--corner-12);
+  outline: none;
+  background: var(--card);
+  color: var(--text-900);
+  font: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  resize: vertical;
+}

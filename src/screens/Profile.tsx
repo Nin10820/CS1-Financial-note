@@ -127,11 +127,6 @@ export default function Profile({ store, onClose }: { store: Store; onClose: () 
               <Row label="Your data" sub="See what the app keeps" onClick={() => go("data")} />
               <Row label="What the AI does with notes" sub="Only reads what you send" onClick={() => go("ai")} />
               <Row label="Download your data" onClick={() => download(store)} />
-              <Row
-                label="Sample data"
-                sub={store.hasSample ? "Showing made-up notes, bills and assets" : "Fill every screen with made-up data"}
-                control={<Switch label="Sample data" checked={store.hasSample} onChange={(v) => (v ? store.loadSample() : store.clearSample())} />}
-              />
             </Group>
             <p className="prof-note">No account, no server: everything you write stays on this phone.</p>
           </>
@@ -165,6 +160,9 @@ export default function Profile({ store, onClose }: { store: Store; onClose: () 
             </Group>
             <Group label="Sent to a server">
               <Row label="Nothing" sub="Notes are read on this phone in this version" />
+            </Group>
+            <Group label="Downloaded">
+              <Row label="Today's prices" sub="For gold, foreign money and coins you hold, from ExchangeRate-API, gold-api.com and CoinGecko. Only public price lists come in; nothing about you goes out." />
             </Group>
             <Group label="Never collected">
               <Row label="Bank accounts" />

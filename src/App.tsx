@@ -1,4 +1,5 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react";
+import { pricesStale, refreshPrices } from "./lib/market";
 import Today from "./screens/Today";
 import type { Range } from "./screens/TodayHeader";
 import NoteEditor from "./screens/NoteEditor";
@@ -60,9 +61,30 @@ export default function App() {
   );
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [addAsset, setAddAsset] = useState(0);
+  const [addAsset, setAddAsset] = useState<{ n: number; mode: "new" | "note" }>({ n: 0, mode: "new" });
 
   const close = useCallback(() => setOverlay(null), []);
+  // Gold, foreign money and coins follow today's price: on open, when the connection returns,
+  // and on Sync. Nothing is fetched until an asset is held in units.
+  const holds = useRef(false);
+  holds.current = store.assets.some((a) => a.unit && a.quantity);
+  const revalue = store.revalueHoldings;
+  const syncPrices = useCallback(
+    async (force: boolean) => {
+      if (!holds.current && !force) return true;
+      if (!force && !pricesStale()) return true;
+      const ok = await refreshPrices();
+      if (ok) revalue();
+      return ok;
+    },
+    [revalue],
+  );
+  useEffect(() => {
+    void syncPrices(false);
+    const on = () => void syncPrices(false);
+    window.addEventListener("online", on);
+    return () => window.removeEventListener("online", on);
+  }, [syncPrices]);
   // Profile › Display › Appearance: Auto follows the phone.
   useEffect(
     () => watchAppearance(store.prefs.appearance ?? "auto"),
@@ -90,14 +112,11 @@ export default function App() {
   const plusLabel =
     tab === "due"
       ? "Add a bill"
-      : tab === "finance"
-        ? "Add an asset"
-        : menuOpen
+      : menuOpen
           ? "Close"
           : "New";
   const onPlus = () => {
     if (tab === "due") setOverlay({ kind: "add-bill" });
-    else if (tab === "finance") setAddAsset((n) => n + 1);
     else setMenuOpen((m) => !m);
   };
 
@@ -203,6 +222,18 @@ export default function App() {
               toggleBill(bill.id, paid, undefined, ym(today()))
             }
             addRequest={addAsset}
+            onMoveUnits={store.moveUnits}
+            onSetHolding={store.setHolding}
+            onRemoveMove={store.removeMove}
+            onSync={() => syncPrices(true)}
+            goldPremium={store.prefs.goldPremium ?? 0}
+            onGoldPremium={(goldPremium) => {
+              store.setPrefs({ goldPremium });
+              setTimeout(revalue, 0);
+            }}
+            depositPlans={store.prefs.depositPlans ?? {}}
+            onDepositPlans={(depositPlans) => store.setPrefs({ depositPlans })}
+            savingGoal={store.prefs.savingGoal ?? 0}
             onProfile={() => setOverlay({ kind: "profile" })}
           />
         </Suspense>
@@ -229,6 +260,14 @@ export default function App() {
       {menuOpen && (
         <ActionMenu
           onClose={() => setMenuOpen(false)}
+          items={
+            tab === "finance"
+              ? [
+                  { icon: "plus", label: "New asset", onClick: () => (setMenuOpen(false), setAddAsset((a) => ({ n: a.n + 1, mode: "new" }))) },
+                  { icon: "note", label: "Quick note", onClick: () => (setMenuOpen(false), setAddAsset((a) => ({ n: a.n + 1, mode: "note" }))) },
+                ]
+              : undefined
+          }
           onTalk={() => assistant({})}
           onTemplate={() => {
             setMenuOpen(false);
