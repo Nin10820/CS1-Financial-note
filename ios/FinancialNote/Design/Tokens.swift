@@ -134,9 +134,20 @@ enum Tokens {
     }
 
     /// Solid bill tile colours from the Figma bill list.
+    /// A bill's colour on Due: a bill (electricity, water…) keeps its icon's colour; every
+    /// installment (a bank, a finance company) is the same purple; other payments are slate.
+    static func billColor(_ bill: Bill) -> Color {
+        switch bill.kind {
+        case .recurring: billTile(bill.icon)
+        case .installment: Color(hex: 0x7A5AF8)
+        case .oneoff: Color(hex: 0x4B5565)
+        }
+    }
+
     static func billTile(_ icon: BillIcon) -> Color {
         switch icon {
-        case .house: Color(hex: 0x3538CD)
+        // Pink, so purple stays for installments on Due.
+        case .house: Color(hex: 0xDD2590)
         case .drop: Color(hex: 0x1BACEE)
         case .gasPump: Color(hex: 0x15B79E)
         case .lightning: Color(hex: 0xFF4405)
@@ -150,7 +161,7 @@ enum Tokens {
     /// Soft tile (background, ink) from the Figma statement list.
     static func billTileSoft(_ icon: BillIcon) -> (bg: Color, ink: Color) {
         switch icon {
-        case .house: (Color(light: 0xE0EAFF, dark: 0x1E2250), Color(light: 0x3538CD, dark: 0x8B91F5))
+        case .house: (Color(light: 0xFCE7F6, dark: 0x4A1036), Color(light: 0xC11574, dark: 0xF670C7))
         case .drop: (Color(light: 0xDFF2FF, dark: 0x0B2C40), Color(light: 0x0085CA, dark: 0x4FB8F0))
         case .gasPump: (Color(light: 0xCCFBEF, dark: 0x0E3B33), Color(light: 0x107569, dark: 0x2ED3B7))
         case .lightning: (Color(light: 0xFFE6D5, dark: 0x4A1E0A), Color(light: 0xC4320A, dark: 0xFF8A5C))

@@ -11,6 +11,7 @@ struct BillDraft {
     var due: String
     var payWith = ""
     var principal: Int?
+    /// The lender of an installment, or who a one-off is paid to (a friend you owe).
     var lender = ""
     var payments = 12
     var rate = 0.0
@@ -44,7 +45,7 @@ struct BillDraft {
         return Bill(
             kind: kind, name: name.trimmingCharacters(in: .whitespaces), icon: BillMath.guessIcon(name, kind: kind),
             amount: each, varies: kind == .recurring && varies, start: due, code: trimmed(code), payWith: trimmed(payWith),
-            lender: inst ? trimmed(lender) : nil, principal: inst ? principal : nil, payments: inst ? payments : nil,
+            lender: inst || kind == .oneoff ? trimmed(lender) : nil, principal: inst ? principal : nil, payments: inst ? payments : nil,
             rate: inst ? rate : nil, fee: inst ? fee : nil)
     }
 }
@@ -66,11 +67,12 @@ struct AddBillSheet: View {
     /// The line being answered now (its chips show at the bottom).
     @State private var active: Line?
     @Query private var profiles: [Profile]
+    @Query private var bills: [Bill]
 
     private static let kinds: [(BillKind, String, String)] = [
-        (.recurring, "Recurring bill", "Electricity, water, internet — every month"),
+        (.recurring, "Bill", "Electricity, water, internet — every month"),
         (.installment, "Installment", "Fixed parts until it's paid off"),
-        (.oneoff, "One-off", "Just this once, no repeat"),
+        (.oneoff, "Other", "Just this once: tuition, insurance, a friend"),
     ]
 
     var body: some View {
@@ -96,7 +98,9 @@ struct AddBillSheet: View {
     }
 
     private var lead: some View {
-        AddingLead(label: Self.kinds.first { $0.0 == draft.kind }?.1.lowercased() ?? "kind of", chosen: draft.kind != nil)
+        // "Adding new bill / installment / payment".
+        AddingLead(label: draft.kind == .oneoff ? "payment"
+                   : Self.kinds.first { $0.0 == draft.kind }?.1.lowercased() ?? "kind of", chosen: draft.kind != nil)
     }
 
     /// Step 1 (Figma Due 943:25329): pick the kind, or say the whole bill in one sentence.
@@ -188,6 +192,7 @@ struct AddBillSheet: View {
     private var oneOffLines: some View {
         moneyLine("Amount:", value: draft.amount, line: .amount)
         if (draft.amount ?? 0) > 0 {
+            textLine("Pay to:", text: $draft.lender, placeholder: "(optional)", line: .lender)
             pickLine("Due", value: DueText.ddmmyyyy(draft.due), line: .due)
             textLine("Pay with", text: $draft.payWith, placeholder: "(optional)", line: .payWith)
         }
@@ -225,6 +230,7 @@ struct AddBillSheet: View {
     private func next(after line: Line?) -> Line? {
         let order: [Line] = draft.kind == .installment
             ? [.name, .principal, .lender, .start, .payments, .rate, .fee]
+            : draft.kind == .oneoff ? [.name, .amount, .lender, .due, .payWith]
             : [.name, .amount, .due, .payWith]
         guard let line, let i = order.firstIndex(of: line) else {
             // From the bill code: on to the amount if it's still empty.
@@ -283,6 +289,12 @@ struct AddBillSheet: View {
                 + [Pick(id: "Pick a date…") { pickingDate = line == .start ? .start : .due }]
         case .payWith:
             return set(myBanks + ["Cash", "Card", "Transfer"]) { draft.payWith = $0 }
+        case .lender where draft.kind == .oneoff:
+            // People already paid to with a one-off, newest first.
+            var seen = Set<String>()
+            let people = bills.filter { $0.kind == .oneoff }.sorted { $0.createdAt > $1.createdAt }
+                .compactMap(\.lender).filter { seen.insert($0.lowercased()).inserted }
+            return set(Array(people.prefix(8))) { draft.lender = $0 }
         case .lender:
             return set(myBanks + ["Home Credit", "FE Credit", "HD Saison"]) { draft.lender = $0 }
         case .payments:
@@ -367,7 +379,11 @@ struct AddBillSheet: View {
 
     /// A line answered by picking: tap it to show its chips.
     private func pickLine(_ title: String, value: String, line: Line) -> some View {
-        Button { go(line) } label: {
+        Button {
+            go(line)
+            // Tapping a date opens the calendar straight away; the quick days stay below it.
+            if line == .due { pickingDate = .due } else if line == .start { pickingDate = .start }
+        } label: {
             HStack(alignment: .firstTextBaseline, spacing: Space.s8) {
                 label(title)
                 Text(value).font(AppFont.h6(.semibold)).foregroundStyle(Tokens.brand600)

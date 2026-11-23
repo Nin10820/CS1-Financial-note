@@ -24,6 +24,58 @@ enum SampleData {
         return Day.iso(Day.date(year: y, month: m + n, day: min(d, 28)))
     }
 
+    /// Where a sample line was paid from (or received into), the same every load.
+    private static func paidFrom(_ c: Category, _ flow: Flow, _ n: Int) -> String {
+        if flow == .in { return ["Vietcombank", "Vietcombank", "MoMo", "TP Bank"][n % 4] }
+        switch c {
+        case .food: return ["Cash", "MoMo", "Cash", "ZaloPay"][n % 4]
+        case .transport: return ["Cash", "MoMo"][n % 2]
+        case .shopping: return ["Card", "TP Bank", "ShopeePay"][n % 3]
+        case .bills: return "Vietcombank"
+        default: return ["Vietcombank", "MoMo", "Card", "Cash"][n % 4]
+        }
+    }
+
+    /// The rest of Due: more bills, installments from finance companies, and one-off payments —
+    /// tuition, insurance, paying friends back (one already done last month).
+    private static func moreBills(thisMonth: String, now: Date,
+                                  paidMonths: (Int, Int, Int) -> [String: PaidRecord]) -> [Bill] {
+        let last = Month.add(thisMonth, -1), next = Month.add(thisMonth, 1)
+        func once(_ month: String, _ amount: Int, daysAgo: Double) -> [String: PaidRecord] {
+            [month: PaidRecord(amount: amount, at: now.addingTimeInterval(-daysAgo * 86_400))]
+        }
+        return [
+            Bill(id: id("building"), kind: .recurring, name: "Phí quản lý chung cư", icon: .house, amount: 350_000,
+                 start: addMonthsIso("\(thisMonth)-01", -8), payWith: "Vietcombank", paid: paidMonths(0, 8, 350_000),
+                 createdAt: now, sample: true),
+            Bill(id: id("mobile"), kind: .recurring, name: "Gói cước Viettel", icon: .phone, amount: 150_000,
+                 start: addMonthsIso("\(thisMonth)-28", -6), payWith: "MoMo", paid: paidMonths(1, 6, 150_000),
+                 createdAt: now, sample: true),
+            Bill(id: id("gas"), kind: .recurring, name: "Gas nấu ăn", icon: .gasPump, amount: 380_000, varies: true,
+                 start: addMonthsIso("\(thisMonth)-26", -4), payWith: "Cash", paid: paidMonths(1, 4, 375_000),
+                 createdAt: now, sample: true),
+            Bill(id: id("laptop"), kind: .installment, name: "MacBook Air", icon: .monitor, amount: 2_150_000,
+                 start: addMonthsIso("\(thisMonth)-08", -2), payWith: "Vietcombank", lender: "FE Credit",
+                 principal: 24_000_000, payments: 12, rate: 1.2, fee: 0, paid: paidMonths(0, 2, 2_150_000),
+                 createdAt: now, sample: true),
+            Bill(id: id("bike"), kind: .installment, name: "Xe Vision", icon: .gasPump, amount: 1_850_000,
+                 start: addMonthsIso("\(thisMonth)-22", -10), payWith: "MoMo", lender: "HD Saison",
+                 principal: 31_000_000, payments: 18, rate: 0.9, fee: 0, paid: paidMonths(1, 10, 1_850_000),
+                 createdAt: now, sample: true),
+            Bill(id: id("tuition"), kind: .oneoff, name: "Học phí học kỳ 2", icon: .student, amount: 8_500_000,
+                 start: "\(next)-10", payWith: "Vietcombank", createdAt: now, sample: true),
+            Bill(id: id("insure"), kind: .oneoff, name: "Bảo hiểm xe máy", icon: .bell, amount: 66_000,
+                 start: "\(thisMonth)-27", payWith: "Cash", createdAt: now, sample: true),
+            Bill(id: id("minh"), kind: .oneoff, name: "Trả tiền vé concert", icon: .bell, amount: 2_000_000,
+                 start: "\(thisMonth)-30", payWith: "MoMo", lender: "Minh", createdAt: now, sample: true),
+            Bill(id: id("lan"), kind: .oneoff, name: "Trả tiền lẩu", icon: .bell, amount: 450_000,
+                 start: "\(last)-20", payWith: "MoMo", lender: "Lan", paid: once(last, 450_000, daysAgo: 30),
+                 createdAt: now, sample: true),
+            Bill(id: id("wedding"), kind: .oneoff, name: "Mừng cưới Huy", icon: .bell, amount: 1_000_000,
+                 start: "\(next)-14", payWith: "Cash", lender: "Huy", createdAt: now, sample: true),
+        ]
+    }
+
     private static func k(_ amount: Int) -> String { "\(Int((Double(amount) / 1000).rounded()))k" }
 
     // Everyday Vietnamese dishes for each meal; each costs between 30k and 50k.
@@ -134,11 +186,13 @@ enum SampleData {
             let noteId = id("note-\(i)")
             let source = items.map { "\($0.title) \(k($0.amount))" }.joined(separator: ", ")
             for (j, it) in items.enumerated() {
-                entries.append(Entry(
+                let e = Entry(
                     id: id("e-\(i)-\(j)"), date: date, title: it.title, amount: it.amount, flow: it.flow,
                     category: it.category, noteId: noteId, source: source,
                     createdAt: midnight.addingTimeInterval(it.hour * 3600 + minutes[j]),
-                    sample: true))
+                    sample: true)
+                e.paidFrom = paidFrom(it.category, it.flow, i * 7 + j)
+                entries.append(e)
             }
             if i < 2 {
                 notes.append(DayNote(date: date, lines: items.map { "\($0.title) \(k($0.amount))" },
@@ -160,18 +214,18 @@ enum SampleData {
             Bill(id: id("rent"), kind: .recurring, name: "Rent", icon: .house, amount: 2_500_000,
                  start: addMonthsIso("\(thisMonth)-05", -8), payWith: "Transfer", paid: paidMonths(0, 8, 2_500_000), createdAt: now, sample: true),
             Bill(id: id("power"), kind: .recurring, name: "Electricity", icon: .lightning, amount: 420_000, varies: true,
-                 start: addMonthsIso("\(thisMonth)-12", -8), code: "PE0400123456", paid: paidMonths(0, 8, 410_000), createdAt: now, sample: true),
+                 start: addMonthsIso("\(thisMonth)-12", -8), code: "PE0400123456", payWith: "MoMo", paid: paidMonths(0, 8, 410_000), createdAt: now, sample: true),
             Bill(id: id("water"), kind: .recurring, name: "Water Bill", icon: .drop, amount: 120_000, varies: true,
-                 start: addMonthsIso(day15, -8), code: "WT2451234151", paid: paidMonths(0, 8, 118_000), createdAt: now, sample: true),
+                 start: addMonthsIso(day15, -8), code: "WT2451234151", payWith: "Vietcombank", paid: paidMonths(0, 8, 118_000), createdAt: now, sample: true),
             Bill(id: id("net"), kind: .recurring, name: "Internet", icon: .phone, amount: 220_000,
-                 start: addMonthsIso("\(thisMonth)-20", -8), paid: paidMonths(0, 8, 220_000), createdAt: now, sample: true),
+                 start: addMonthsIso("\(thisMonth)-20", -8), payWith: "Card", paid: paidMonths(0, 8, 220_000), createdAt: now, sample: true),
             Bill(id: id("iphone"), kind: .installment, name: "iPhone 15 Pro", icon: .phone, amount: 1_100_000,
                  start: addMonthsIso("\(thisMonth)-25", -3), payWith: "TP Bank", lender: "TP Bank", principal: 12_120_000,
                  payments: 12, rate: 0, fee: 1.5, paid: paidMonths(1, 3, 1_100_000), createdAt: now, sample: true),
             Bill(id: id("course"), kind: .installment, name: "English Course", icon: .student, amount: 367_000,
                  start: addMonthsIso("\(thisMonth)-18", -5), lender: "Home Credit", principal: 2_200_000,
                  payments: 6, rate: 0, fee: 0, paid: paidMonths(1, 5, 367_000), createdAt: now, sample: true),
-        ]
+        ] + moreBills(thisMonth: thisMonth, now: now, paidMonths: paidMonths)
 
         // A paid bill shows as a "Bills" spend on its due day, like ticking it in Due does.
         let from = Day.addDays(today, -91)
@@ -186,6 +240,7 @@ enum SampleData {
                     id: id("bill-\(bill.id)-\(month)"), date: date, title: bill.name, amount: record.amount, flow: .out,
                     category: .bills, noteId: "bill-\(bill.id)-\(month)", source: "Checked off “\(bill.name)” in Due",
                     createdAt: record.at, billId: bill.id, sample: true)
+                entry.paidFrom = bill.payWith
                 entries.append(entry)
                 records[month]?.entryId = entry.id
             }

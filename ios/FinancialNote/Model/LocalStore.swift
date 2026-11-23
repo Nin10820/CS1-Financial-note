@@ -51,6 +51,31 @@ struct LocalStore {
         try? context.save()
     }
 
+    /// Adds what's new in the sample (bills, their check-off entries) without touching anything
+    /// already there, and fills in "paid from" / "pay with" on sample lines that have none.
+    /// Edits made to sample items stay.
+    func topUpSample(today: String = Day.today(), now: Date = .now) {
+        guard all(Bill.self).contains(where: \.sample) || all(Entry.self).contains(where: \.sample) else { return }
+        let x = SampleData.make(today: today, now: now)
+        let bills = Dictionary(all(Bill.self).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        for b in x.bills {
+            if let old = bills[b.id] {
+                if old.sample && old.payWith == nil { old.payWith = b.payWith }
+            } else {
+                context.insert(b)
+            }
+        }
+        let entries = Dictionary(all(Entry.self).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        for e in x.entries {
+            if let old = entries[e.id] {
+                if old.sample && old.paidFrom == nil { old.paidFrom = e.paidFrom }
+            } else if e.billId != nil {
+                context.insert(e)
+            }
+        }
+        try? context.save()
+    }
+
     /// Removes every sample item and leaves the user's own data alone.
     func clearSample() {
         let hadSample = all(Asset.self).contains(where: \.sample) || all(Entry.self).contains(where: \.sample)

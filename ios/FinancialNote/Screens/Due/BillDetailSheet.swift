@@ -19,6 +19,8 @@ struct BillDetailSheet: View {
     @State private var allHistory = false
     @State private var chatNotice = false
     @State private var copied = false
+    @Query private var profiles: [Profile]
+    @Query private var allBills: [Bill]
 
     var body: some View {
         let due = BillMath.dueIn(bill, month: month)
@@ -66,7 +68,7 @@ struct BillDetailSheet: View {
 
     /// Soft light in the bill's colour behind the top (Figma: blue for water).
     private var glow: some View {
-        RadialGradient(colors: [Tokens.billTile(bill.icon).opacity(0.28), .clear],
+        RadialGradient(colors: [Tokens.billColor(bill).opacity(0.28), .clear],
                        center: .top, startRadius: 0, endRadius: 360)
             .frame(height: 360)
             .blur(radius: 30)
@@ -76,7 +78,7 @@ struct BillDetailSheet: View {
 
     private func head(step: BillMath.Step?, record: PaidRecord?) -> some View {
         VStack(alignment: .leading, spacing: Space.s16) {
-            BillTile(icon: bill.icon, size: 56)
+            BillTile(icon: bill.icon, size: 56, color: Tokens.billColor(bill))
             VStack(alignment: .leading, spacing: 4) {
                 Text(bill.name)
                     .font(AppFont.title(24, .bold))
@@ -156,10 +158,13 @@ struct BillDetailSheet: View {
 
     /// One fact: label on the left; on the right green text, or a small grey chip.
     private enum Value {
-        case green(String), chip(String), date(String), percent(Double), code(String), none
+        case green(String), chip(String), date(String), percent(Double), code(String), payWith, none
     }
 
     private func facts(due: String?) -> some View {
+        // Who a one-off is paid to, when it was written down.
+        var payTo: [(String, Value)] = []
+        if bill.kind == .oneoff, let who = bill.lender { payTo = [("Pay to", .chip(who))] }
         let rows: [(String, Value)] = bill.kind == .installment
             ? [
                 ("Amount borrowed", .green("\(Money.format(bill.principal ?? 0)) đ")),
@@ -175,8 +180,9 @@ struct BillDetailSheet: View {
                 ("Amount each time", .chip(bill.varies ? "Changes" : "Fixed")),
                 (bill.varies ? "Roughly how much?" : "Amount", .green("\(bill.varies ? "~" : "")\(Money.format(bill.amount)) đ")),
                 ("Repeats", .chip(bill.kind == .recurring ? "Monthly" : "Just once")),
+            ] + payTo + [
                 ("Due", .date(due ?? bill.start)),
-                ("Pay with", .chip(bill.payWith ?? "–")),
+                ("Pay with", .payWith),
             ]
         return VStack(spacing: 0) {
             ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
@@ -231,9 +237,37 @@ struct BillDetailSheet: View {
                     Text("%").foregroundStyle(Tokens.grey400)
                 }
             }
+        case .payWith:
+            // Tap to say how it's paid; it then shows as the bill's badge on Due.
+            Menu {
+                Picker("Pay with", selection: Binding(get: { bill.payWith }, set: {
+                    bill.payWith = $0
+                    try? context.save()
+                })) {
+                    Text("Not set").tag(String?.none)
+                    ForEach(payOptions, id: \.self) { Text($0).tag(String?.some($0)) }
+                }
+            } label: {
+                chip {
+                    HStack(spacing: 4) {
+                        Text(bill.payWith ?? "Choose").foregroundStyle(bill.payWith == nil ? Tokens.grey400 : Tokens.text900)
+                        Image(systemName: "chevron.up.chevron.down").font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(Tokens.grey400)
+                    }
+                }
+            }
+            .accessibilityLabel("Pay with, \(bill.payWith ?? "not set")")
         case .none:
             EmptyView()
         }
+    }
+
+    /// Your bank apps, the usual ways, and whatever other bills are paid with.
+    private var payOptions: [String] {
+        let banks = (profiles.first?.banks ?? []).compactMap { BankApp.named($0)?.name }
+        var seen = Set<String>()
+        return (banks + ["Transfer", "MoMo", "Cash", "Card"] + allBills.compactMap(\.payWith) + [bill.payWith].compactMap { $0 })
+            .filter { seen.insert($0.lowercased()).inserted }
     }
 
     private func chip<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
@@ -349,7 +383,7 @@ struct BillDetailSheet: View {
                             bill, month: month, paid: !paid, date: app.today, amount: !paid && bill.varies ? typed : nil)
                     } label: {
                         Text(paid ? "Undo check" : "Check")
-                            .font(AppFont.bodyLarge(.semibold))
+                            .font(AppFont.body(.semibold))
                             .foregroundStyle(paid ? Tokens.text900 : .white)
                             .frame(maxWidth: .infinity, minHeight: 44)
                             .contentShape(.capsule)

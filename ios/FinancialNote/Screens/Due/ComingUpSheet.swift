@@ -7,28 +7,50 @@ struct ComingUpSheet: View {
     @Environment(AppState.self) private var app
     @Environment(\.dismiss) private var dismiss
     @State private var view: ViewKind = .month
-    @State private var year = Day.parts(Day.today()).y
 
     enum ViewKind: String, CaseIterable { case card = "Card", month = "Month" }
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: Space.s16) {
+            ScrollViewReader { proxy in
+                ScrollView {
+                    Group { if view == .month { grid } else { timeline } }
+                        .padding(Space.s20)
+                }
+                // Card / Month stays on top while the years scroll under it.
+                .safeAreaInset(edge: .top, spacing: 0) {
                     Picker("View", selection: $view) {
                         Label("Card", systemImage: "list.bullet").tag(ViewKind.card)
                         Label("Month", systemImage: "square.grid.2x2").tag(ViewKind.month)
                     }
                     .pickerStyle(.segmented)
-                    if view == .month { grid } else { timeline }
+                    .padding(.horizontal, Space.s20)
+                    .padding(.vertical, Space.s8)
+                    .background(Tokens.canvas)
                 }
-                .padding(Space.s20)
+                // Opens on the year of the month on Due; scroll up for older years, down for later ones.
+                .onAppear { jump(proxy) }
+                .onChange(of: view) { _, _ in jump(proxy) }
             }
             .background(Tokens.canvas)
             .sheetHeader("Coming up")
         }
         .presentationDetents([.large])
-        .onAppear { year = Day.parts(app.dueMonth + "-01").y }
+    }
+
+    private var openYear: Int { Day.parts(app.dueMonth + "-01").y }
+
+    /// From the year of the first bill (or last year) to two years ahead.
+    private var years: [Int] {
+        let now = Day.parts(app.today).y
+        let first = min(bills.map { Day.parts($0.start).y }.min() ?? now, now - 1)
+        return Array(first...(max(now, openYear) + 2))
+    }
+
+    /// Month opens on the year of the month on Due; Card starts at this month, at the top.
+    private func jump(_ proxy: ScrollViewProxy) {
+        let target = view == .month ? "year-\(openYear)" : "timeline-top"
+        Task { @MainActor in proxy.scrollTo(target, anchor: .top) }
     }
 
     private func pick(_ month: String) {
@@ -38,26 +60,24 @@ struct ComingUpSheet: View {
 
     // MARK: - Month grid
 
+    /// Every year one under the other, each with its twelve months.
     private var grid: some View {
-        VStack(spacing: Space.s12) {
-            HStack {
-                Button { year -= 1 } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44).contentShape(.rect) }
-                    .accessibilityLabel("Previous year")
-                Text(String(year))
-                    .font(AppFont.heading(20, .semibold))
-                    .frame(maxWidth: .infinity)
-                    .accessibilityAddTraits(.isHeader)
-                Button { year += 1 } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44).contentShape(.rect) }
-                    .accessibilityLabel("Next year")
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(Tokens.text700)
-
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Space.s8), count: 3), spacing: Space.s8) {
-                ForEach(1...12, id: \.self) { i in
-                    let m = String(format: "%04d-%02d", year, i)
-                    MonthCell(month: m, bills: bills, selected: m == app.dueMonth, hidden: app.hidden) { pick(m) }
+        VStack(spacing: Space.s24) {
+            ForEach(years, id: \.self) { year in
+                VStack(alignment: .leading, spacing: Space.s12) {
+                    Text(String(year))
+                        .font(AppFont.heading(20, .semibold))
+                        .foregroundStyle(year == Day.parts(app.today).y ? Tokens.text900 : Tokens.text700)
+                        .padding(.leading, Space.s4)
+                        .accessibilityAddTraits(.isHeader)
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Space.s8), count: 3), spacing: Space.s8) {
+                        ForEach(1...12, id: \.self) { i in
+                            let m = String(format: "%04d-%02d", year, i)
+                            MonthCell(month: m, bills: bills, selected: m == app.dueMonth, hidden: app.hidden) { pick(m) }
+                        }
+                    }
                 }
+                .id("year-\(year)")
             }
             HStack(spacing: Space.s4) {
                 Image(systemName: "checkmark.circle")
@@ -76,6 +96,7 @@ struct ComingUpSheet: View {
             .map { (m: $0, s: BillMath.monthSummary(bills, month: $0)) }
             .filter { !$0.s.due.isEmpty }
         return VStack(alignment: .leading, spacing: 0) {
+            Color.clear.frame(height: 0).id("timeline-top")
             if months.isEmpty {
                 Text("Nothing due in the next 12 months.")
                     .font(AppFont.main(14))
@@ -94,10 +115,22 @@ struct ComingUpSheet: View {
                                 .font(AppFont.main(12, .medium))
                                 .foregroundStyle(Tokens.grey400)
                             AmountText(value: row.s.remaining + row.s.paid, size: 18, hidden: app.hidden)
-                            Text("\(row.s.due.count) \(row.s.due.count == 1 ? "bill" : "bills")"
-                                 + (row.s.still.isEmpty ? " · all paid" : " · \(row.s.still.count) to pay"))
-                                .font(AppFont.main(12))
-                                .foregroundStyle(Tokens.grey400)
+                            // What's in it: one line each, name and amount.
+                            VStack(spacing: Space.s4) {
+                                ForEach(row.s.due, id: \.bill.id) { item in
+                                    let paid = item.bill.paid[row.m]
+                                    HStack(spacing: Space.s8) {
+                                        Circle().fill(Tokens.billColor(item.bill)).frame(width: 6, height: 6)
+                                        Text(item.bill.name).lineLimit(1)
+                                        Spacer(minLength: Space.s8)
+                                        Text(app.hidden ? "•••" : Money.format(paid?.amount ?? item.bill.amount) + "đ")
+                                            .monospacedDigit()
+                                    }
+                                    .font(AppFont.main(13))
+                                    .foregroundStyle(paid == nil ? Tokens.text700 : Tokens.grey400)
+                                }
+                            }
+                            .padding(.top, Space.s4)
                         }
                         .padding(.bottom, Space.s20)
                         Spacer()

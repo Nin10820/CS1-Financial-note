@@ -22,6 +22,10 @@ struct FinancialNoteApp: App {
         if ProcessInfo.processInfo.arguments.contains("-reloadSample") {
             LocalStore(context: container.mainContext).loadSample()
         }
+        // `-topUpSample` adds the newer sample bills and "paid from" without reloading anything.
+        if ProcessInfo.processInfo.arguments.contains("-topUpSample") {
+            LocalStore(context: container.mainContext).topUpSample()
+        }
         #endif
         Self.styleNavigationTitles()
         // System alerts draw their main button (e.g. Save) in the UIKit tint, which is blue

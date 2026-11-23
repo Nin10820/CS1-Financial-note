@@ -145,6 +145,8 @@ struct BillTile: View {
     var icon: BillIcon
     var size: CGFloat = 36
     var soft = false
+    /// A colour of its own (Due colours bills by kind); the icon's colour otherwise.
+    var color: Color? = nil
 
     var body: some View {
         let colors = Tokens.billTileSoft(icon)
@@ -152,7 +154,7 @@ struct BillTile: View {
             .font(.system(size: size * 0.46, weight: .semibold))
             .foregroundStyle(soft ? colors.ink : .white)
             .frame(width: size, height: size)
-            .background(soft ? colors.bg : Tokens.billTile(icon), in: .rect(cornerRadius: size >= 36 ? 12 : 10))
+            .background(soft ? colors.bg : color ?? Tokens.billTile(icon), in: .rect(cornerRadius: size >= 36 ? 12 : 10))
             .accessibilityHidden(true)
     }
 }

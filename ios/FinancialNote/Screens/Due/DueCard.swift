@@ -3,6 +3,42 @@ import SwiftUI
 /// Which bills the Due list shows.
 enum DueFilter: Hashable { case all, still, done }
 
+extension Bill {
+    /// Where the bill comes from or goes to: the lender of an installment, who a one-off is paid
+    /// to, or the bank it's paid with. nil when nothing was written.
+    var source: String? {
+        guard let s = (lender ?? payWith)?.trimmingCharacters(in: .whitespaces), !s.isEmpty else { return nil }
+        return s
+    }
+}
+
+extension BillKind {
+    /// Due's name for the kind: "Bill", "Installment", "Other".
+    var badge: String {
+        switch self {
+        case .recurring: "Bill"
+        case .installment: "Installment"
+        case .oneoff: "Other"
+        }
+    }
+}
+
+/// A small label on a bill row: the kind in grey, where it's from in green.
+struct BillBadge: View {
+    var text: String
+    var green = false
+
+    var body: some View {
+        Text(text)
+            .font(AppFont.table(11, .medium))
+            .foregroundStyle(green ? Tokens.brand800 : Tokens.text700)
+            .lineLimit(1)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(green ? Tokens.brand100 : Tokens.bg4, in: .capsule)
+    }
+}
+
 /// Due's dark card, in the same style as Today's Total Amount card: what's left to pay this
 /// month, a line with what's paid and what's left overall, then a row — All |
 /// Still · Done | History — that picks what the list below shows.
@@ -143,6 +179,9 @@ struct BillRow: View {
         let record = bill.paid[month]
         let paid = record != nil
         let amount = record?.amount ?? bill.amount
+        let line = DueText.listDate(date, paid: paid, today: today)
+        // "To Minh" for a one-off paid to someone; the bank or lender otherwise.
+        let source = bill.source.map { bill.kind == .oneoff && bill.lender != nil ? "To \($0)" : $0 }
         HStack(spacing: Space.s8) {
             Button(action: onOpen) {
                 HStack(spacing: Space.s12) {
@@ -151,7 +190,7 @@ struct BillRow: View {
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 40, height: 40)
-                        .background(Tokens.billTile(bill.icon), in: .circle)
+                        .background(Tokens.billColor(bill), in: .circle)
                         .opacity(paid ? 0.6 : 1)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
@@ -159,21 +198,29 @@ struct BillRow: View {
                             .font(AppFont.table(15, .semibold))
                             .foregroundStyle(paid ? Tokens.grey400 : Tokens.text900)
                             .lineLimit(1)
-                        Text(DueText.listDate(date, paid: paid, today: today))
+                        // One badge: where the money is owed. The kind is the tile's colour.
+                        if let source {
+                            BillBadge(text: source, green: true)
+                                .opacity(paid ? 0.7 : 1)
+                        }
+                    }
+                    Spacer(minLength: Space.s8)
+                    // The amount, and the day under it.
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text((!paid && bill.varies ? "~" : "") + (hidden ? "•••" : Money.format(amount) + "đ"))
+                            .font(AppFont.heading(16, .semibold))
+                            .foregroundStyle(paid ? Tokens.grey400 : Tokens.text900)
+                            .monospacedDigit()
+                        Text(line)
                             .font(AppFont.table(12))
                             .foregroundStyle(Tokens.grey400)
                     }
-                    Spacer(minLength: Space.s8)
-                    Text((!paid && bill.varies ? "~" : "") + (hidden ? "•••" : Money.format(amount) + "đ"))
-                        .font(AppFont.heading(16, .semibold))
-                        .foregroundStyle(paid ? Tokens.grey400 : Tokens.text900)
-                        .monospacedDigit()
                     .fixedSize()
                 }
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("\(bill.name), \(DueText.listDate(date, paid: paid, today: today)), \(hidden ? "amount hidden" : "\(Money.format(amount)) dong")")
+            .accessibilityLabel("\(bill.name), \(line), \(bill.kind.badge)\(source.map { ", \($0)" } ?? ""), \(hidden ? "amount hidden" : "\(Money.format(amount)) dong")")
             .accessibilityHint("Opens the details")
             Button(action: onTick) {
                 Image(systemName: paid ? "checkmark.circle.fill" : "circle")

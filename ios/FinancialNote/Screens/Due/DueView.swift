@@ -28,6 +28,9 @@ struct DueView: View {
     @State private var sheet: DueSheet?
     /// The card's All / Still / Done row, applied to the list.
     @State private var filter: DueFilter = .all
+    /// The chip picked above the list: "" for all, "kind:installment" or "from:Home Credit".
+    /// Kept between visits so the list opens the way it was left.
+    @AppStorage("dueView") private var view = ""
     @State private var path: [DueRoute] = []
     @State private var ticks = 0
     @State private var pageHeight: CGFloat = 0
@@ -42,8 +45,13 @@ struct DueView: View {
         @Bindable var app = app
         let s = BillMath.monthSummary(bills, month: app.dueMonth)
         let inDone = { (i: BillMath.DueItem) in stay[i.bill.id] ?? (i.bill.paid[app.dueMonth] != nil) }
-        let still = s.due.filter { !inDone($0) }
-        let done = s.due.filter(inDone)
+        let shown = s.due.filter { DueViews.matches($0.bill, view) }
+        let still = shown.filter { !inDone($0) }
+        let done = shown.filter(inDone)
+        let views = DueViews.chips(s.due.map(\.bill), keeping: view)
+        // The list in kinds — Bill, Installment, Other — after the card's All / Still / Done.
+        let listed = filter == .still ? still : filter == .done ? done : shown
+        let kinds = BillKind.allCases.map { k in (k, listed.filter { $0.bill.kind == k }) }.filter { !$0.1.isEmpty }
 
         NavigationStack(path: $path) {
             ScrollView {
@@ -58,12 +66,21 @@ struct DueView: View {
                     if s.due.isEmpty {
                         empty
                     } else {
+                        if views.count > 2 {
+                            DueViewChips(chips: views, selected: $view)
+                                .padding(.horizontal, -Space.s20)
+                        }
                         VStack(alignment: .leading, spacing: Space.s8) {
-                            if filter != .done && !still.isEmpty { group("Still", still) }
-                            if filter != .still && !done.isEmpty {
-                                group("Done", done).padding(.top, filter == .all && !still.isEmpty ? Space.s8 : 0)
+                            ForEach(Array(kinds.enumerated()), id: \.element.0) { i, part in
+                                group(part.0.badge, part.1).padding(.top, i > 0 ? Space.s8 : 0)
                             }
-                            if (filter == .still && still.isEmpty) || (filter == .done && done.isEmpty) {
+                            if shown.isEmpty {
+                                Text("Nothing for \(DueViews.title(view)) in \(DueText.monthName(app.dueMonth)).")
+                                    .font(AppFont.body()).foregroundStyle(Tokens.grey400)
+                                    .multilineTextAlignment(.center)
+                                    .frame(maxWidth: .infinity, minHeight: 120)
+                                    .background(Tokens.bg4.opacity(0.6), in: .rect(cornerRadius: Corner.c20))
+                            } else if (filter == .still && still.isEmpty) || (filter == .done && done.isEmpty) {
                                 Text(filter == .still ? "Everything's paid this month." : "Nothing ticked yet this month.")
                                     .font(AppFont.body()).foregroundStyle(Tokens.grey400)
                                     .frame(maxWidth: .infinity, minHeight: 120)
@@ -71,6 +88,7 @@ struct DueView: View {
                             }
                         }
                         .animation(.snappy, value: filter)
+                        .animation(.snappy, value: view)
                     }
                 }
                 .padding(.horizontal, Space.s20)
@@ -322,5 +340,77 @@ private struct TickToastView: View {
         .padding(.horizontal, Space.s20)
         .padding(.bottom, Space.s12)
         .accessibilityElement(children: .contain)
+    }
+}
+
+/// The chips above Due's list: All, then where the money goes (a bank, a lender, someone a
+/// payment is to). One at a time; the kinds are the list's own groups. An old "kind:" choice
+/// from before shows everything.
+enum DueViews {
+    struct Chip: Hashable { var id: String; var title: String }
+
+    static func matches(_ bill: Bill, _ view: String) -> Bool {
+        if view.hasPrefix("from:") { return key(bill.source ?? "") == key(String(view.dropFirst(5))) }
+        return true
+    }
+
+    /// The chips for this month's bills; the picked one stays even when this month has none of it.
+    static func chips(_ bills: [Bill], keeping view: String) -> [Chip] {
+        var list = [Chip(id: "", title: "All")]
+        var seen = Set<String>()
+        for s in bills.compactMap(\.source) where seen.insert(key(s)).inserted {
+            list.append(Chip(id: "from:\(s)", title: s))
+        }
+        if view.hasPrefix("from:") && !list.contains(where: { $0.id == view }) {
+            list.append(Chip(id: view, title: title(view)))
+        }
+        return list
+    }
+
+    /// "Installment", "Home Credit".
+    static func title(_ view: String) -> String {
+        if view.hasPrefix("from:") { return String(view.dropFirst(5)) }
+        return "All"
+    }
+
+    private static func key(_ s: String) -> String {
+        s.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "vi"))
+            .trimmingCharacters(in: .whitespaces)
+    }
+}
+
+/// A row of chips that scrolls sideways, edge to edge like the month strip.
+struct DueViewChips: View {
+    var chips: [DueViews.Chip]
+    @Binding var selected: String
+
+    var body: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: Space.s8) {
+                ForEach(chips, id: \.self) { c in
+                    let on = c.id == selected
+                    Button {
+                        animate { selected = on && !c.id.isEmpty ? "" : c.id }
+                    } label: {
+                        Text(c.title)
+                            .font(AppFont.main(14, on ? .semibold : .medium))
+                            .foregroundStyle(on ? .white : Tokens.text700)
+                            .lineLimit(1)
+                            .padding(.horizontal, Space.s12)
+                            .frame(minHeight: 34)
+                            .background(on ? Tokens.brand600 : Tokens.card, in: .capsule)
+                            .overlay(Capsule().strokeBorder(on ? .clear : Tokens.bd1))
+                            .frame(minHeight: 44)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+            .padding(.horizontal, Space.s20)
+        }
+        .scrollIndicators(.hidden)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Show")
     }
 }
