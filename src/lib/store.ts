@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react"
 import type { Category, Flow } from "../components/ui"
 import type { Bill } from "./bills"
 import type { Asset, AssetMove, CareGift, WorthPoint } from "./assets"
-import { makeSample } from "./sample"
 import { today } from "./format"
 
 /** One saved line. Lines saved together from one note share a `noteId`. */
@@ -78,31 +77,7 @@ const blank = (): Saved => ({
   sampleNotes: [],
 })
 
-/** Adds the sample on top of what is there (sample items first removed, so it never doubles). */
-function withSample(s: Saved): Saved {
-  const base = withoutSample(s)
-  const x = makeSample(today())
-  const notes = { ...base.notes }
-  const sampleNotes: string[] = []
-  for (const [date, note] of Object.entries(x.notes))
-    if (!notes[date]) {
-      notes[date] = note
-      sampleNotes.push(date)
-    }
-  return {
-    ...base,
-    entries: [...base.entries, ...x.entries],
-    bills: [...base.bills, ...x.bills],
-    assets: [...base.assets, ...x.assets],
-    moves: [...base.moves, ...x.moves],
-    care: [...base.care, ...x.care],
-    worth: base.worth.length ? base.worth : x.worth,
-    notes,
-    sampleNotes,
-    prefs: { ...base.prefs, birthYear: base.prefs.birthYear ?? x.birthYear },
-  }
-}
-
+/** Drops the old sample items a browser may still have saved; the user's own data stays. */
 function withoutSample(s: Saved): Saved {
   const keep = <T extends { sample?: boolean }>(list: T[]) => list.filter((i) => !i.sample)
   const notes = { ...s.notes }
@@ -124,11 +99,11 @@ function withoutSample(s: Saved): Saved {
 function load(): Saved {
   try {
     const raw = localStorage.getItem(KEY)
-    // First launch on this device: start with the sample so every screen has something to show.
-    if (!raw) return withSample(blank())
+    // First launch on this device: start empty.
+    if (!raw) return blank()
     const p = JSON.parse(raw) as Partial<Saved>
     const b = blank()
-    return {
+    return withoutSample({
       entries: Array.isArray(p.entries) ? p.entries : [],
       name: p.name || "Nin",
       notes: p.notes && typeof p.notes === "object" ? p.notes : {},
@@ -139,7 +114,7 @@ function load(): Saved {
       worth: Array.isArray(p.worth) ? p.worth : [],
       prefs: { ...b.prefs, ...(p.prefs ?? {}) },
       sampleNotes: Array.isArray(p.sampleNotes) ? p.sampleNotes : [],
-    }
+    })
   } catch {
     // Private mode or corrupt data: start empty rather than crash.
     return blank()
@@ -243,20 +218,14 @@ export function useStore() {
       })),
     [],
   )
-  const loadSample = useCallback(() => setState((s) => withSample(s)), [])
-  const clearSample = useCallback(() => setState((s) => withoutSample(s)), [])
-  /** Wipes everything on this device and starts clean (no sample). */
+  /** Wipes everything on this device and starts clean. */
   const clearAll = useCallback(() => setState({ ...blank() }), [])
-  const hasSample = state.entries.some((e) => e.sample) || state.assets.some((a) => a.sample) || state.bills.some((b) => b.sample)
 
   return {
     ...state,
-    hasSample,
     setName,
     setPrefs,
     addAsset,
-    loadSample,
-    clearSample,
     clearAll,
     addEntries,
     updateEntry,

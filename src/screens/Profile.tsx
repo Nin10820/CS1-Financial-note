@@ -95,11 +95,6 @@ export default function Profile({ store, onTab, onQuickNote }: { store: Store; o
               <Row label="Your data" sub="See what the app keeps" onClick={() => go("data")} />
               <Row label="What the AI does with notes" sub="Only reads what you send" onClick={() => go("ai")} />
               <Row label="Download your data" onClick={() => download(store)} />
-              <Row
-                label="Sample data"
-                sub={store.hasSample ? "Showing made-up notes, bills and assets" : "Fill every screen with made-up data"}
-                control={<Switch label="Sample data" checked={store.hasSample} onChange={(v) => (v ? store.loadSample() : store.clearSample())} />}
-              />
             </Group>
 
             <Group label="Display">
