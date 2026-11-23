@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { IconButton } from "../components/ui"
 import { Icon } from "../components/Icon"
 import StickyHeader from "../components/StickyHeader"
-import { AmountText, AssetTile, HistoryLink, JoinedCard, Legend, ListCard, ListRow, Pie, PieCard, SectionTitle, Segmented, StatCard, TickMark, maskC, pct, pctText } from "../components/kit"
+import { AmountText, AssetTile, HistoryLink, JoinedCard, Legend, ListCard, ListRow, Pie, PieCard, SectionTitle, Segmented, StatCard, TickMark, Tile, maskC, pct, pctText } from "../components/kit"
 import { usePageSwipe } from "../lib/pageSwipe"
 import { addMonthsYm, compact, money, monthTitle, shortDay, today as todayIso } from "../lib/format"
 import { savingPlan, monthsShort as monthsShortList } from "../lib/analysis"
@@ -23,7 +23,7 @@ const RANGES: { value: Range; label: string; short: string }[] = [
   { value: 36, label: "Last 3 years", short: "3 years" },
   { value: 0, label: "All time", short: "All" },
 ]
-const DEBT_COLORS = ["#f97066", "#fdb022", "#7a5af8", "#2e90fa", "#00ba90", "#ee46bc"]
+const DEBT_COLORS = [1, 2, 3, 4, 5, 6].map((n) => `var(--debt-${n})`)
 
 export type FinanceActions = {
   onAddAsset: (a: Asset) => void
@@ -620,14 +620,14 @@ function NetWorthBar({ assets, owed, hidden }: { assets: number; owed: number; h
       </div>
       <div className="fin2-net__bar" aria-hidden="true">
         {net > 0 && <span style={{ width: `${netPct}%`, background: "var(--brand-500)" }} />}
-        {owed > 0 && <span style={{ flex: 1, background: "#f97066" }} />}
+        {owed > 0 && <span style={{ flex: 1, background: "var(--debt-1)" }} />}
       </div>
       <div className="fin2-net__legend">
         <span>
           <i style={{ background: "var(--brand-500)" }} /> Net worth <b>{netPct}%</b>
         </span>
         <span>
-          <i style={{ background: "#f97066" }} /> Debt {hidden ? "" : compact(owed)} <b>{100 - netPct}%</b>
+          <i style={{ background: "var(--debt-1)" }} /> Debt {hidden ? "" : compact(owed)} <b>{100 - netPct}%</b>
         </span>
       </div>
       <p className="k-note">All you own, less installments and family loans still owed.</p>
@@ -870,7 +870,7 @@ function Debt({ bills, loans, hidden, today, ...act }: { bills: Bill[]; loans: F
           {family.map((p) => (
             <ListRow
               key={p.who}
-              tile={<span className="k-tile" style={{ width: 40, height: 40, background: colors[p.who] ?? "var(--grey-400)", fontSize: 16 }}>{p.who.slice(0, 1).toUpperCase()}</span>}
+              tile={<Tile bg={colors[p.who] ?? "var(--grey-400)"} mark={p.who.slice(0, 1).toUpperCase()} />}
               title={p.who}
               sub={`${hidden ? "" : `got ${compact(p.principal)} · `}${p.rate}% a year`}
               amount={hidden ? "•••" : `${money(p.owed)}đ`}

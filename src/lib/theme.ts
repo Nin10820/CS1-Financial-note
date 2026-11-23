@@ -7,7 +7,9 @@ const media = () => window.matchMedia("(prefers-color-scheme: dark)")
 export function applyAppearance(a: Appearance = "auto") {
   const dark = a === "dark" || (a === "auto" && media().matches)
   document.documentElement.dataset.theme = dark ? "dark" : "light"
-  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#0c1019" : "#eaecf0")
+  // The bar takes the canvas colour from tokens.css, so it follows any change there.
+  const canvas = getComputedStyle(document.documentElement).getPropertyValue("--canvas").trim()
+  if (canvas) document.querySelector('meta[name="theme-color"]')?.setAttribute("content", canvas)
 }
 
 /** Keeps "auto" in step when the phone switches between light and dark. */

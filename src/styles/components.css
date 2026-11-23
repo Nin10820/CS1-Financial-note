@@ -42,32 +42,32 @@
   line-height: 1.4;
 }
 .fn-amount__cur {
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: var(--weight-m);
   line-height: 1.4;
   color: var(--grey-400);
 }
 .fn-amount--14 .fn-amount__num {
-  font-size: 14px;
+  font-size: var(--fs-14);
 }
 .fn-amount--18 .fn-amount__num {
-  font-size: 18px;
+  font-size: var(--fs-18);
   font-weight: 550;
   line-height: 20px;
 }
 .fn-amount--28 .fn-amount__num {
-  font-size: 28px;
+  font-size: var(--fs-28);
   font-weight: var(--weight-s);
 }
 .fn-amount--28 .fn-amount__cur {
-  font-size: 26px;
+  font-size: var(--fs-26);
 }
 .fn-amount--32 .fn-amount__num {
-  font-size: 32px;
+  font-size: var(--fs-32);
   font-weight: var(--weight-s);
 }
 .fn-amount--32 .fn-amount__cur {
-  font-size: 24px;
+  font-size: var(--fs-24);
 }
 .fn-amount--on-dark {
   color: var(--text-white);
@@ -144,21 +144,21 @@
   min-height: 32px;
   padding: 0 var(--sp-12);
   border-radius: var(--corner-6);
-  font-size: 14px;
+  font-size: var(--fs-14);
   line-height: 20px;
 }
 .fn-btn--md {
   height: 36px;
   padding: var(--sp-4) var(--sp-12);
   border-radius: var(--rounded);
-  font-size: 14px;
+  font-size: var(--fs-14);
   line-height: 20px;
 }
 .fn-btn--lg {
   height: 48px;
   padding: 0 var(--sp-24);
   border-radius: var(--corner-12);
-  font-size: 18px;
+  font-size: var(--fs-18);
 }
 .fn-btn--primary {
   background: var(--bg-dark);
@@ -232,7 +232,7 @@
   border-radius: var(--rounded);
   background: var(--bg-4);
   color: var(--grey-500);
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-weight: var(--weight-m);
   line-height: 1.3;
   transition: background-color 0.15s, color 0.15s;
@@ -414,7 +414,7 @@
 .fn-spend-card__label {
   margin: 0;
   color: var(--brand-300);
-  font-size: 16px;
+  font-size: var(--fs-16);
   font-weight: var(--weight-m);
   line-height: 24px;
 }
@@ -430,7 +430,7 @@
   white-space: nowrap;
 }
 .fn-spend-card__cur {
-  font-size: 24px;
+  font-size: var(--fs-24);
   font-weight: var(--weight-m);
   line-height: 1.4;
   color: var(--white-64);
@@ -495,7 +495,7 @@
 }
 .fn-month__name {
   font-family: var(--font-title);
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-weight: var(--weight-m);
   line-height: 20px;
 }
@@ -508,13 +508,13 @@
   display: inline-flex;
   align-items: baseline;
   gap: 2px;
-  font-size: 18px;
+  font-size: var(--fs-18);
   font-weight: 550;
   line-height: 20px;
   white-space: nowrap;
 }
 .fn-month__cur {
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: var(--weight-m);
   line-height: 1.4;
 }
@@ -531,7 +531,7 @@
   color: var(--brand-200);
 }
 .fn-month--idle {
-  background: var(--white-80);
+  background: var(--card);
   box-shadow: var(--shadow-light-2);
   color: var(--grey-700);
 }
@@ -540,7 +540,7 @@
 }
 .fn-month--idle .fn-month__cur,
 .fn-month--picked .fn-month__cur {
-  color: var(--dark-64);
+  color: var(--grey-400);
 }
 .fn-month--idle .fn-month__count,
 .fn-month--picked .fn-month__count {

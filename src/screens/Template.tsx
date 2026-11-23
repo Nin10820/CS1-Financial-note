@@ -291,7 +291,7 @@ function TagChip({ name, on, onClick }: { name: string; on?: boolean; onClick: (
       type="button"
       className={`tag-chip${on ? " is-on" : ""}`}
       aria-pressed={on}
-      style={on ? { background: info?.fill ?? "var(--brand-100)", color: info?.whiteText ? "#fff" : undefined } : undefined}
+      style={on ? { background: info?.fill ?? "var(--brand-100)", color: info?.whiteText ? "var(--white)" : undefined } : undefined}
       onClick={onClick}
     >
       <span aria-hidden="true">{info?.mark ?? "#"}</span>

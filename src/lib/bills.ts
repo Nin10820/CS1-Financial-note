@@ -32,16 +32,16 @@ export type Bill = {
 
 export type BillIcon = Extract<IconName, "house" | "drop" | "gas-pump" | "lightning" | "phone" | "student" | "monitor" | "bell">
 
-/** Tile colours from the Figma bill list (solid) and statement list (soft). */
+/** Tile colours from the Figma bill list (solid) and statement list (soft) — tokens.css › Palettes. */
 export const TILE: Record<BillIcon, { solid: string; soft: string; ink: string }> = {
-  house: { solid: "#3538cd", soft: "#e0eaff", ink: "#3538cd" },
-  drop: { solid: "#1bacee", soft: "#dff2ff", ink: "#0085ca" },
-  "gas-pump": { solid: "#15b79e", soft: "#ccfbef", ink: "#107569" },
-  lightning: { solid: "#ff4405", soft: "#ffe6d5", ink: "#c4320a" },
-  phone: { solid: "#5fa82f", soft: "#e2f4d3", ink: "#3b6922" },
-  student: { solid: "#1570ef", soft: "#d1e9ff", ink: "#1570ef" },
-  monitor: { solid: "#c85a34", soft: "#f8eadc", ink: "#c85a34" },
-  bell: { solid: "#364152", soft: "#eaecf0", ink: "#364152" },
+  house: { solid: "var(--bill-house)", soft: "var(--bill-house-soft)", ink: "var(--bill-house-ink)" },
+  drop: { solid: "var(--bill-drop)", soft: "var(--bill-drop-soft)", ink: "var(--bill-drop-ink)" },
+  "gas-pump": { solid: "var(--bill-gas-pump)", soft: "var(--bill-gas-pump-soft)", ink: "var(--bill-gas-pump-ink)" },
+  lightning: { solid: "var(--bill-lightning)", soft: "var(--bill-lightning-soft)", ink: "var(--bill-lightning-ink)" },
+  phone: { solid: "var(--bill-phone)", soft: "var(--bill-phone-soft)", ink: "var(--bill-phone-ink)" },
+  student: { solid: "var(--bill-student)", soft: "var(--bill-student-soft)", ink: "var(--bill-student-ink)" },
+  monitor: { solid: "var(--bill-monitor)", soft: "var(--bill-monitor-soft)", ink: "var(--bill-monitor-ink)" },
+  bell: { solid: "var(--bill-bell)", soft: "var(--bill-bell-soft)", ink: "var(--bill-bell-ink)" },
 }
 
 /** Picks a tile from the name the user typed (Vietnamese or English). */

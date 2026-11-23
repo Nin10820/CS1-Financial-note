@@ -51,7 +51,7 @@
   padding: 0 var(--sp-16);
   border-radius: var(--rounded);
   color: var(--text-900);
-  font-size: 16px;
+  font-size: var(--fs-16);
   font-weight: var(--weight-m);
   line-height: 22px;
   text-overflow: ellipsis;

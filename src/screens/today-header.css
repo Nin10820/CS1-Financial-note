@@ -12,7 +12,7 @@
   background: var(--bg-white);
   box-shadow: 0 0 0 0.5px var(--dark-6, rgb(13 18 28 / 6%)), 0 1px 8px var(--dark-4);
   color: var(--text-900);
-  font-size: 14px;
+  font-size: var(--fs-14);
   font-weight: var(--weight-s);
 }
 .today-top__today:active {
@@ -40,7 +40,7 @@
 }
 .today-head__big {
   color: var(--text-900);
-  font-size: 44px;
+  font-size: var(--fs-44);
   line-height: 1.1;
 }
 .today-head__dot {
@@ -49,11 +49,11 @@
   height: 8px;
   margin: 8px 0 0 -4px;
   border-radius: 50%;
-  background: #d92d20;
+  background: var(--today-red);
 }
 .today-head__month {
   color: var(--grey-400);
-  font-size: 24px;
+  font-size: var(--fs-24);
 }
 /* A real <select> under the label, so the system picker opens on phones. */
 .today-head__range {
@@ -64,14 +64,14 @@
   min-width: 44px;
   min-height: 44px;
   color: var(--text-700);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: var(--weight-m);
 }
 .today-head__range select {
   position: absolute;
   inset: 0;
   opacity: 0;
-  font-size: 16px;
+  font-size: var(--fs-16);
 }
 
 /* Week strip: number on top, weekday below; picked = brand-100 box with a brand-300 edge. */
@@ -96,20 +96,20 @@
 }
 .week2__num {
   font-family: var(--font-heading);
-  font-size: 20px;
+  font-size: var(--fs-20);
   font-weight: 400;
   line-height: 1.2;
 }
 .week2__name {
   color: var(--grey-400);
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: var(--weight-m);
 }
 .week2__day.is-strong {
   color: var(--text-900);
 }
 .week2__day.is-today .week2__name {
-  color: #d92d20;
+  color: var(--today-red);
 }
 .week2__day.is-picked {
   border-color: var(--brand-300);
@@ -161,20 +161,20 @@
 .period__amount {
   color: var(--grey-400);
   font-family: var(--font-heading);
-  font-size: 16px;
+  font-size: var(--fs-16);
 }
 .period__amount small {
   margin-left: 2px;
   color: var(--grey-300);
-  font-size: 12px;
+  font-size: var(--fs-12);
 }
 .period__name {
-  font-size: 12px;
+  font-size: var(--fs-12);
   font-weight: var(--weight-m);
 }
 .period__cell.is-picked {
   border-color: var(--brand-300);
-  background: linear-gradient(rgb(164 218 124 / 10%), rgb(164 218 124 / 10%)), rgb(255 255 255 / 12%);
+  background: linear-gradient(rgb(164 218 124 / 10%), rgb(164 218 124 / 10%)), var(--white-12);
   box-shadow: 0 2px 8px var(--dark-4);
 }
 .period__cell.is-picked .period__amount {
@@ -185,8 +185,8 @@
   color: var(--text-700);
 }
 .period__cell.is-picked .period__name {
-  color: var(--brand-900, #14270c);
-  font-size: 14px;
+  color: var(--brand-900);
+  font-size: var(--fs-14);
 }
 .period__cell.is-future {
   opacity: 0.5;
