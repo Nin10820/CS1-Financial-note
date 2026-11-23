@@ -32,6 +32,7 @@ struct HeroCard<Buttons: View>: View {
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(hidden ? "\(label), hidden" : "\(label), \(Money.format(amount)) dong")
+                .doubleTapToHide($hidden)
                 if showEye {
                     Button {
                         hidden.toggle()
@@ -156,5 +157,16 @@ struct BillTile: View {
             .frame(width: size, height: size)
             .background(soft ? colors.bg : color ?? Tokens.billTile(icon), in: .rect(cornerRadius: size >= 36 ? 12 : 10))
             .accessibilityHidden(true)
+    }
+}
+
+extension View {
+    /// The big amount at the top of a page: tap it twice to hide or show amounts. VoiceOver gets
+    /// the same as an action, and a light tap is felt when it changes.
+    func doubleTapToHide(_ hidden: Binding<Bool>) -> some View {
+        contentShape(.rect)
+            .onTapGesture(count: 2) { animate(.snappy) { hidden.wrappedValue.toggle() } }
+            .sensoryFeedback(.selection, trigger: hidden.wrappedValue)
+            .accessibilityAction(named: hidden.wrappedValue ? "Show amounts" : "Hide amounts") { hidden.wrappedValue.toggle() }
     }
 }

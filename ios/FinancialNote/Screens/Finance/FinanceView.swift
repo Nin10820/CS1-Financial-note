@@ -129,7 +129,7 @@ struct FinanceView: View {
                     // Total assets as a story over time: touch a month on the line to read it here.
                     TotalBlock(total: picked?.value ?? shares.total, month: picked.map { FinanceText.monthLabel($0.month) },
                                growth: picked == nil ? growth : nil, putIn: picked.flatMap { deposits[$0.month] },
-                               hidden: app.assetsHidden)
+                               hidden: Bindable(app).assetsHidden)
                     Spacer(minLength: Space.s8)
                     Menu {
                         Picker("Show", selection: $worthRange) {
@@ -214,7 +214,7 @@ private struct TotalBlock: View {
     var growth: Int?
     /// Money put in during the touched month, shown where the growth badge sits.
     var putIn: Int? = nil
-    var hidden: Bool
+    @Binding var hidden: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s8) {
@@ -233,6 +233,7 @@ private struct TotalBlock: View {
                 Text("đ").font(AppFont.currency(for: 36)).foregroundStyle(Tokens.grey400)
             }
             .accessibilityElement(children: .combine)
+            .doubleTapToHide($hidden)
             // On its own line under the amount.
             if let growth, !hidden { GrowthBadge(pct: growth) }
             if let putIn {
@@ -789,7 +790,7 @@ struct QuickMoveSheet: View {
 
     var body: some View {
         let a = move.asset
-        if let unit = a.unit, let held = a.quantity, let price = Market.price(unit) {
+        if a.followsPrice, let unit = a.unit, let held = a.quantity, let price = Market.price(unit) {
             unitBody(a, unit: unit, held: held, price: price)
         } else {
             dongBody(a)

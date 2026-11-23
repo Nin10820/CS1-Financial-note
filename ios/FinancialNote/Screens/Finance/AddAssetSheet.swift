@@ -20,6 +20,9 @@ struct AddAssetSheet: View {
     /// Held in units (5 chỉ, 1,000 $, 0.05 BTC): then the worth follows today's price.
     @State private var quantityText = ""
     @State private var unit: HoldingUnit?
+    /// Edit, held in units: worth follows today's price, or the value typed below.
+    @State private var follows = true
+    @State private var worthText = ""
     @State private var ready = false
     /// The line being answered now.
     @State private var active: Line?
@@ -57,6 +60,8 @@ struct AddAssetSheet: View {
                 // Gold, dollars and coins: the unit is ready, so only how many is left to type.
                 unit = a.unit ?? HoldingUnit.guess(a.icon)
                 quantityText = a.quantity.map { $0 == $0.rounded() ? String(Int($0)) : String($0) } ?? ""
+                follows = a.followsPrice
+                worthText = Money.format(a.amount)
             }
         }
     }
@@ -304,10 +309,37 @@ struct AddAssetSheet: View {
             } footer: {
                 Text(unit == nil ? "Pick a unit (chỉ, $, BTC…) and the worth follows today's price."
                      : quantity == nil ? "Type how many \(unit?.label ?? "")."
+                     : !follows ? "Kept at the value you type below."
                      : unitWorth.map { "≈ \(Money.format($0)) đ at today's price. Sync updates it." }
                        ?? "No price yet: it fills in on the next sync.")
             }
             .listRowBackground(Tokens.card)
+            if unit != nil && quantity != nil {
+                Section {
+                    Toggle("Follow today's price", isOn: $follows)
+                        .tint(Tokens.brand500)
+                    if !follows {
+                        HStack {
+                            Text("Worth now")
+                            Spacer()
+                            TextField("0", text: $worthText)
+                                .keyboardType(.numberPad)
+                                .multilineTextAlignment(.trailing)
+                                .monospacedDigit()
+                                .onChange(of: worthText) { _, t in
+                                    let n = Int(t.filter(\.isNumber)) ?? 0
+                                    let shown = n == 0 ? "" : Money.format(n)
+                                    if shown != t { worthText = shown }
+                                }
+                            Text("đ").foregroundStyle(Tokens.grey400)
+                        }
+                    }
+                } footer: {
+                    Text(follows ? "Turn off to keep your own value, like the shop's gold price. Sync won't change it."
+                         : "Sync won't change this value. Turn it back on to follow the market.")
+                }
+                .listRowBackground(Tokens.card)
+            }
             Section("Note") {
                 TextField("Optional", text: $note, axis: .vertical).lineLimit(1...4)
             }
@@ -324,6 +356,10 @@ struct AddAssetSheet: View {
             let store = LocalStore(context: context)
             store.editAsset(a, name: n, kind: kind, note: memo.isEmpty ? nil : memo)
             store.setHolding(a, quantity: quantity, unit: unit)
+            a.followsPrice = follows || unit == nil || quantity == nil
+            if !a.followsPrice, let worth = Int(worthText.filter(\.isNumber)), worth > 0 {
+                store.move(a, .value, amount: worth, date: app.today)
+            }
             store.revalueHoldings(today: app.today)
             dismiss()
             return

@@ -170,6 +170,9 @@ final class Asset {
     var quantity: Double? = nil
     /// The unit of `quantity`, a `HoldingUnit` raw value ("chi", "usd", "btc"…).
     var unitRaw: String? = nil
+    /// Held in units: its worth follows today's price. Off when the user keeps their own value
+    /// (a shop's gold price, say); then sync leaves it alone.
+    var followsPrice: Bool = true
 
     var unit: HoldingUnit? {
         get { unitRaw.flatMap(HoldingUnit.init(rawValue:)) }

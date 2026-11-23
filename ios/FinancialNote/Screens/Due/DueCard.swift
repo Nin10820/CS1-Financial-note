@@ -76,6 +76,7 @@ struct DueCard: View {
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(hidden ? "Remaining, hidden" : "Remaining, \(Money.format(remaining)) dong")
+                .doubleTapToHide($hidden)
                 Spacer(minLength: Space.s8)
             }
             HStack(spacing: Space.s8) {

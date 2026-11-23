@@ -241,7 +241,8 @@ struct LocalStore {
     func revalueHoldings(today: String) {
         let moves = all(AssetMove.self)
         for asset in all(Asset.self) {
-            guard let q = asset.quantity, let unit = asset.unit, let price = Market.price(unit) else { continue }
+            guard asset.followsPrice, let q = asset.quantity, let unit = asset.unit, let price = Market.price(unit)
+            else { continue }
             let target = Int((q * price).rounded())
             let delta = target - asset.amount
             guard delta != 0 else { continue }

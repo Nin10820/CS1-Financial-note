@@ -38,6 +38,8 @@ nonisolated struct ExportFile: Codable, Equatable, Sendable {
         /// What's held in its own unit, e.g. 5 "chi" (version 3; older files have neither).
         var quantity: Double? = nil
         var unit: String? = nil
+        /// false when the user keeps their own value instead of today's price (newer files only).
+        var followsPrice: Bool? = nil
     }
     struct MoveRow: Codable, Equatable, Sendable {
         var id, title, icon: String
@@ -120,7 +122,8 @@ extension ExportFile {
             },
             assets: store.all(Asset.self).map {
                 AssetRow(id: $0.id, name: $0.name, kind: $0.kindRaw, icon: $0.iconRaw, amount: $0.amount, updated: $0.updatedOn,
-                         sample: $0.sample, note: $0.note, quantity: $0.quantity, unit: $0.unitRaw)
+                         sample: $0.sample, note: $0.note, quantity: $0.quantity, unit: $0.unitRaw,
+                         followsPrice: $0.followsPrice ? nil : false)
             }.sorted { $0.id < $1.id },
             moves: store.all(AssetMove.self).sorted { ($0.date, $0.id) < ($1.date, $1.id) }.map {
                 MoveRow(id: $0.id, title: $0.title, icon: $0.iconRaw, amount: $0.amount, date: $0.date, sample: $0.sample,

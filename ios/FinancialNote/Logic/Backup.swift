@@ -70,6 +70,7 @@ extension LocalStore {
             a.note = r.note
             a.quantity = r.quantity
             a.unitRaw = r.unit
+            a.followsPrice = r.followsPrice ?? true
             context.insert(a)
         }
         for r in file.moves {

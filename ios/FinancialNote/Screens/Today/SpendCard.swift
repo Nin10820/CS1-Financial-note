@@ -44,6 +44,7 @@ struct SpendCard: View {
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(hidden ? "\(label), hidden" : "\(label), \(net < 0 ? "minus " : "")\(Money.format(abs(net))) dong")
+                .doubleTapToHide($hidden)
                 Spacer(minLength: Space.s8)
                 Button {
                     hidden.toggle()
