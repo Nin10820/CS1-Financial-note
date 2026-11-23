@@ -34,7 +34,8 @@ export type BillIcon = Extract<IconName, "house" | "drop" | "gas-pump" | "lightn
 
 /** Tile colours from the Figma bill list (solid) and statement list (soft). */
 export const TILE: Record<BillIcon, { solid: string; soft: string; ink: string }> = {
-  house: { solid: "#3538cd", soft: "#e0eaff", ink: "#3538cd" },
+  // Pink, so purple stays for installments on Due.
+  house: { solid: "#dd2590", soft: "#fce7f6", ink: "#c11574" },
   drop: { solid: "#1bacee", soft: "#dff2ff", ink: "#0085ca" },
   "gas-pump": { solid: "#15b79e", soft: "#ccfbef", ink: "#107569" },
   lightning: { solid: "#ff4405", soft: "#ffe6d5", ink: "#c4320a" },
@@ -42,6 +43,24 @@ export const TILE: Record<BillIcon, { solid: string; soft: string; ink: string }
   student: { solid: "#1570ef", soft: "#d1e9ff", ink: "#1570ef" },
   monitor: { solid: "#c85a34", soft: "#f8eadc", ink: "#c85a34" },
   bell: { solid: "#364152", soft: "#eaecf0", ink: "#364152" },
+}
+
+/** Due's names for the kinds. */
+export const KIND_LABEL: Record<BillKind, string> = { recurring: "Bill", installment: "Installment", oneoff: "Other" }
+
+/**
+ * A bill's colour on Due: a bill (electricity, water…) keeps its icon's colour; every installment
+ * is the same purple; other payments are slate.
+ */
+export function billColor(b: Bill): string {
+  if (b.kind === "installment") return "#7a5af8"
+  if (b.kind === "oneoff") return "#4b5565"
+  return TILE[b.icon].solid
+}
+
+/** Where a bill is paid: the lender, who an Other payment is to, or the bank / wallet it's paid with. */
+export function billSource(b: Bill): string | undefined {
+  return (b.lender ?? b.payWith)?.trim() || undefined
 }
 
 /** Picks a tile from the name the user typed (Vietnamese or English). */

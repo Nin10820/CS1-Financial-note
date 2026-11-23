@@ -402,6 +402,8 @@ export default function App() {
               month={month}
               onClose={close}
               onCheck={(paid, amount) => toggleBill(bill.id, paid, amount)}
+              onPayWith={(v) => store.updateBill(bill.id, { payWith: v })}
+              payOptions={store.bills.flatMap((b) => (b.payWith ? [b.payWith] : []))}
               onDelete={() => {
                 store.removeBill(bill.id);
                 close();
@@ -426,6 +428,7 @@ export default function App() {
         <ComingUp
           bills={store.bills}
           month={month}
+          hidden={hidden}
           onPick={(m) => setMonth(m)}
           onClose={close}
         />

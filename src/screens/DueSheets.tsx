@@ -1,9 +1,9 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Amount, Button, IconButton, MonthCard, SegmentedTabs, GlassGroup } from "../components/ui"
 import StickyHeader from "../components/StickyHeader"
 import { Icon } from "../components/Icon"
 import { money, today } from "../lib/format"
-import { addMonths, dueIn, installmentStep, lastDue, monthSummary, ym, type Bill } from "../lib/bills"
+import { addMonths, billColor, dueIn, installmentStep, lastDue, monthSummary, ym, type Bill } from "../lib/bills"
 import ModalSheet, { ModalHeader } from "./ModalSheet"
 import { BillTile, ddmmyyyy, monthLabel } from "./Due"
 import dotFilled from "../assets/icons/dot-filled.svg"
@@ -18,19 +18,31 @@ const short = (n: number) => (n >= 1e6 ? `${(n / 1e6).toLocaleString("en-US", { 
 export function ComingUp({
   bills,
   month,
+  hidden = false,
   onPick,
   onClose,
 }: {
   bills: Bill[]
   month: string
+  hidden?: boolean
   onPick: (m: string) => void
   onClose: () => void
 }) {
   const [view, setView] = useState<"card" | "month">("month")
-  const [year, setYear] = useState(Number(month.slice(0, 4)))
   const now = ym(today())
-  const months = Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, "0")}`)
+  const openYear = Number(month.slice(0, 4))
+  const thisYear = Number(now.slice(0, 4))
+  // Every year one under the other: from the first bill (or last year) to two years ahead.
+  const firstYear = Math.min(thisYear - 1, ...bills.map((b) => Number(b.start.slice(0, 4))))
+  const years = Array.from({ length: Math.max(thisYear, openYear) + 2 - firstYear + 1 }, (_, i) => firstYear + i)
   const next = Array.from({ length: 12 }, (_, i) => addMonths(now, i)).map((m) => ({ m, s: monthSummary(bills, m) }))
+  const root = useRef<HTMLDivElement>(null)
+
+  // Month opens on the year of the month on Due (scroll up for older, down for later); Card at the top.
+  useEffect(() => {
+    const target = view === "month" ? root.current?.querySelector(`#coming-year-${openYear}`) : root.current
+    target?.scrollIntoView({ block: "start" })
+  }, [view, openYear])
 
   return (
     <ModalSheet
@@ -38,7 +50,7 @@ export function ComingUp({
       onClose={onClose}
       header={<ModalHeader title="Coming up" right={<IconButton icon="close" label="Close" variant="glass-strong" onClick={onClose} />} />}
     >
-      <div className="coming">
+      <div className="coming" ref={root}>
         <div className="coming__tabs">
           <SegmentedTabs
             label="View"
@@ -52,13 +64,11 @@ export function ComingUp({
         </div>
         {view === "month" ? (
           <>
-            <div className="coming__year">
-              <IconButton icon="caret-left" label="Previous year" variant="plain" size={32} iconSize={16} onClick={() => setYear(year - 1)} />
-              <h3>{year}</h3>
-              <IconButton icon="caret-right" label="Next year" variant="plain" size={32} iconSize={16} onClick={() => setYear(year + 1)} />
-            </div>
+            {years.map((year) => (
+            <section key={year} id={`coming-year-${year}`} className="coming__yearblock" aria-label={String(year)}>
+            <h3 className={`coming__yeartitle${year === thisYear ? " is-now" : ""}`}>{year}</h3>
             <div className="coming__grid">
-              {months.map((m, i) => {
+              {Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, "0")}`).map((m, i) => {
                 const s = monthSummary(bills, m)
                 const total = s.due.reduce((t, x) => t + (x.bill.paid[m]?.amount ?? x.bill.amount), 0)
                 const state = !s.due.length ? "empty" : m === month ? "selected" : s.still.length === 0 ? "picked" : "idle"
@@ -77,6 +87,8 @@ export function ComingUp({
                 )
               })}
             </div>
+            </section>
+            ))}
             <p className="t-capture-12-r coming__legend">
               <Icon name="check-circle" size={12} /> all paid · dashed = nothing due
             </p>
@@ -99,9 +111,18 @@ export function ComingUp({
                       {m === now ? " · this month" : ""}
                     </span>
                     <Amount value={money(s.remaining + s.paid)} size={18} />
-                    <span className="t-capture-12-r coming__count">
-                      {s.due.length} {s.due.length === 1 ? "bill" : "bills"}
-                      {s.still.length === 0 ? " · all paid" : ` · ${s.still.length} to pay`}
+                    {/* What's in it: one line each, name and amount; paid ones fade. */}
+                    <span className="coming__bills">
+                      {s.due.map(({ bill }) => {
+                        const paid = bill.paid[m]
+                        return (
+                          <span key={bill.id} className={`coming__bill${paid ? " is-paid" : ""}`}>
+                            <i style={{ background: billColor(bill) }} aria-hidden="true" />
+                            <span className="coming__bill-name">{bill.name}</span>
+                            <span className="tnum">{hidden ? "•••" : `${money(paid?.amount ?? bill.amount)}đ`}</span>
+                          </span>
+                        )
+                      })}
                     </span>
                   </button>
                 </li>

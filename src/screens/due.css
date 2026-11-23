@@ -393,6 +393,18 @@
 .bill-sheet__main {
   flex: 1;
   border-radius: var(--rounded) !important;
+  font-size: 15px !important;
+}
+/* Pay with: picked right in the bill. */
+.bill-sheet__pay {
+  appearance: none;
+  border: 0;
+  border-radius: var(--rounded);
+  padding: 4px 26px 4px 12px;
+  background: var(--bg-3) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 256 256' fill='%239aa4b2'%3E%3Cpath d='M184.49 167.51a12 12 0 0 1 0 17l-48 48a12 12 0 0 1-17 0l-48-48a12 12 0 0 1 17-17L128 207l39.51-39.52a12 12 0 0 1 16.98.03Zm-96-79L128 49l39.51 39.52a12 12 0 0 0 17-17l-48-48a12 12 0 0 0-17 0l-48 48a12 12 0 0 0 17 17Z'/%3E%3C/svg%3E") no-repeat right 10px center;
+  color: var(--text-900);
+  font: inherit;
+  cursor: pointer;
 }
 .bill-sheet__nodue {
   flex: 1;
@@ -538,8 +550,63 @@
   gap: var(--sp-12);
   padding: var(--sp-8) var(--sp-16) calc(var(--sp-32) + env(safe-area-inset-bottom));
 }
+.coming__tabs {
+  /* Card / Month stays on top while the years scroll under it. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0 calc(-1 * var(--sp-16));
+  padding: var(--sp-8) var(--sp-16);
+  background: var(--bg-3);
+}
 .coming__tabs .fn-tabs {
   width: 100%;
+}
+.coming__yearblock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-12);
+  padding-bottom: var(--sp-12);
+  scroll-margin-top: 64px;
+}
+.coming__yeartitle {
+  margin: 0;
+  padding-left: var(--sp-4);
+  font-family: var(--font-title);
+  font-size: 20px;
+  font-weight: var(--weight-b);
+  color: var(--text-700);
+}
+.coming__yeartitle.is-now {
+  color: var(--text-900);
+}
+.coming__bills {
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: var(--sp-6);
+}
+.coming__bill {
+  display: grid;
+  grid-template-columns: 6px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-8);
+  font-size: 13px;
+  color: var(--text-700);
+}
+.coming__bill i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.coming__bill-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.coming__bill.is-paid {
+  color: var(--grey-400);
 }
 .coming__year {
   display: flex;
@@ -691,4 +758,54 @@
   background: var(--card);
   color: var(--grey-400);
   font-size: 14px;
+}
+
+/* One badge under a bill's name: where it's paid. */
+.due2-badge {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 2px;
+  padding: 1px 8px;
+  border-radius: var(--rounded);
+  background: var(--brand-100);
+  color: var(--brand-800);
+  font-size: 11px;
+  font-weight: var(--weight-m);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.due2-badge.is-done {
+  opacity: 0.7;
+}
+/* All, then where the money goes; scrolls sideways edge to edge. */
+.due2-chips {
+  display: flex;
+  gap: var(--sp-8);
+  margin: 0 calc(-1 * var(--sp-20));
+  padding: 0 var(--sp-20);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.due2-chips::-webkit-scrollbar {
+  display: none;
+}
+.due2-chip {
+  flex: none;
+  min-height: 34px;
+  padding: 0 var(--sp-12);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--rounded);
+  background: var(--card);
+  color: var(--text-700);
+  font: inherit;
+  font-size: 14px;
+  font-weight: var(--weight-m);
+  cursor: pointer;
+}
+.due2-chip.is-on {
+  border-color: transparent;
+  background: var(--brand-600);
+  color: #fff;
+  font-weight: var(--weight-s);
 }
