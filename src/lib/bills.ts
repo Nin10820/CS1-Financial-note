@@ -126,3 +126,61 @@ export function monthSummary(bills: Bill[], month: string) {
     }, 0)
   return { due, still, done, paid, remaining, totalRemaining: remaining + future }
 }
+
+/** What "Say it your way" read from one sentence, to fill the New bill form. */
+export type BillDraft = { kind: BillKind; name: string; amount?: number; principal?: number; due?: string; payments?: number; varies: boolean; payWith?: string }
+
+/** Reads an amount like "250k", "1tr2", "12 triệu", "340.000". */
+export function readAmount(text: string): { amount?: number; rest: string } {
+  const m = text.match(/(\d+(?:[.,]\d{3})+|\d+(?:[.,]\d+)?)\s*(tr|triệu|trieu|m\b|k\b|nghìn|ngàn|đ|d\b|vnd)?\s*(\d{1,3}(?!\d))?/i)
+  if (!m) return { rest: text }
+  const raw = m[1]
+  const unit = (m[2] ?? "").toLowerCase()
+  const thousands = /^\d+([.,]\d{3})+$/.test(raw)
+  const n = thousands ? Number(raw.replace(/[.,]/g, "")) : Number(raw.replace(",", "."))
+  const tail = m[3] ? Number(m[3]) / 10 ** m[3].length : 0
+  const amount = unit.startsWith("tr") || unit === "m" ? Math.round((n + tail) * 1_000_000) : unit === "k" || unit.startsWith("ng") ? Math.round(n * 1000) : Math.round(n)
+  return { amount: amount > 0 ? amount : undefined, rest: text.replace(m[0], " ") }
+}
+
+/** "Internet 250k every month on the 5th", "laptop 12tr trả góp 12 tháng", "bảo hiểm 1tr2 một lần ngày 20". */
+export function readBillSentence(text: string, month: string, today: string): BillDraft {
+  const lower = text.toLocaleLowerCase("vi")
+  const kind: BillKind = /trả góp|tra gop|góp|installment|instalment/.test(lower)
+    ? "installment"
+    : /một lần|1 lần|mot lan|once|one[- ]?off|lần này/.test(lower)
+      ? "oneoff"
+      : "recurring"
+  const num = (re: RegExp) => {
+    const m = lower.match(re)
+    return m ? Number(m[1]) : undefined
+  }
+  const day = num(/(?:ngày|ngay|mùng|mung|day)\s*(\d{1,2})/) ?? num(/on the\s*(\d{1,2})/) ?? num(/\b(\d{1,2})(?:st|nd|rd|th)\b/)
+  const last = new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0).getDate()
+  const due = day && day >= 1 && day <= 31 ? `${month}-${String(Math.min(day, last)).padStart(2, "0")}` : month === today.slice(0, 7) ? today : `${month}-15`
+  const payments = kind === "installment" ? num(/(\d{1,3})\s*(?:tháng|thang|kỳ|ky|months?|payments?)/) : undefined
+  const varies = kind === "recurring" && /khoảng|tầm|tam |about|around|~|thay đổi|changes/.test(lower)
+  let rest = text
+  for (const p of [
+    /(trả góp|tra gop|góp|installment|instalment)/gi,
+    /(một lần|1 lần|mot lan|once|one[- ]?off|lần này)/gi,
+    /(mỗi tháng|hàng tháng|hang thang|moi thang|every month|monthly|per month|\/tháng|\/month)/gi,
+    /(ngày|ngay|mùng|mung|day)\s*\d{1,2}/gi,
+    /on the\s*\d{1,2}(st|nd|rd|th)?/gi,
+    /\b\d{1,2}(st|nd|rd|th)\b/gi,
+    /\d{1,3}\s*(tháng|thang|kỳ|ky|months?|payments?)/gi,
+    /\b(khoảng|tầm|about|around)\b|~/gi,
+  ])
+    rest = rest.replace(p, " ")
+  const read = readAmount(rest)
+  const name = read.rest.replace(/\s+/g, " ").replace(/^[\s,.\-–—]+|[\s,.\-–—]+$/g, "")
+  return {
+    kind,
+    name: name || text,
+    amount: kind === "installment" ? undefined : read.amount,
+    principal: kind === "installment" ? read.amount : undefined,
+    due,
+    payments,
+    varies,
+  }
+}

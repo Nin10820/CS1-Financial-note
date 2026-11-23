@@ -1,71 +1,40 @@
-/* Bottom navigation — Figma Navigation Bar Ver 2 (961:31747).
-   12 top · 56 write button · 12 gap · 62 tab capsule · 24 bottom (the home indicator sits below). */
+/* Navigation Bar (iOS app RootView › AppTabBar): a 60px tab capsule with Today, Due, Finance, AI
+   and the round green + beside it, 12px apart, 20px from the sides. Basic surfaces, no blur. */
 .tabbar {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   gap: var(--sp-12);
-  padding: var(--sp-12) var(--sp-20) var(--sp-24);
+  padding: var(--sp-12) var(--sp-20) calc(var(--sp-8) + env(safe-area-inset-bottom) / 2);
 }
 
-/* Round write button: brand gradient with a glassy inner edge. */
-.tabbar__write {
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  padding: 0;
-  border: 0;
-  border-inline: 0.5px solid rgb(13 18 28 / 80%);
-  border-radius: var(--rounded);
-  background: linear-gradient(180deg, var(--brand-400) 0%, var(--brand-500) 100%);
-  box-shadow:
-    inset 0 -1px 2px rgb(255 255 255 / 90%),
-    inset 0 1px 2px rgb(13 18 28 / 6%),
-    inset 0 -0.5px 0 rgb(13 18 28 / 64%),
-    0 6px 16px rgb(95 168 47 / 30%);
-  color: var(--text-white);
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* ── Tabs + sliding lens ────────────────────────────────── */
 .tabbar__tabs {
-  --pad: 12px;
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  width: 100%;
-  height: 62px;
-  padding: var(--sp-4) var(--pad);
+  flex: 1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  height: 60px;
+  padding: 4px;
   border-radius: var(--rounded);
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
-/* 82 × 54 lens behind the picked tab (Figma: dark 8%). */
+/* The lens behind the picked tab. */
 .tabbar__lens {
-  --w: calc((100% - 2 * var(--pad)) / 5);
+  --w: calc((100% - 8px) / 4);
   position: absolute;
   top: 4px;
   bottom: 4px;
-  left: calc(var(--pad) - 7px + var(--i) * var(--w));
+  left: calc(4px + var(--i) * var(--w));
   z-index: 0;
-  width: calc(var(--w) + 14px);
+  width: var(--w);
   border-radius: var(--rounded);
-  background: var(--dark-8);
-  transition: left 0.5s var(--spring), background-color 0.25s ease, box-shadow 0.25s ease, scale 0.35s var(--spring);
+  background: var(--dark-6, rgb(13 18 28 / 6%));
+  transition: left 0.45s var(--spring), scale 0.3s var(--spring), background-color 0.2s ease;
 }
-/* Held: the lens grows a little and darkens. */
 .tabbar__tabs.is-pressing .tabbar__lens {
-  scale: 1.04 1.06;
+  scale: 1.06 1.08;
   background: var(--dark-12, rgb(13 18 28 / 12%));
-  transition: left 0.28s var(--spring), background-color 0.2s ease, box-shadow 0.2s ease, scale 0.3s var(--spring);
-}
-.tabbar__lens::after {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-.tabbar__tabs.is-pressing .tabbar__lens::after {
-  opacity: 1;
 }
 .tabbar__tab {
   position: relative;
@@ -74,35 +43,109 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
-  padding: var(--sp-6) 0;
+  padding: 0;
   border: 0;
   border-radius: var(--rounded);
   background: none;
-  color: var(--grey-400);
+  color: var(--text-900);
   font-size: 11px;
   font-weight: var(--weight-m);
   line-height: 14px;
-  transition: color 0.25s ease;
-}
-.tabbar__tab > :first-child {
-  transition: transform 0.35s var(--spring);
+  transition: color 0.2s ease;
 }
 .tabbar__tab.is-lit {
-  color: var(--brand-500);
+  color: var(--brand-600);
 }
-.tabbar__tabs.is-pressing .tabbar__tab.is-lit > :first-child {
-  transform: scale(1.12);
+.tabbar__tab > .fn-icon {
+  transition: transform 0.35s var(--spring);
+}
+.tabbar__tabs.is-pressing .tabbar__tab.is-lit > .fn-icon {
+  transform: scale(1.1);
 }
 .tabbar__tab:focus-visible {
   outline: 2px solid var(--brand-500);
   outline-offset: -2px;
 }
 
+/* The round +: brand-600 so the white icon keeps 4.2:1. */
+.tabbar__plus {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--rounded);
+  background: var(--brand-600);
+  box-shadow: inset 0 0 0 0.5px var(--white-16), 0 4px 14px rgb(76 138 38 / 30%);
+  color: var(--text-white);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.25s var(--spring);
+}
+.tabbar__plus > .fn-icon {
+  transition: transform 0.3s var(--spring);
+}
+.tabbar__plus.is-open > .fn-icon {
+  transform: rotate(45deg);
+}
+.tabbar__plus:active {
+  transform: scale(0.94);
+}
+
+/* + menu: a 4% dim and three white pills right above the + */
+.action-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.action-menu__dim {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 4%);
+}
+.action-menu__pills {
+  position: absolute;
+  right: max(var(--sp-20), calc((100vw - var(--app-width, 480px)) / 2 + var(--sp-20)));
+  bottom: calc(92px + env(safe-area-inset-bottom) / 2);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sp-12);
+  transform-origin: 100% 100%;
+  animation: action-grow 0.28s var(--spring);
+}
+.action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-8);
+  padding: var(--sp-12) var(--sp-16);
+  border: 0;
+  border-radius: var(--rounded);
+  background: var(--bg-white);
+  box-shadow: 0 0 0 0.5px var(--dark-6, rgb(13 18 28 / 6%)), 0 6px 18px rgb(13 18 28 / 12%);
+  color: var(--brand-800);
+  font-size: 14px;
+  font-weight: var(--weight-s);
+  -webkit-tap-highlight-color: transparent;
+}
+.action-pill:active {
+  transform: scale(0.96);
+}
+@keyframes action-grow {
+  from {
+    transform: scale(0.6);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .tabbar__lens,
-  .tabbar__tab {
+  .tabbar__tab,
+  .tabbar__plus > .fn-icon {
     transition: none;
+  }
+  .action-menu__pills {
+    animation: none;
   }
 }

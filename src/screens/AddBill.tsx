@@ -2,7 +2,8 @@ import { useState } from "react"
 import { IconButton } from "../components/ui"
 import { Icon } from "../components/Icon"
 import { money, today } from "../lib/format"
-import { guessIcon, installmentPayment, type Bill, type BillKind } from "../lib/bills"
+import { guessIcon, installmentPayment, readBillSentence, type Bill, type BillKind } from "../lib/bills"
+import { AddingLead, QuickPickCard } from "../components/kit"
 import { uid } from "../lib/store"
 import ModalSheet, { ModalHeader } from "./ModalSheet"
 
@@ -87,24 +88,29 @@ export default function AddBill({ month, onClose, onSave }: { month: string; onC
       }
     >
       <div className="add-bill">
-        <h3 className="add-bill__lead">
-          Adding new <span className={kind ? "is-kind" : "is-placeholder"}>{label?.toLocaleLowerCase() ?? "kind of"}</span>
-          <br />— tell us what you know:
-        </h3>
+        <AddingLead label={label?.toLocaleLowerCase() ?? "kind of"} chosen={!!kind} />
 
         {!kind ? (
-          <div className="add-bill__kinds">
-            <p className="t-capture-12-r add-bill__step">Step 1 of 2</p>
-            <p className="t-body-14-s add-bill__ask">What kind is this?</p>
-            {KINDS.map((k) => (
-              <button key={k.kind} type="button" className="add-bill__kind" onClick={() => setKind(k.kind)}>
-                <span>
-                  <span className="t-body-14-m">{k.label}</span>
-                  <span className="t-capture-12-r add-bill__kind-hint">{k.hint}</span>
-                </span>
-                <Icon name="caret-right-sm" size={14} />
-              </button>
-            ))}
+          <div className="add-bill__pick">
+            <QuickPickCard
+              title="What kind is this?"
+              options={KINDS.map((k) => ({ id: k.kind, title: k.label, hint: k.hint }))}
+              placeholder="e.g. Internet 250k every month on the 5th"
+              onPick={setKind}
+              onSay={(text) => {
+                const d = readBillSentence(text, month, today())
+                setF((s) => ({
+                  ...s,
+                  name: d.name,
+                  varies: d.varies,
+                  amount: d.amount ? String(d.amount) : "",
+                  principal: d.principal ? String(d.principal) : "",
+                  due: d.due ?? s.due,
+                  payments: d.payments ? String(d.payments) : s.payments,
+                }))
+                setKind(d.kind)
+              }}
+            />
           </div>
         ) : (
           <div className="add-bill__form">
@@ -185,7 +191,7 @@ function Line({
   const shown = isMoney && value ? Number(value.replace(/[^\d]/g, "") || 0).toLocaleString("en-US") : value
   return (
     <label className="add-bill__line">
-      <span className="add-bill__label">{label}:</span>
+      <span className="add-bill__label">{label}{/[?:]$/.test(label) ? "" : ":"}</span>
       <input
         className="add-bill__input"
         type={type}

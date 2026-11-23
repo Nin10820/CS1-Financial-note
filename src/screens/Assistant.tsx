@@ -4,10 +4,12 @@ import { Icon } from "../components/Icon"
 import { greeting, longDate, money, shortDate, today } from "../lib/format"
 import { parseNote, type Draft } from "../lib/parse"
 import { CATEGORIES, categoryTone, uid, type CategoryName, type Entry } from "../lib/store"
+import { answer, askedFor, type Report } from "../lib/answers"
+import type { Bill } from "../lib/bills"
 import ModalSheet, { ModalHeader } from "./ModalSheet"
 import DayPicker from "./DayPicker"
 
-export type AssistantOpen = { notice?: string; note?: { date: string; lines: string[] } }
+export type AssistantOpen = { notice?: string; note?: { date: string; lines: string[] }; ask?: { q: string; report: Report }; voice?: boolean }
 
 type Turn =
   | {
@@ -21,6 +23,8 @@ type Turn =
       attached?: { date: string; count: number }
     }
   | { id: string; kind: "notice"; text: string }
+  /** A question about past spending, answered on the device. */
+  | { id: string; kind: "qa"; q: string; a: string }
 
 const DEFAULT_CHIPS = ["thịt xay 50k", "đậu hũ 15k"]
 
@@ -29,6 +33,7 @@ export default function Assistant({
   name,
   defaultDay,
   entries,
+  bills,
   opts,
   onClose,
   onSave,
@@ -38,6 +43,7 @@ export default function Assistant({
   name: string
   defaultDay: string
   entries: Entry[]
+  bills: Bill[]
   opts?: AssistantOpen
   onClose: () => void
   onSave: (list: Entry[]) => void
@@ -60,11 +66,17 @@ export default function Assistant({
         },
       ]
     }
+    if (opts?.ask) return [{ id: uid(), kind: "qa", q: opts.ask.q, a: answer(opts.ask.report, entries, bills, today()) }]
     return opts?.notice ? [{ id: uid(), kind: "notice", text: opts.notice }] : []
   })
   const [editing, setEditing] = useState<string | null>(null)
   const [history, setHistory] = useState(false)
   const input = useRef<HTMLTextAreaElement>(null)
+  const voice = useVoice((said) => setText((t) => (t.trim() ? `${t.trim()}, ${said}` : said)))
+  useEffect(() => {
+    if (opts?.voice) voice.start()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [picking, setPicking] = useState(false)
   const log = useRef<HTMLDivElement>(null)
 
@@ -96,6 +108,11 @@ export default function Assistant({
     if (!note) return
     setText("")
     setEditing(null)
+    const report = askedFor(note)
+    if (report) {
+      setTurns((t) => [...t, { id: uid(), kind: "qa", q: note, a: answer(report, entries, bills, today()) }])
+      return
+    }
     setTurns((t) => [
       // An unfinished review is dropped when a new note is sent; nothing from it was saved.
       ...t.map((x) => (x.kind === "note" && x.status === "review" ? { ...x, status: "discarded" as const } : x)),
@@ -230,7 +247,15 @@ export default function Assistant({
               {text.trim() ? (
                 <IconButton icon="send-up" label="Send" variant="dark" iconSize={20} type="submit" />
               ) : (
-                <IconButton icon="waveform" label="Voice note (coming soon)" variant="dark" iconSize={20} disabled />
+                <IconButton
+                  icon={voice.listening ? "waveform" : "mic"}
+                  label={voice.ok ? (voice.listening ? "Stop listening" : "Say it") : "Voice isn't available in this browser"}
+                  variant="dark"
+                  iconSize={20}
+                  disabled={!voice.ok}
+                  aria-pressed={voice.listening}
+                  onClick={() => (voice.listening ? voice.stop() : voice.start())}
+                />
               )}
             </div>
           </form>
@@ -274,7 +299,12 @@ export default function Assistant({
             </div>
           )}
           {turns.map((turn) =>
-            turn.kind === "notice" ? (
+            turn.kind === "qa" ? (
+              <div key={turn.id} className="chat__turn">
+                <ChatBubble>{turn.q}</ChatBubble>
+                <p className="t-body-14-r chat__bot">{turn.a}</p>
+              </div>
+            ) : turn.kind === "notice" ? (
               <p key={turn.id} className="t-body-14-r chat__bot">
                 {turn.text}
               </p>
@@ -514,4 +544,49 @@ function DraftEditor({
       </div>
     </div>
   )
+}
+
+type Recognition = {
+  lang: string
+  interimResults: boolean
+  continuous: boolean
+  start: () => void
+  stop: () => void
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null
+  onend: (() => void) | null
+  onerror: (() => void) | null
+}
+type RecognitionCtor = new () => Recognition
+
+/** Speech to text with the browser's own recogniser (Safari, Chrome), Vietnamese first. */
+function useVoice(onText: (said: string) => void) {
+  const w = window as unknown as { SpeechRecognition?: RecognitionCtor; webkitSpeechRecognition?: RecognitionCtor }
+  const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition
+  const [listening, setListening] = useState(false)
+  const rec = useRef<Recognition | null>(null)
+  const start = () => {
+    if (!Ctor || listening) return
+    const r = new Ctor()
+    r.lang = "vi-VN"
+    r.interimResults = false
+    r.continuous = false
+    r.onresult = (e) => {
+      const said = Array.from(e.results)
+        .map((x) => x[0].transcript)
+        .join(" ")
+        .trim()
+      if (said) onText(said)
+    }
+    r.onend = () => setListening(false)
+    r.onerror = () => setListening(false)
+    rec.current = r
+    try {
+      r.start()
+      setListening(true)
+    } catch {
+      setListening(false)
+    }
+  }
+  const stop = () => rec.current?.stop()
+  return { ok: !!Ctor, listening, start, stop }
 }

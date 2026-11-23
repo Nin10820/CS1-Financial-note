@@ -155,4 +155,87 @@
     rgb(200 233 173 / 100%) 52%,
     rgb(226 244 211 / 100%) 100%
   );
+
+  /* Layers (ios/DESIGN.md): every page and sheet sits on the canvas; cards and rows are white. */
+  --canvas: #eaecf0;
+  --card: var(--bg-white);
+  --segment-on: #ffffff; /* picked pill on a grey track */
+  --keypad-tray: #dfe1e6;
+  --keypad-key: #ffffff;
+  --action: #3b6922; /* prominent buttons with white text */
+  --success: #079455; /* gain, done */
+  --today-red: #d92d20; /* the only red: today's dot */
+  --on-dark: #dce5d6;
+  --on-dark-muted: #b3bfad;
+  --brand-900: #14270c;
+  /* Invested in people: family leans pink, yourself blue. */
+  --life-family: #dd2590;
+  --life-self: #1570ef;
+  --life-family-bg: linear-gradient(135deg, #fdf2fa, #fce7f6);
+  --life-self-bg: linear-gradient(135deg, #eff8ff, #d1e9ff);
+  /* Soft green light at the top of Today and Due. */
+  --page-glow: linear-gradient(180deg, var(--brand-100) 0%, var(--canvas) 100%);
+  color-scheme: light;
+}
+
+/* Dark mode: greys and surfaces flip, brand colours lift a step so they read on dark.
+   Auto follows the phone; Profile › Display › Appearance can force Light or Dark. */
+:root[data-theme="dark"] {
+  --grey-200: #262e3c;
+  --grey-300: #697586;
+  --grey-400: #9aa4b2;
+  --grey-500: #cdd5df;
+  --grey-700: #e3e8ef;
+  --grey-800: #eef2f6;
+  --grey-900: #f3f4f6;
+  --bg-1: #171c25;
+  --bg-2: #12161f;
+  --bg-3: #0c1019;
+  --bg-4: #1d2533;
+  --bg-white: #171c25;
+  --bd-0: #1d2533;
+  --bd-1: #262e3c;
+  --bd-2: #364152;
+  --bd-3: #364152;
+  --text-900: #f3f4f6;
+  --text-700: #cdd5df;
+  --text-disabled: #697586;
+  --brand-25: #0f1a09;
+  --brand-50: #142410;
+  --brand-100: #1c3314;
+  --brand-200: #2c481f;
+  --brand-300: #3b6922;
+  --brand-400: #4c8a26;
+  --brand-500: #6db83b;
+  --brand-600: #83c853;
+  --brand-700: #9cd472;
+  --brand-800: #c8e9ad;
+  --brand-900: #e2f4d3;
+  --category-food: #e5875f;
+  --category-transport: #5b9bf5;
+  --category-received: #9b7bf0;
+  --secondary-25: #2a1b12;
+  --secondary-100: #3d2618;
+  --secondary-300: #8a5636;
+  --secondary-500: #e5875f;
+  --blue-100: #0b2c40;
+  --blue-700: #4fb8f0;
+  --teal-200: #0e3b33;
+  --teal-500: #2ed3b7;
+  --canvas: #0c1019;
+  --segment-on: #364152;
+  --keypad-tray: #272a32;
+  --keypad-key: #364152;
+  --success: #47cd89;
+  --today-red: #f97066;
+  --dark-2: rgb(0 0 0 / 10%);
+  --dark-4: rgb(0 0 0 / 18%);
+  --dark-6: rgb(255 255 255 / 6%);
+  --dark-8: rgb(255 255 255 / 8%);
+  --page-glow: linear-gradient(180deg, #13240c 0%, var(--canvas) 100%);
+  --life-family: #f670c7;
+  --life-self: #53b1fd;
+  --life-family-bg: linear-gradient(135deg, #3d0f2e, #1e0a18);
+  --life-self-bg: linear-gradient(135deg, #0b2545, #081526);
+  color-scheme: dark;
 }
