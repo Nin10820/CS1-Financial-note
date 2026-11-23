@@ -15,10 +15,13 @@ final class AppState {
     var range: DayRange = .day
     /// The month Due shows, "YYYY-MM".
     var dueMonth = Month.of(Day.today())
-    /// Amounts shown as "••••••". Starts hidden when Profile › Display says so.
+    /// Amounts shown as "••••••": tap the big amount at the top of a page twice to switch.
     var hidden = false
-    /// Finance totals hidden; starts hidden when Profile › Display says so for assets or for all amounts.
-    var assetsHidden = false
+    /// The same switch on Finance: one tap-twice hides or shows amounts everywhere.
+    var assetsHidden: Bool {
+        get { hidden }
+        set { hidden = newValue }
+    }
     /// Something for the AI tab to start with (a day's note, a notice). Taken once by the tab.
     var assistant: AssistantSeed?
     var dayNoteOpen = false

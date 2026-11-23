@@ -1,4 +1,3 @@
-import LocalAuthentication
 import SwiftData
 import SwiftUI
 
@@ -8,7 +7,7 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
-    @State private var unlockProblem: String?
+    @State private var confirmReset = false
     @AppStorage("appearance") private var appearance = "system"
     @Query private var profiles: [Profile]
     @Query private var entries: [Entry]
@@ -64,8 +63,6 @@ struct ProfileView: View {
                                 .contentShape(.rect.inset(by: -12))
                             }
                         }
-                        Toggle("Hide amounts when the app opens", isOn: Binding(get: { p.hideOnOpen }, set: { p.hideOnOpen = $0; save() }))
-                        NavigationLink("Display") { DisplayView(profile: p) }
                     }
                     .listRowBackground(Tokens.card)
 
@@ -76,10 +73,32 @@ struct ProfileView: View {
                     .listRowBackground(Tokens.card)
 
                     Section {
-                        // The app starts empty. Nin's data set comes in only after Face ID or the
-                        // iPhone passcode; off takes it out again and leaves anything typed by hand.
-                        Toggle(isOn: Binding(get: { hasSample }, set: { setDataNin($0) })) {
-                            row("Data Nin", hasSample ? "Loaded on this phone" : "Face ID or passcode to load it")
+                        // Three stores that never mix: Nin's own, an empty one, and a full example.
+                        HStack {
+                            row("Data", DataSets.shared.current.hint)
+                            Spacer()
+                            Menu {
+                                Picker("Data", selection: Binding(get: { DataSets.shared.current },
+                                                                  set: { DataSets.shared.switchTo($0) })) {
+                                    ForEach(DataSets.Kind.allCases) { k in
+                                        Text(k.title).tag(k)
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: Space.s4) {
+                                    Text(DataSets.shared.current.title)
+                                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 12, weight: .semibold))
+                                }
+                                .foregroundStyle(Tokens.grey400)
+                                .contentShape(.rect.inset(by: -12))
+                            }
+                            .accessibilityLabel("Data, \(DataSets.shared.current.title)")
+                        }
+                        if DataSets.shared.current != .nin {
+                            Button(DataSets.shared.current == .example ? "Fresh example data" : "Start empty again") {
+                                confirmReset = true
+                            }
+                            .foregroundStyle(Tokens.brand600)
                         }
                         NavigationLink { YourDataView() } label: { row("Your data", "See what the app keeps") }
                         NavigationLink { AIInfoView() } label: { row("What the AI does with notes", "Only reads what you write") }
@@ -100,31 +119,15 @@ struct ProfileView: View {
             .contentMargins(.top, Space.s8, for: .scrollContent)
             .font(AppFont.main(14, .medium))
             .sheetHeader("Profile")
-            .alert("Can't unlock Data Nin", isPresented: Binding(get: { unlockProblem != nil }, set: { if !$0 { unlockProblem = nil } })) {
-                Button("OK", role: .cancel) {}
+            .confirmationDialog(DataSets.shared.current == .example ? "Put back a fresh full example?" : "Empty this data set?",
+                                isPresented: $confirmReset, titleVisibility: .visible) {
+                Button(DataSets.shared.current == .example ? "Fresh example" : "Empty it", role: .destructive) {
+                    DataSets.shared.reset()
+                }
             } message: {
-                Text(unlockProblem ?? "")
+                Text("Only the \(DataSets.shared.current.title) set changes. Nin's data is not touched.")
             }
             .tint(Tokens.brand600)
-        }
-    }
-
-    private var hasSample: Bool {
-        entries.contains(where: \.sample) || assets.contains(where: \.sample) || bills.contains(where: \.sample)
-    }
-
-    /// On asks for Face ID or the iPhone passcode first; off just takes the data out.
-    private func setDataNin(_ on: Bool) {
-        let store = LocalStore(context: context)
-        guard on else { store.clearSample(); return }
-        let auth = LAContext()
-        var error: NSError?
-        guard auth.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
-            unlockProblem = "Set a passcode on this iPhone first, then try again."
-            return
-        }
-        auth.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Load Data Nin on this phone") { ok, _ in
-            Task { @MainActor in if ok { store.loadSample() } }
         }
     }
 
@@ -399,38 +402,6 @@ struct DeleteAllView: View {
 
 // MARK: - Display and help
 
-private struct DisplayView: View {
-    @Bindable var profile: Profile
-    @Environment(\.modelContext) private var context
-
-    var body: some View {
-        List {
-            Section { intro("You choose when to look", "No number jumps out at you.") }
-            .listRowBackground(Tokens.card)
-            Section("When the app opens") {
-                Toggle(isOn: Binding(get: { profile.hideOnOpen }, set: { profile.hideOnOpen = $0; try? context.save() })) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Hide balances")
-                        Text("Tap the eye to show them").font(AppFont.main(12)).foregroundStyle(.secondary)
-                    }
-                }
-                Toggle(isOn: Binding(get: { profile.hideAssets }, set: { profile.hideAssets = $0; try? context.save() })) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Hide asset totals")
-                        Text("Applies to Finance too").font(AppFont.main(12)).foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .listRowBackground(Tokens.card)
-            Section("Numbers") { LabeledContent("Currency", value: "VND") }
-            .listRowBackground(Tokens.card)
-        }
-        .appListSurface()
-        .font(AppFont.main(16))
-        .navigationTitle("Display")
-        .toolbarTitleDisplayMode(.inline)
-    }
-}
 
 private struct ReportView: View {
     static let topics = ["Misread my note", "Slow", "Wrong number", "Other"]

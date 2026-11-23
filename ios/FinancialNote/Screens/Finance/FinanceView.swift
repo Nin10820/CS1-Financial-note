@@ -62,8 +62,6 @@ struct FinanceView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Menu {
-                        Button(app.assetsHidden ? "Show amounts" : "Hide amounts",
-                               systemImage: app.assetsHidden ? "eye" : "eye.slash") { app.assetsHidden.toggle() }
                         Button("For your family", systemImage: "person.2") { path.append(.family) }
                             .disabled(care.isEmpty)
                     } label: {

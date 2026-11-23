@@ -4,19 +4,15 @@ import UIKit
 
 @main
 struct FinancialNoteApp: App {
-    let container: ModelContainer
+    /// Everything lives in SwiftData stores on this phone (Nin, Empty, Example; Profile › Data).
+    /// Nothing is synced or sent anywhere.
+    @State private var sets = DataSets.shared
     @Environment(\.scenePhase) private var scenePhase
 
+    private var container: ModelContainer { sets.container }
+
     init() {
-        // Everything lives in one SwiftData store on this phone. Nothing is synced or sent anywhere.
-        let inMemory = ProcessInfo.processInfo.arguments.contains("-uiTesting")
-        let config = ModelConfiguration(isStoredInMemoryOnly: inMemory, cloudKitDatabase: .none)
-        do {
-            container = try ModelContainer(for: Schema(AppSchema.models), configurations: config)
-        } catch {
-            fatalError("Couldn't open the on-device store: \(error)")
-        }
-        LocalStore(context: container.mainContext).prepareOnLaunch()
+        let container = DataSets.shared.container
         #if DEBUG
         // For trying the app: `-reloadSample` puts in a fresh copy of the made-up data.
         if ProcessInfo.processInfo.arguments.contains("-reloadSample") {
@@ -51,15 +47,21 @@ struct FinancialNoteApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                // The backup folder (Profile › Backup & restore) follows every saved change…
+                // Another data set is another app state: the screens start over on it.
+                .id(sets.current)
+                // The backup folder (Profile › Backup & restore) follows every saved change to
+                // Nin's own data (never the Empty or Example sets)…
                 .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave).receive(on: RunLoop.main)) { _ in
-                    BackupFolder.shared.changed(container: container)
+                    if sets.current == .nin { BackupFolder.shared.changed(container: container) }
                 }
         }
         .modelContainer(container)
         // …and settings too, once the app goes to the background.
         .onChange(of: scenePhase) { _, phase in
-            if phase == .background, BackupFolder.shared.isOn { BackupFolder.shared.saveNow(container: container) }
+            if phase == .background {
+                try? container.mainContext.save()
+                if sets.current == .nin, BackupFolder.shared.isOn { BackupFolder.shared.saveNow(container: container) }
+            }
             // Gold, dollars and coins follow today's price when the phone is online.
             if phase == .active {
                 MarketSync.start(container)

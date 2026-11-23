@@ -46,24 +46,6 @@ struct SpendCard: View {
                 .accessibilityLabel(hidden ? "\(label), hidden" : "\(label), \(net < 0 ? "minus " : "")\(Money.format(abs(net))) dong")
                 .doubleTapToHide($hidden)
                 Spacer(minLength: Space.s8)
-                Button {
-                    hidden.toggle()
-                } label: {
-                    Group {
-                        if hidden {
-                            Image(systemName: "eye").font(.system(size: 14, weight: .semibold))
-                        } else {
-                            AppIcon(.eyeSlash, size: 16)
-                        }
-                    }
-                    .foregroundStyle(.white.opacity(0.8))
-                        .frame(width: 32, height: 32)
-                        .background(.white.opacity(0.08), in: .circle)
-                        .frame(width: 44, height: 44)
-                        .contentShape(.circle)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(hidden ? "Show amounts" : "Hide amounts")
             }
             HStack(spacing: Space.s8) {
                 Text("\(notes) \(notes == 1 ? "note" : "notes")")

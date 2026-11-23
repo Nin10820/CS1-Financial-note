@@ -8,7 +8,6 @@ struct HeroCard<Buttons: View>: View {
     var sub: String?
     var rows: [(label: String, value: Int)]
     @Binding var hidden: Bool
-    var showEye = true
     @ViewBuilder var buttons: Buttons
 
     var body: some View {
@@ -33,19 +32,6 @@ struct HeroCard<Buttons: View>: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(hidden ? "\(label), hidden" : "\(label), \(Money.format(amount)) dong")
                 .doubleTapToHide($hidden)
-                if showEye {
-                    Button {
-                        hidden.toggle()
-                    } label: {
-                        Image(systemName: hidden ? "eye" : "eye.slash")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(Tokens.onDark)
-                            .frame(width: 32, height: 32)
-                            .background(.white.opacity(0.1), in: .circle)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(hidden ? "Show amounts" : "Hide amounts")
-                }
             }
             if let sub {
                 Text(sub)

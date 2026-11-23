@@ -25,8 +25,7 @@ struct InstallmentsView: View {
                     amount: statement,
                     sub: lastDay.map { "Due \(DueText.ddmmyyyy($0))" },
                     rows: [("Coming up", comingUp), ("Remaining", remaining)],
-                    hidden: $app.hidden,
-                    showEye: true
+                    hidden: $app.hidden
                 ) {
                     HeroButton(title: "History", systemImage: "clock.arrow.circlepath") { sheet = .history }
                     HeroButton(title: "Coming up", systemImage: "calendar") { sheet = .comingUp }

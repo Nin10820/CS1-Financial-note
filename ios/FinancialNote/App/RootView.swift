@@ -72,8 +72,6 @@ struct RootView: View {
         .onAppear {
             guard !didApplyPrefs else { return }
             didApplyPrefs = true
-            app.hidden = profiles.first?.hideOnOpen ?? false
-            app.assetsHidden = app.hidden || (profiles.first?.hideAssets ?? false)
         }
     }
 
