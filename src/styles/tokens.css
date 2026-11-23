@@ -367,6 +367,7 @@
   --dark-8: rgb(255 255 255 / 8%);
   --page-glow: linear-gradient(180deg, #13240c 0%, var(--canvas) 100%);
   /* Palettes lift a step on dark (iOS Tokens dark values). */
+  --bill-other: #697586; /* lighter slate so it shows on the dark canvas */
   --bill-house-soft: #4a1036;
   --bill-house-ink: #f670c7;
   --bill-drop-soft: #0b2c40;
