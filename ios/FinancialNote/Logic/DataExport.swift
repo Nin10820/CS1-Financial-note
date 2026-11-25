@@ -57,6 +57,27 @@ nonisolated struct ExportFile: Codable, Equatable, Sendable {
         var rate: Double
         var sample: Bool
     }
+    struct BelongingRow: Codable, Equatable, Sendable {
+        var id, name, icon, mode: String
+        var paid: Int
+        var boughtOn: String
+        var estimate: Int
+        var estimatedOn: String
+        var lossPerYear, floorPct, quickSalePct: Double
+        var source, note: String?
+        var createdAt: Date
+        var sample: Bool
+        /// A collection, and the collection a piece is in (newer files only).
+        var isCollection: Bool? = nil
+        var parentId: String? = nil
+        var entryId: String? = nil
+        var code: String? = nil
+        var year: Int? = nil
+        var condition: String? = nil
+        var keeps: Bool? = nil
+        var soldOn: String? = nil
+        var soldFor: Int? = nil
+    }
     struct WorthRow: Codable, Equatable, Sendable { var month: String; var value: Int; var sample: Bool }
     /// Settings kept outside the database (on this phone's UserDefaults).
     struct Settings: Codable, Equatable, Sendable {
@@ -88,6 +109,8 @@ nonisolated struct ExportFile: Codable, Equatable, Sendable {
     var loans: [LoanRow]? = nil
     var worth: [WorthRow]? = nil
     var settings: Settings? = nil
+    /// Land, a car, a watch… (newer files only).
+    var belongings: [BelongingRow]? = nil
 
     static func encoder() -> JSONEncoder {
         let e = JSONEncoder()
@@ -142,7 +165,16 @@ extension ExportFile {
             worth: store.all(WorthPoint.self).sorted { $0.month < $1.month }.map {
                 WorthRow(month: $0.month, value: $0.value, sample: $0.sample)
             },
-            settings: Settings.read(defaults))
+            settings: Settings.read(defaults),
+            belongings: store.all(Belonging.self).sorted { ($0.createdAt, $0.id) < ($1.createdAt, $1.id) }.map {
+                BelongingRow(id: $0.id, name: $0.name, icon: $0.iconRaw, mode: $0.modeRaw, paid: $0.paid,
+                             boughtOn: $0.boughtOn, estimate: $0.estimate, estimatedOn: $0.estimatedOn,
+                             lossPerYear: $0.lossPerYear, floorPct: $0.floorPct, quickSalePct: $0.quickSalePct,
+                             source: $0.source, note: $0.note, createdAt: $0.createdAt, sample: $0.sample,
+                             isCollection: $0.isCollection ? true : nil, parentId: $0.parentId, entryId: $0.entryId,
+                             code: $0.code, year: $0.year, condition: $0.conditionRaw,
+                             keeps: $0.keeps ? true : nil, soldOn: $0.soldOn, soldFor: $0.soldFor)
+            })
     }
 }
 

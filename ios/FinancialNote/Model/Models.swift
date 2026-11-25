@@ -313,6 +313,196 @@ nonisolated enum LoanMove: String, Codable, Sendable, CaseIterable {
     }
 }
 
+/// Something you own whose price is hard to pin down: land, a car, a watch, a bag, Lego.
+/// Its worth is your estimate, what you paid, or what's left after it loses value each year.
+/// It stays out of Total Asset unless you count it in (Finance › ••• ).
+@Model
+final class Belonging {
+    @Attribute(.unique) var id: String
+    var name: String
+    var iconRaw: String
+    /// "estimate", "depreciate" or "paid".
+    var modeRaw: String
+    /// What you paid, in đồng; 0 when you don't know.
+    var paid: Int
+    /// "YYYY-MM-DD" bought.
+    var boughtOn: String
+    /// Your value, in đồng (estimate mode).
+    var estimate: Int
+    /// "YYYY-MM-DD" the estimate was last checked.
+    var estimatedOn: String
+    /// Percent it loses a year (depreciate mode), e.g. 10.
+    var lossPerYear: Double
+    /// It never goes below this percent of what you paid.
+    var floorPct: Double
+    /// A quick sale fetches this percent of its value, e.g. 70.
+    var quickSalePct: Double
+    /// Where the price came from: "Chợ Tốt 12/2026", "shop's quote".
+    var source: String?
+    var note: String?
+    var createdAt: Date
+    var sample: Bool
+    /// A collection (Lego, watches, cards…): worth what its pieces are worth.
+    var isCollection: Bool = false
+    /// The collection this piece belongs to; nil for things on their own.
+    var parentId: String? = nil
+    /// The spending line in Today it was bought with, when kept from there.
+    var entryId: String? = nil
+    /// A piece in a collection: its code or model (a set number, a card number), the year it came
+    /// out, and its condition.
+    var code: String? = nil
+    var year: Int? = nil
+    var conditionRaw: String? = nil
+    /// Its picture, kept small on the phone (a Lego set's from Rebrickable).
+    @Attribute(.externalStorage) var imageData: Data? = nil
+    /// The family's, kept for use (a bed, a dryer): you wouldn't sell it, so no quick-sale number.
+    var keeps: Bool = false
+    /// "YYYY-MM-DD" it was sold, and what it fetched. A sold thing stays in the list, greyed,
+    /// and no longer counts.
+    var soldOn: String? = nil
+    var soldFor: Int? = nil
+
+    var condition: BelongingCondition? {
+        get { conditionRaw.flatMap(BelongingCondition.init(rawValue:)) }
+        set { conditionRaw = newValue?.rawValue }
+    }
+
+    var mode: BelongingValue {
+        get { BelongingValue(rawValue: modeRaw) ?? .estimate }
+        set { modeRaw = newValue.rawValue }
+    }
+
+    var icon: BelongingIcon {
+        get { BelongingIcon(rawValue: iconRaw) ?? .other }
+        set { iconRaw = newValue.rawValue }
+    }
+
+    init(id: String = UUID().uuidString, name: String, icon: BelongingIcon, mode: BelongingValue, paid: Int,
+         boughtOn: String, estimate: Int = 0, estimatedOn: String? = nil, lossPerYear: Double = 10,
+         floorPct: Double = 10, quickSalePct: Double = 70, source: String? = nil, note: String? = nil,
+         createdAt: Date = .now, sample: Bool = false) {
+        self.id = id
+        self.name = name
+        self.iconRaw = icon.rawValue
+        self.modeRaw = mode.rawValue
+        self.paid = paid
+        self.boughtOn = boughtOn
+        self.estimate = estimate
+        self.estimatedOn = estimatedOn ?? boughtOn
+        self.lossPerYear = lossPerYear
+        self.floorPct = floorPct
+        self.quickSalePct = quickSalePct
+        self.source = source
+        self.note = note
+        self.createdAt = createdAt
+        self.sample = sample
+    }
+}
+
+/// How a collected piece is kept. New keeps its price; used and damaged ones are worth less.
+nonisolated enum BelongingCondition: String, Codable, Sendable, CaseIterable {
+    case sealed, likeNew, used, damaged
+
+    var label: String {
+        switch self {
+        case .sealed: "New / sealed"
+        case .likeNew: "Like new"
+        case .used: "Used"
+        case .damaged: "Damaged / missing parts"
+        }
+    }
+
+    var short: String {
+        switch self {
+        case .sealed: "New"
+        case .likeNew: "Like new"
+        case .used: "Used"
+        case .damaged: "Damaged"
+        }
+    }
+
+    /// The share of its price it's usually worth, to start the estimate from.
+    var share: Double {
+        switch self {
+        case .sealed: 1
+        case .likeNew: 0.8
+        case .used: 0.6
+        case .damaged: 0.3
+        }
+    }
+}
+
+nonisolated enum BelongingValue: String, Codable, Sendable, CaseIterable {
+    case estimate, depreciate, paid
+
+    var label: String {
+        switch self {
+        case .estimate: "Your estimate"
+        case .depreciate: "Wears down"
+        case .paid: "What you paid"
+        }
+    }
+}
+
+nonisolated enum BelongingIcon: String, Codable, Sendable, CaseIterable {
+    case land, house, car, motorbike, bicycle, watch, bag, lego, cards, sneakers, figure, boardGame, coins, camera,
+         laptop, phone, gadget, sport, furniture, appliance, art, other
+
+    var symbol: String {
+        switch self {
+        case .land: "map.fill"
+        case .house: "house.fill"
+        case .car: "car.fill"
+        case .motorbike: "scooter"
+        case .bicycle: "bicycle"
+        case .watch: "watch.analog"
+        case .bag: "handbag.fill"
+        case .lego: "puzzlepiece.fill"
+        case .cards: "rectangle.portrait.on.rectangle.portrait.fill"
+        case .sneakers: "shoe.fill"
+        case .figure: "figure.stand"
+        case .boardGame: "dice.fill"
+        case .coins: "dollarsign.circle.fill"
+        case .camera: "camera.fill"
+        case .laptop: "laptopcomputer"
+        case .phone: "iphone"
+        case .gadget: "keyboard.fill"
+        case .sport: "figure.badminton"
+        case .furniture: "bed.double.fill"
+        case .appliance: "washer.fill"
+        case .art: "paintpalette.fill"
+        case .other: "shippingbox.fill"
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .land: "Land"
+        case .house: "House"
+        case .car: "Car"
+        case .motorbike: "Motorbike"
+        case .bicycle: "Bicycle"
+        case .watch: "Watch"
+        case .bag: "Bag"
+        case .lego: "Lego"
+        case .cards: "Cards"
+        case .sneakers: "Sneakers"
+        case .figure: "Figures / models"
+        case .boardGame: "Board games"
+        case .coins: "Coins & notes"
+        case .camera: "Camera"
+        case .laptop: "Laptop"
+        case .phone: "Phone"
+        case .gadget: "Gadget (keyboard, headphones…)"
+        case .sport: "Sports gear"
+        case .furniture: "Furniture (bed, chair…)"
+        case .appliance: "Home appliance"
+        case .art: "Art"
+        case .other: "Other"
+        }
+    }
+}
+
 /// Net worth at the end of a month, for the chart. Only the sample fills it today.
 @Model
 final class WorthPoint {
@@ -355,6 +545,6 @@ final class Profile {
 enum AppSchema {
     static let models: [any PersistentModel.Type] = [
         Entry.self, DayNote.self, Bill.self, Asset.self, AssetMove.self, CareGift.self, WorthPoint.self, Profile.self,
-        FamilyLoan.self,
+        FamilyLoan.self, Belonging.self,
     ]
 }

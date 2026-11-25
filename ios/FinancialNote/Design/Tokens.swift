@@ -124,6 +124,9 @@ enum Tokens {
         }
     }
 
+    /// Belongings (land, a car, a watch, Lego): one warm brown for the group.
+    static let belonging = Color(light: 0xA15C07, dark: 0xDC8A1E)
+
     static func assetKind(_ k: AssetKind) -> Color {
         switch k {
         case .available: brand600

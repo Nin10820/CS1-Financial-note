@@ -14,9 +14,53 @@ enum SampleData {
         var loans: [FamilyLoan]
         var worth: [WorthPoint]
         var birthYear: Int
+        var belongings: [Belonging] = []
     }
 
     private static func id(_ s: String) -> String { "sample-\(s)" }
+
+    /// Things owned whose price is hard to pin down: land and collectibles you estimate (one not
+    /// checked for a while), a bike and a laptop that lose value, a watch kept at its price.
+    private static func belongings(today: String, now: Date) -> [Belonging] {
+        func ago(_ days: Int) -> String { Day.addDays(today, -days) }
+        // Lego as a collection: each set inside with its own value.
+        let lego = Belonging(id: id("lego"), name: "Lego", icon: .lego, mode: .estimate, paid: 0, boughtOn: ago(700),
+                             createdAt: now, sample: true)
+        lego.isCollection = true
+        func piece(_ b: Belonging) -> Belonging {
+            b.parentId = lego.id
+            // Code, year and condition, as you'd write them for a set.
+            switch b.id {
+            case id("lego-falcon"): (b.code, b.year, b.condition) = ("75192", 2017, .sealed)
+            case id("lego-hogwarts"): (b.code, b.year, b.condition) = ("71043", 2018, .likeNew)
+            default: (b.code, b.year, b.condition) = ("42096", 2019, .used)
+            }
+            return b
+        }
+        return [
+            Belonging(id: id("land"), name: "Đất Long An 120m²", icon: .land, mode: .estimate, paid: 950_000_000,
+                      boughtOn: ago(900), estimate: 1_350_000_000, estimatedOn: ago(40), quickSalePct: 80,
+                      source: "Môi giới báo giá", note: "Sổ hồng riêng", createdAt: now, sample: true),
+            lego,
+            piece(Belonging(id: id("lego-falcon"), name: "Millennium Falcon 75192", icon: .lego, mode: .estimate,
+                            paid: 19_500_000, boughtOn: ago(700), estimate: 26_000_000, estimatedOn: ago(220),
+                            quickSalePct: 75, source: "Chợ Tốt", note: "Còn hộp, chưa ráp", createdAt: now, sample: true)),
+            piece(Belonging(id: id("lego-hogwarts"), name: "Hogwarts Castle 71043", icon: .lego, mode: .estimate,
+                            paid: 11_900_000, boughtOn: ago(500), estimate: 13_500_000, estimatedOn: ago(30),
+                            quickSalePct: 75, createdAt: now, sample: true)),
+            piece(Belonging(id: id("lego-porsche"), name: "Technic Porsche 911 42096", icon: .lego, mode: .paid,
+                            paid: 3_600_000, boughtOn: ago(400), quickSalePct: 70, createdAt: now, sample: true)),
+            Belonging(id: id("watch"), name: "Đồng hồ Seiko Presage", icon: .watch, mode: .paid, paid: 12_800_000,
+                      boughtOn: ago(400), quickSalePct: 60, createdAt: now, sample: true),
+            Belonging(id: id("bag"), name: "Túi Charles & Keith", icon: .bag, mode: .estimate, paid: 2_400_000,
+                      boughtOn: ago(300), estimate: 1_200_000, estimatedOn: ago(20), quickSalePct: 60,
+                      createdAt: now, sample: true),
+            Belonging(id: id("bike"), name: "Honda Vision", icon: .motorbike, mode: .depreciate, paid: 33_000_000,
+                      boughtOn: ago(600), lossPerYear: 10, floorPct: 30, quickSalePct: 85, createdAt: now, sample: true),
+            Belonging(id: id("mac"), name: "MacBook Air M3", icon: .laptop, mode: .depreciate, paid: 27_000_000,
+                      boughtOn: ago(80), lossPerYear: 25, floorPct: 10, quickSalePct: 80, createdAt: now, sample: true),
+        ]
+    }
 
     /// Same month offset as the web sample: the day is capped at 28 so it always exists.
     static func addMonthsIso(_ iso: String, _ n: Int) -> String {
@@ -200,6 +244,15 @@ enum SampleData {
             }
         }
 
+        // Big buys to try "Keep it in Belongings too?" on: a keyboard, AirPods, a jacket (just spending).
+        for (j, buy) in [("Bàn phím cơ Keychron Q1", 2_650_000, 2), ("AirPods Pro 2", 5_990_000, 9),
+                         ("Áo khoác Uniqlo", 990_000, 4), ("Ghế công thái học", 3_200_000, 16)].enumerated() {
+            let date = Day.addDays(today, -buy.2)
+            entries.append(Entry(id: id("buy-\(j)"), date: date, title: buy.0, amount: buy.1, flow: .out,
+                                 category: .shopping, noteId: id("buy-\(j)"), source: "\(buy.0) \(k(buy.1))",
+                                 createdAt: Day.date(date).addingTimeInterval(15 * 3600), sample: true))
+        }
+
         let thisMonth = Month.of(today)
         let day15 = "\(thisMonth)-15"
         func paidMonths(_ from: Int, _ to: Int, _ amount: Int) -> [String: PaidRecord] {
@@ -367,6 +420,6 @@ enum SampleData {
         }
 
         return Bundle(entries: entries, notes: notes, bills: bills, assets: assets, moves: moves, care: care, loans: loans,
-                      worth: worth, birthYear: ty - 27)
+                      worth: worth, birthYear: ty - 27, belongings: belongings(today: today, now: now))
     }
 }

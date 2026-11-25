@@ -6,11 +6,17 @@ import SwiftUI
 /// The two tints. Family leans pink, yourself leans blue.
 enum LifeTint {
     case family, yourself
+    /// Belongings by what they are: things that hold value (amber), everyday things (teal),
+    /// collections (slate blue).
+    case lasting, everyday, collection
 
     var accent: Color {
         switch self {
         case .family: Color(light: 0xDD2590, dark: 0xF670C7)
         case .yourself: Color(light: 0x1570EF, dark: 0x53B1FD)
+        case .lasting: Color(light: 0xB54708, dark: 0xFDB022)
+        case .everyday: Color(light: 0x0E9384, dark: 0x2ED3B7)
+        case .collection: Color(light: 0x4E5BA6, dark: 0x9EA5D1)
         }
     }
 
@@ -18,6 +24,9 @@ enum LifeTint {
         let c: [Color] = switch self {
         case .family: [Color(light: 0xFDF2FA, dark: 0x3D0F2E), Color(light: 0xFCE7F6, dark: 0x1E0A18)]
         case .yourself: [Color(light: 0xEFF8FF, dark: 0x0B2545), Color(light: 0xD1E9FF, dark: 0x081526)]
+        case .lasting: [Color(light: 0xFFFAEB, dark: 0x3A2608), Color(light: 0xFEF0C7, dark: 0x1F1404)]
+        case .everyday: [Color(light: 0xF0FDF9, dark: 0x0A3029), Color(light: 0xCCFBEF, dark: 0x061A16)]
+        case .collection: [Color(light: 0xF8F9FC, dark: 0x1B1F36), Color(light: 0xEAECF5, dark: 0x10121F)]
         }
         return LinearGradient(colors: c, startPoint: .topLeading, endPoint: .bottomTrailing)
     }
@@ -26,6 +35,9 @@ enum LifeTint {
         switch self {
         case .family: "heart.fill"
         case .yourself: "figure.run"
+        case .lasting: "house.fill"
+        case .everyday: "iphone.gen3"
+        case .collection: "square.stack.3d.up.fill"
         }
     }
 
@@ -34,6 +46,7 @@ enum LifeTint {
         switch self {
         case .family: "The things you've given the people you love, that you may never have noticed…"
         case .yourself: "The things you've put into yourself — learning, moving, staying well…"
+        case .lasting, .everyday, .collection: ""
         }
     }
 }
@@ -45,6 +58,8 @@ struct LifeCard: View {
     var amount: Int
     var sub: String
     var hidden: Bool
+    /// Shown instead of the amount, e.g. "Nothing yet" on an empty card.
+    var amountText: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.s12) {
@@ -61,12 +76,17 @@ struct LifeCard: View {
             }
             Spacer(minLength: 0)
             Text(title).font(AppFont.table(13, .medium)).foregroundStyle(tint.accent)
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(hidden ? "•••" : AnalyticsView.compact(amount))
-                    .font(AppFont.amount(28)).foregroundStyle(Tokens.text900).monospacedDigit()
-                Text("đ").font(AppFont.currency(for: 28)).foregroundStyle(Tokens.grey400)
+            if let amountText {
+                Text(amountText).font(AppFont.heading(20, .medium)).foregroundStyle(Tokens.grey400)
+                    .frame(minHeight: 34, alignment: .bottomLeading)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(hidden ? "•••" : AnalyticsView.compact(amount))
+                        .font(AppFont.amount(28)).foregroundStyle(Tokens.text900).monospacedDigit()
+                    Text("đ").font(AppFont.currency(for: 28)).foregroundStyle(Tokens.grey400)
+                }
+                .lineLimit(1).minimumScaleFactor(0.7)
             }
-            .lineLimit(1).minimumScaleFactor(0.7)
             Text(sub).font(AppFont.table(12)).foregroundStyle(Tokens.text700).lineLimit(2)
         }
         .padding(Space.s16)

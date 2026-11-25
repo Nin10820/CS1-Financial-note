@@ -20,6 +20,9 @@ struct EntrySheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var app
     @Query private var assets: [Asset]
+    @Query private var belongings: [Belonging]
+    @AppStorage(KeepSuggestion.thresholdKey) private var keepThreshold = KeepSuggestion.defaultThreshold
+    @State private var keeping = false
 
     @State private var d = EntryEdit()
     @State private var start = EntryEdit()
@@ -44,6 +47,7 @@ struct EntrySheet: View {
                     amountHeader
                     nameCard
                     detailsCard
+                    keepCard
                     tagsCard
                     commentBlock
                     if let source = entry?.source, !source.isEmpty {
@@ -79,6 +83,9 @@ struct EntrySheet: View {
                     .sheetSurface()
             }
             .sheet(isPresented: $pickingDate) { EntryDateSheet(date: $d.date) { dateSet = true }.sheetSurface() }
+            .sheet(isPresented: $keeping) {
+                if let entry { BelongingSheet(from: entry).sheetSurface() }
+            }
         }
         .presentationDetents([.large])
         .onAppear {
@@ -134,6 +141,49 @@ struct EntrySheet: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, Space.s8)
+    }
+
+    /// A saved spending line that could be something you own (a phone, a 2.5M keyboard): offer to
+    /// keep it in Belongings too, and say why. Once kept, say where it is.
+    @ViewBuilder
+    private var keepCard: some View {
+        if let entry {
+            if let kept = belongings.first(where: { $0.entryId == entry.id }) {
+                HStack(spacing: Space.s12) {
+                    BelongingTile(icon: kept.icon, size: 36, color: BelongingMath.group(kept).tint.accent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("In Belongings").font(AppFont.main(14, .semibold)).foregroundStyle(Tokens.text900)
+                        Text(BelongingMath.group(kept).title + " · worth "
+                             + (app.hidden ? "•••" : Money.format(BelongingMath.value(kept, today: app.today)) + "đ") + " now")
+                            .font(AppFont.main(12)).foregroundStyle(Tokens.grey400)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(Space.s16)
+                .background(Tokens.card, in: .rect(cornerRadius: Corner.c16))
+                .accessibilityElement(children: .combine)
+            } else if let why = KeepSuggestion.reason(title: entry.title, amount: entry.amount, flow: entry.flow,
+                                                      category: entry.category, threshold: keepThreshold) {
+                Button { keeping = true } label: {
+                    HStack(spacing: Space.s12) {
+                        BelongingTile(icon: BelongingMath.guessIcon(entry.title), size: 36,
+                                      color: LifeTint.everyday.accent)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Keep it in Belongings too?").font(AppFont.main(14, .semibold)).foregroundStyle(Tokens.text900)
+                            Text(why).font(AppFont.main(12)).foregroundStyle(Tokens.grey400)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(Tokens.grey300)
+                    }
+                    .padding(Space.s16)
+                    .background(Tokens.card, in: .rect(cornerRadius: Corner.c16))
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Opens a new belonging filled in from this line. The spending stays in Today.")
+            }
+        }
     }
 
     private var nameCard: some View {

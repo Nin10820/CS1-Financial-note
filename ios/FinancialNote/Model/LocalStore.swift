@@ -43,6 +43,7 @@ struct LocalStore {
         x.moves.forEach(context.insert)
         x.care.forEach(context.insert)
         x.loans.forEach(context.insert)
+        x.belongings.forEach(context.insert)
         // A day note from the sample only fills a day the user hasn't written yet.
         let written = Set(all(DayNote.self).map(\.date))
         x.notes.filter { !written.contains($0.date) }.forEach(context.insert)
@@ -87,6 +88,7 @@ struct LocalStore {
         all(AssetMove.self).filter { $0.sample || ($0.assetId?.hasPrefix("sample-") ?? false) }.forEach(context.delete)
         all(CareGift.self).filter(\.sample).forEach(context.delete)
         all(FamilyLoan.self).filter(\.sample).forEach(context.delete)
+        all(Belonging.self).filter(\.sample).forEach(context.delete)
         all(DayNote.self).filter(\.sample).forEach(context.delete)
         // The chart is made from the sample, so it goes with it.
         if hadSample { all(WorthPoint.self).forEach(context.delete) }

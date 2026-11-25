@@ -23,6 +23,7 @@ extension ExportFile {
     var summary: String {
         var parts = ["\(entries.count) spends and incomes", "\(bills.count) bills", "\(assets.count) assets"]
         if let loans, !loans.isEmpty { parts.append("\(loans.count) family loan moves") }
+        if let belongings, !belongings.isEmpty { parts.append("\(belongings.count) belongings") }
         return parts.joined(separator: ", ")
     }
 }
@@ -89,6 +90,20 @@ extension LocalStore {
             l.kindRaw = r.kind
             context.insert(l)
         }
+        for r in file.belongings ?? [] {
+            let b = Belonging(id: r.id, name: r.name, icon: .other, mode: .estimate, paid: r.paid, boughtOn: r.boughtOn,
+                              estimate: r.estimate, estimatedOn: r.estimatedOn, lossPerYear: r.lossPerYear,
+                              floorPct: r.floorPct, quickSalePct: r.quickSalePct, source: r.source, note: r.note,
+                              createdAt: r.createdAt, sample: r.sample)
+            b.iconRaw = r.icon
+            b.modeRaw = r.mode
+            b.isCollection = r.isCollection ?? false
+            b.parentId = r.parentId
+            b.entryId = r.entryId
+            b.code = r.code; b.year = r.year; b.conditionRaw = r.condition
+            b.keeps = r.keeps ?? false; b.soldOn = r.soldOn; b.soldFor = r.soldFor
+            context.insert(b)
+        }
         for r in file.worth ?? [] {
             context.insert(WorthPoint(month: r.month, value: r.value, sample: r.sample))
         }
@@ -139,6 +154,14 @@ enum BackupCSV {
                 (f.loans ?? []).map {
                     [$0.date, $0.who, LoanMove(rawValue: $0.kind)?.label ?? $0.kind, "\($0.amount)", "\($0.rate)",
                      $0.title, sample($0.sample), $0.id]
+                })),
+            ("belongings.csv", table(
+                ["name", "valued by", "paid", "bought", "your value", "checked", "loses % a year", "quick sale %",
+                 "source", "note", "sample", "id"],
+                (f.belongings ?? []).map {
+                    [$0.name, BelongingValue(rawValue: $0.mode)?.label ?? $0.mode, "\($0.paid)", $0.boughtOn,
+                     "\($0.estimate)", $0.estimatedOn, "\($0.lossPerYear)", "\($0.quickSalePct)",
+                     $0.source ?? "", $0.note ?? "", sample($0.sample), $0.id]
                 })),
             ("worth.csv", table(
                 ["month", "total asset"],
@@ -287,3 +310,80 @@ final class BackupFolder {
         }
     }
 }
+
+#if DEBUG
+/// Developer-only: adds rows from Documents/import.json (the same row shapes as a backup file)
+/// to the open data set. Belongings with an id already there are updated; other rows with an id
+/// already there are skipped. The file is removed after.
+enum DevImport {
+    struct File: Decodable {
+        var belongings: [ExportFile.BelongingRow]?
+        var entries: [ExportFile.EntryRow]?
+        var care: [ExportFile.CareRow]?
+        var loans: [ExportFile.LoanRow]?
+        var bills: [ExportFile.BillRow]?
+    }
+
+    @MainActor
+    static func run(_ context: ModelContext) {
+        let url = URL.documentsDirectory.appending(path: "import.json")
+        guard let data = try? Data(contentsOf: url) else { return }
+        let f: File
+        let d = JSONDecoder()
+        d.dateDecodingStrategy = .iso8601
+        do { f = try d.decode(File.self, from: data) } catch {
+            try? Data("\(error)".utf8).write(to: URL.documentsDirectory.appending(path: "import-error.txt"))
+            return
+        }
+        let store = LocalStore(context: context)
+        let have = Dictionary(store.all(Belonging.self).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        for r in f.belongings ?? [] {
+            let b = have[r.id] ?? Belonging(id: r.id, name: r.name, icon: .other, mode: .estimate, paid: 0, boughtOn: r.boughtOn)
+            b.name = r.name; b.iconRaw = r.icon; b.modeRaw = r.mode; b.paid = r.paid; b.boughtOn = r.boughtOn
+            b.estimate = r.estimate; b.estimatedOn = r.estimatedOn; b.lossPerYear = r.lossPerYear
+            b.floorPct = r.floorPct; b.quickSalePct = r.quickSalePct; b.source = r.source; b.note = r.note
+            b.isCollection = r.isCollection ?? false; b.parentId = r.parentId; b.entryId = r.entryId
+            b.code = r.code; b.year = r.year; b.conditionRaw = r.condition
+            b.keeps = r.keeps ?? false; b.soldOn = r.soldOn; b.soldFor = r.soldFor
+            if have[r.id] == nil { b.createdAt = r.createdAt; context.insert(b) }
+        }
+        let entryIds = Set(store.all(Entry.self).map(\.id))
+        for r in f.entries ?? [] where !entryIds.contains(r.id) {
+            let e = Entry(id: r.id, date: r.date, title: r.title, amount: r.amount, flow: .out, category: .other,
+                          noteId: r.noteId, source: r.source, createdAt: r.createdAt, billId: r.billId, sample: false)
+            e.flowRaw = r.flow; e.categoryRaw = r.category; e.tags = r.tags; e.comment = r.comment; e.paidFrom = r.paidFrom
+            context.insert(e)
+        }
+        let careIds = Set(store.all(CareGift.self).map(\.id))
+        for r in f.care ?? [] where !careIds.contains(r.id) {
+            context.insert(CareGift(id: r.id, who: r.who, title: r.title, amount: r.amount, date: r.date))
+        }
+        let loanIds = Set(store.all(FamilyLoan.self).map(\.id))
+        for r in f.loans ?? [] where !loanIds.contains(r.id) {
+            let l = FamilyLoan(id: r.id, who: r.who, title: r.title, kind: .received, amount: r.amount, date: r.date, rate: r.rate)
+            l.kindRaw = r.kind
+            context.insert(l)
+        }
+        let billIds = Set(store.all(Bill.self).map(\.id))
+        for r in f.bills ?? [] where !billIds.contains(r.id) {
+            let b = Bill(id: r.id, kind: .oneoff, name: r.name, icon: .bell, amount: r.amount, varies: r.varies, start: r.start,
+                         code: r.code, payWith: r.payWith, lender: r.lender, principal: r.principal, payments: r.payments,
+                         rate: r.rate, fee: r.fee, paid: r.paid)
+            b.kindRaw = r.kind; b.iconRaw = r.icon
+            context.insert(b)
+        }
+        try? context.save()
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    /// `-legoPictures`: gets the picture of every Lego piece that has a code and none yet.
+    @MainActor
+    static func legoPictures(_ context: ModelContext) async {
+        for p in LocalStore(context: context).all(Belonging.self) where p.imageData == nil && p.parentId != nil {
+            guard let set = p.code.flatMap(LegoCatalog.find), let data = await LegoCatalog.picture(for: set) else { continue }
+            p.imageData = data
+            try? context.save()
+        }
+    }
+}
+#endif

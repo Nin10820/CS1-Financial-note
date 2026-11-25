@@ -40,6 +40,11 @@ nonisolated enum Day {
         return self.iso(date(year: y, month: m, day: d + days))
     }
 
+    /// Whole days from `from` to `to` ("YYYY-MM-DD"); negative when `to` is earlier.
+    static func daysBetween(_ from: String, _ to: String) -> Int {
+        calendar.dateComponents([.day], from: date(from), to: date(to)).day ?? 0
+    }
+
     /// Monday of the week that holds `iso`.
     static func monday(of iso: String) -> String {
         let weekday = calendar.component(.weekday, from: date(iso)) // 1 = Sunday

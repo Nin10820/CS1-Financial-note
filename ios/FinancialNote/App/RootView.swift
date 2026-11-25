@@ -193,7 +193,7 @@ private struct AppTabBar: View {
                 .glassEffectID("plus", in: glass)
                 .accessibilityLabel(app.actionsOpen ? "Close menu" : app.tab == .due ? "Add a bill" : "Add")
                 .accessibilityHint(app.tab == .due ? "" : app.tab == .finance
-                    ? "New asset, Scan or Quick note" : "Talk With AI, Template or Scan")
+                    ? "New asset, Belonging, Scan or Quick note" : "Talk With AI, Template or Scan")
             }
         }
         .padding(.horizontal, small ? Space.s32 : Space.s20)
@@ -236,6 +236,10 @@ private struct ActionMenu: View {
                                 app.actionsOpen = false
                                 app.scanForAssets = true
                                 app.scanOpen = true
+                            }
+                            ActionPill(title: "Belonging", icon: .shoppingBag) {
+                                app.actionsOpen = false
+                                app.addBelongingRequest += 1
                             }
                             ActionPill(title: "New asset", icon: .plus) {
                                 app.actionsOpen = false

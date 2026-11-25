@@ -18,6 +18,14 @@ struct FinancialNoteApp: App {
         if ProcessInfo.processInfo.arguments.contains("-reloadSample") {
             LocalStore(context: container.mainContext).loadSample()
         }
+        // `-importBelongings` adds belongings from Documents/import-belongings.json (rows as in a
+        // backup file), skipping any already there. For filling a set from the Mac while building.
+        if ProcessInfo.processInfo.arguments.contains("-importData") {
+            DevImport.run(container.mainContext)
+        }
+        if ProcessInfo.processInfo.arguments.contains("-legoPictures") {
+            Task { @MainActor in await DevImport.legoPictures(container.mainContext) }
+        }
         // `-topUpSample` adds the newer sample bills and "paid from" without reloading anything.
         if ProcessInfo.processInfo.arguments.contains("-topUpSample") {
             LocalStore(context: container.mainContext).topUpSample()

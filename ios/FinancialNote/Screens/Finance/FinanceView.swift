@@ -14,6 +14,11 @@ struct FinanceView: View {
     @Query(sort: \FamilyLoan.date, order: .reverse) private var loans: [FamilyLoan]
     @Query private var profiles: [Profile]
     @Query private var entries: [Entry]
+    @Query(sort: \Belonging.createdAt) private var belongings: [Belonging]
+    /// Belongings stay out of Total Asset unless counted in (Finance › •••).
+    @AppStorage("countBelongings") private var countBelongings = false
+    @AppStorage(KeepSuggestion.thresholdKey) private var keepThreshold = KeepSuggestion.defaultThreshold
+    @State private var belongingSheet: BelongingSheetID?
 
     @State private var view: FinanceTab = .overview
     @State private var adding = false
@@ -43,8 +48,12 @@ struct FinanceView: View {
                     .padding(.top, 6)
                     switch view {
                     case .overview: overview
-                    case .total: TotalAssetsSection(assets: assets, moves: moves, bills: bills, loans: loans, today: app.today,
-                                                    hidden: app.assetsHidden) { adding = true }
+                    case .total:
+                        TotalAssetsSection(assets: assets, moves: moves, bills: bills, loans: loans, today: app.today,
+                                           hidden: app.assetsHidden) { adding = true }
+                        BelongingsList(belongings: belongings, today: app.today, hidden: app.assetsHidden,
+                                       counted: countBelongings) { belongingSheet = $0 }
+                            .padding(.top, Space.s8)
                     case .debt: DebtSection(bills: bills, loans: loans, today: app.today, hidden: app.assetsHidden)
                     }
                 }
@@ -55,6 +64,18 @@ struct FinanceView: View {
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pageHeight = $0 }
             .onChange(of: app.addAssetRequest) { _, _ in adding = true }
+            .onChange(of: app.addBelongingRequest) { _, _ in belongingSheet = .new }
+            .sheet(item: $belongingSheet) { which in
+                Group {
+                    switch which {
+                    case .new: BelongingSheet()
+                    case .edit(let id): if let b = belongings.first(where: { $0.id == id }) { BelongingSheet(editing: b) }
+                    case .collection(let id): CollectionSheet(collectionId: id)
+                    case .group(let g): BelongingGroupSheet(group: g)
+                    }
+                }
+                .sheetSurface()
+            }
             .modifier(MinimizesTabBar())
             .background(Tokens.canvas)
             .navigationTitle("Finance")
@@ -62,6 +83,18 @@ struct FinanceView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Menu {
+                        Toggle(isOn: $countBelongings) {
+                            Label("Count belongings in Total Asset", systemImage: "shippingbox")
+                        }
+                        // Spending lines from this much offer "Keep it in Belongings too?" (gadgets from 1M).
+                        Picker(selection: $keepThreshold) {
+                            ForEach([1_000_000, 2_000_000, 5_000_000, 10_000_000], id: \.self) {
+                                Text(AnalyticsView.compact($0) + "đ").tag($0)
+                            }
+                        } label: {
+                            Label("Ask to keep from", systemImage: "questionmark.circle")
+                        }
+                        .pickerStyle(.menu)
                         Button("For your family", systemImage: "person.2") { path.append(.family) }
                             .disabled(care.isEmpty)
                     } label: {
@@ -125,7 +158,8 @@ struct FinanceView: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .center) {
                     // Total assets as a story over time: touch a month on the line to read it here.
-                    TotalBlock(total: picked?.value ?? shares.total, month: picked.map { FinanceText.monthLabel($0.month) },
+                    TotalBlock(total: picked?.value ?? shares.total
+                                   + (countBelongings ? BelongingMath.total(belongings, today: app.today) : 0), month: picked.map { FinanceText.monthLabel($0.month) },
                                growth: picked == nil ? growth : nil, putIn: picked.flatMap { deposits[$0.month] },
                                hidden: Bindable(app).assetsHidden)
                     Spacer(minLength: Space.s8)
@@ -199,6 +233,12 @@ struct FinanceView: View {
                 .buttonStyle(.plain)
             }
             .padding(.top, Space.s8)
+
+            // What you own that's hard to price, after the people: kept apart from Total Asset.
+            BelongingCards(belongings: belongings, today: app.today, hidden: app.assetsHidden,
+                           counted: countBelongings, onOpen: { belongingSheet = .group($0) },
+                           onAdd: { belongingSheet = .new })
+                .padding(.top, Space.s8)
         }
     }
 }
@@ -1133,11 +1173,19 @@ private struct DebtSection: View {
     private func familyCard(_ family: [LoanMath.Person]) -> some View {
         VStack(alignment: .leading, spacing: Space.s8) {
         FinanceSectionTitle(title: "Family loans") {
+            // Text and icon, no border: the same as Sync on Assets.
             Button { addingLoan = true } label: {
-                Label("Add", systemImage: "plus").font(AppFont.table(12, .semibold))
-                    .padding(.horizontal, Space.s12).frame(height: 32)
+                HStack(spacing: Space.s4) {
+                    Image(systemName: "plus")
+                    Text("Add")
+                }
+                .font(AppFont.main(14, .semibold))
+                .foregroundStyle(Tokens.brand600)
+                .frame(minHeight: 44)
+                .contentShape(.rect)
             }
-            .buttonStyle(.glass)
+            .buttonStyle(.plain)
+            .accessibilityLabel("Add a family loan")
         }
         VStack(spacing: 0) {
             if family.isEmpty {

@@ -793,6 +793,12 @@ struct AnalyticsView: View {
 
     /// 18,500,000 → "18.5M", 450,000 → "450K", 0 → "0".
     static func compact(_ n: Int) -> String {
+        // A billion and up: "1.44B" reads better than "1443M".
+        if n >= 1_000_000_000 {
+            let v = Double(n) / 1_000_000_000
+            return (v >= 100 ? String(Int(v.rounded())) : String(format: "%.2f", v)
+                .replacingOccurrences(of: #"\.?0+$"#, with: "", options: .regularExpression)) + "B"
+        }
         if n >= 1_000_000 {
             let v = Double(n) / 1_000_000
             return (v >= 100 || v == v.rounded() ? String(Int(v.rounded())) : String(format: "%.1f", v)) + "M"
