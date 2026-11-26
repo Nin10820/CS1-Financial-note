@@ -8,9 +8,9 @@ import { uid } from "../lib/store"
 import ModalSheet, { ModalHeader } from "./ModalSheet"
 
 const KINDS: { kind: BillKind; label: string; hint: string }[] = [
-  { kind: "recurring", label: "Recurring bill", hint: "Electricity, water, internet — every month" },
+  { kind: "recurring", label: "Bill", hint: "Electricity, water, internet — every month" },
   { kind: "installment", label: "Installment", hint: "Fixed parts until it's paid off" },
-  { kind: "oneoff", label: "One-off", hint: "Just this once, no repeat" },
+  { kind: "oneoff", label: "Other", hint: "Just this once: tuition, insurance, a friend" },
 ]
 
 const num = (v: string) => Number(v.replace(/[^\d.]/g, "")) || 0
@@ -55,7 +55,8 @@ export default function AddBill({ month, onClose, onSave }: { month: string; onC
       start: f.due,
       code: f.code.trim() || undefined,
       payWith: f.payWith.trim() || undefined,
-      lender: kind === "installment" ? f.lender.trim() || undefined : undefined,
+      // An installment's lender, or who an Other payment is to.
+      lender: kind !== "recurring" ? f.lender.trim() || undefined : undefined,
       principal: kind === "installment" ? num(f.principal) : undefined,
       payments: kind === "installment" ? Math.round(num(f.payments)) : undefined,
       rate: kind === "installment" ? num(f.rate) : undefined,
@@ -88,7 +89,7 @@ export default function AddBill({ month, onClose, onSave }: { month: string; onC
       }
     >
       <div className="add-bill">
-        <AddingLead label={label?.toLocaleLowerCase() ?? "kind of"} chosen={!!kind} />
+        <AddingLead label={kind === "oneoff" ? "payment" : label?.toLocaleLowerCase() ?? "kind of"} chosen={!!kind} />
 
         {!kind ? (
           <div className="add-bill__pick">
@@ -154,6 +155,7 @@ export default function AddBill({ month, onClose, onSave }: { month: string; onC
                   placeholder="340,000"
                   money
                 />
+                {kind === "oneoff" && <Line label="Pay to" value={f.lender} onChange={set("lender")} placeholder="(optional)" />}
                 <Line label="Due" value={f.due} onChange={set("due")} type="date" />
                 {kind === "recurring" && <p className="t-capture-12-r add-bill__note">Repeats monthly on day {Number(f.due.slice(8, 10)) || 15}.</p>}
                 <Line label="Pay with" value={f.payWith} onChange={set("payWith")} placeholder="(optional)" />
@@ -199,6 +201,8 @@ function Line({
         placeholder={placeholder}
         inputMode={isMoney || numeric ? "decimal" : undefined}
         autoFocus={autoFocus}
+        // A date opens the calendar on a tap anywhere in it, not only on its small icon.
+        onClick={type === "date" ? (e) => e.currentTarget.showPicker?.() : undefined}
         onChange={(e) => onChange(isMoney ? e.target.value.replace(/[^\d]/g, "") : e.target.value)}
       />
       {isMoney && value ? <span className="add-bill__suffix">đ</span> : suffix && value ? <span className="add-bill__suffix">{suffix}</span> : null}

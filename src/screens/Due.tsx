@@ -5,7 +5,7 @@ import StickyHeader from "../components/StickyHeader"
 import { ListCard, ListRow, TickMark, Tile, Toast } from "../components/kit"
 import { usePageSwipe } from "../lib/pageSwipe"
 import { money, today as todayIso } from "../lib/format"
-import { TILE, addMonths, monthSummary, ym, type Bill } from "../lib/bills"
+import { TILE, KIND_LABEL, billColor, billSource, addMonths, monthSummary, ym, type Bill, type BillKind } from "../lib/bills"
 import { PeriodStrip, MONTHS, MONTHS_LONG } from "./TodayHeader"
 import "./today.css"
 import "./today-header.css"
@@ -86,9 +86,39 @@ export default function Due({
     }
   }, [menu])
 
+  // The chip above the list: "" for all, or where the money goes ("Home Credit", "MoMo"…). Kept between visits.
+  const [view, setViewState] = useState(() => {
+    try {
+      return localStorage.getItem("dueView") ?? ""
+    } catch {
+      return ""
+    }
+  })
+  const setView = (v: string) => {
+    setViewState(v)
+    try {
+      localStorage.setItem("dueView", v)
+    } catch {
+      /* private window: just not remembered */
+    }
+  }
+  const key = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+  const sources: string[] = []
+  for (const x of s.due) {
+    const src = billSource(x.bill)
+    if (src && !sources.some((o) => key(o) === key(src))) sources.push(src)
+  }
+  if (view && !sources.some((o) => key(o) === key(view))) sources.push(view)
+  const shown = s.due.filter((x) => !view || key(billSource(x.bill) ?? "") === key(view))
+
   const inDone = (b: Bill) => stay[b.id] ?? !!b.paid[month]
-  const still = s.due.filter((x) => !inDone(x.bill))
-  const done = s.due.filter((x) => inDone(x.bill))
+  const still = shown.filter((x) => !inDone(x.bill))
+  const done = shown.filter((x) => inDone(x.bill))
+  // The list in kinds — Bill, Installment, Other — after the card's All / Still / Done.
+  const listed = filter === "still" ? still : filter === "done" ? done : shown
+  const kinds = (["recurring", "installment", "oneoff"] as BillKind[])
+    .map((k) => [k, listed.filter((x) => x.bill.kind === k)] as const)
+    .filter(([, items]) => items.length > 0)
 
   const toggle = (bill: Bill) => {
     const paid = !bill.paid[month]
@@ -123,15 +153,20 @@ export default function Due({
           const record = bill.paid[month]
           const paid = !!record
           const amount = record?.amount ?? bill.amount
+          const src = billSource(bill)
+          // One badge: where it's paid. "To Minh" when an Other payment is to someone.
+          const badge = src && (bill.kind === "oneoff" && bill.lender ? `To ${src}` : src)
           return (
             <ListRow
               key={bill.id}
-              tile={<Tile bg={TILE[bill.icon].solid} icon={bill.icon} dim={paid} />}
+              tile={<Tile bg={billColor(bill)} icon={bill.icon} dim={paid} />}
               title={bill.name}
-              sub={listDate(date, paid, today)}
+              sub={badge ? <span className={`due2-badge${paid ? " is-done" : ""}`}>{badge}</span> : undefined}
               amount={`${!paid && bill.varies ? "~" : ""}${hidden ? "•••" : `${money(amount)}đ`}`}
+              amountSub={listDate(date, paid, today)}
+              amountSubTone="muted"
               done={paid}
-              label={`${bill.name}, ${listDate(date, paid, today)}`}
+              label={`${bill.name}, ${KIND_LABEL[bill.kind]}${badge ? `, ${badge}` : ""}, ${listDate(date, paid, today)}`}
               onClick={() => onOpenBill(bill.id)}
               trailing={
                 <button
@@ -249,10 +284,27 @@ export default function Due({
           </div>
         ) : (
           <>
-            {filter !== "done" && still.length > 0 && group("Still", still)}
-            {filter !== "still" && done.length > 0 && group("Done", done)}
-            {filter === "still" && still.length === 0 && <p className="k-empty">Everything&apos;s paid this month.</p>}
-            {filter === "done" && done.length === 0 && <p className="k-empty">Nothing ticked yet this month.</p>}
+            {sources.length > 1 && (
+              <div className="due2-chips" role="group" aria-label="Show">
+                {["", ...sources].map((c) => {
+                  const on = key(c) === key(view)
+                  return (
+                    <button key={c || "all"} type="button" className={`due2-chip${on ? " is-on" : ""}`} aria-pressed={on} onClick={() => setView(on && c ? "" : c)}>
+                      {c || "All"}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            {kinds.map(([k, items]) => group(KIND_LABEL[k], items))}
+            {shown.length === 0 ? (
+              <p className="k-empty">Nothing for {view} in {MONTHS_LONG[mo - 1]}.</p>
+            ) : (
+              <>
+                {filter === "still" && still.length === 0 && <p className="k-empty">Everything&apos;s paid this month.</p>}
+                {filter === "done" && done.length === 0 && <p className="k-empty">Nothing ticked yet this month.</p>}
+              </>
+            )}
           </>
         )}
       </div>
@@ -277,12 +329,12 @@ export default function Due({
   )
 }
 
-export function BillTile({ bill, size = 36, soft }: { bill: Bill; size?: number; soft?: boolean }) {
+export function BillTile({ bill, size = 36, soft, color }: { bill: Bill; size?: number; soft?: boolean; color?: string }) {
   const t = TILE[bill.icon]
   return (
     <span
       className="bill-tile"
-      style={{ width: size, height: size, background: soft ? t.soft : t.solid, color: soft ? t.ink : "var(--white)", borderRadius: size >= 36 ? 12 : 10 }}
+      style={{ width: size, height: size, background: soft ? t.soft : color ?? t.solid, color: soft ? t.ink : "var(--white)", borderRadius: size >= 36 ? 12 : 10 }}
     >
       <Icon name={bill.icon} size={Math.round(size * 0.56)} />
     </span>

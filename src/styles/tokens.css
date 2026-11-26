@@ -192,7 +192,9 @@
   /* ── Palettes (iOS Tokens.billTile / assetKind / assetTile / category). Pick from these;
      don't invent new hues in a screen. ── */
   /* Bill tiles: solid, and soft background + ink for the statement list. */
-  --bill-house: #3538cd;
+  --bill-house: #dd2590; /* pink, so purple stays for installments */
+  --bill-installment: #7a5af8; /* every installment on Due */
+  --bill-other: #4b5565; /* Other payments on Due */
   --bill-drop: #1bacee;
   --bill-gas-pump: #15b79e;
   --bill-lightning: #ff4405;
@@ -200,8 +202,8 @@
   --bill-student: #1570ef;
   --bill-monitor: #c85a34;
   --bill-bell: #364152;
-  --bill-house-soft: #e0eaff;
-  --bill-house-ink: #3538cd;
+  --bill-house-soft: #fce7f6;
+  --bill-house-ink: #c11574;
   --bill-drop-soft: #dff2ff;
   --bill-drop-ink: #0085ca;
   --bill-gas-pump-soft: #ccfbef;
@@ -365,8 +367,9 @@
   --dark-8: rgb(255 255 255 / 8%);
   --page-glow: linear-gradient(180deg, #13240c 0%, var(--canvas) 100%);
   /* Palettes lift a step on dark (iOS Tokens dark values). */
-  --bill-house-soft: #1e2250;
-  --bill-house-ink: #8b91f5;
+  --bill-other: #697586; /* lighter slate so it shows on the dark canvas */
+  --bill-house-soft: #4a1036;
+  --bill-house-ink: #f670c7;
   --bill-drop-soft: #0b2c40;
   --bill-drop-ink: #4fb8f0;
   --bill-gas-pump-soft: #0e3b33;

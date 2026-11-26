@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Amount, Button, IconButton } from "../components/ui"
 import { Icon } from "../components/Icon"
 import { money, today } from "../lib/format"
-import { addMonths, dueIn, installmentStep, lastDue, ym, type Bill } from "../lib/bills"
+import { addMonths, billColor, dueIn, installmentStep, lastDue, ym, type Bill } from "../lib/bills"
 import ModalSheet, { ModalHeader } from "./ModalSheet"
 import { BillTile, ddmmyyyy, dueLabel, monthLabel } from "./Due"
 
@@ -13,12 +13,17 @@ export default function BillSheet({
   onClose,
   onCheck,
   onDelete,
+  onPayWith,
+  payOptions = [],
 }: {
   bill: Bill
   month: string
   onClose: () => void
   onCheck: (paid: boolean, amount?: number) => void
   onDelete: () => void
+  /** Pick how it's paid; it then shows as the bill's badge on Due. */
+  onPayWith?: (v: string | undefined) => void
+  payOptions?: string[]
 }) {
   const due = dueIn(bill, month)
   const paid = bill.paid[month]
@@ -46,9 +51,11 @@ export default function BillSheet({
           ["Amount each time", bill.varies ? "Changes" : "Fixed"],
           [bill.varies ? "Roughly how much" : "Amount", `${bill.varies ? "~" : ""}${money(bill.amount)} đ`],
           ["Repeats", bill.kind === "recurring" ? "Monthly" : "Just once"],
+          ...(bill.kind === "oneoff" && bill.lender ? ([["Pay to", bill.lender]] as [string, string][]) : []),
           ["Due", ddmmyyyy(due ?? bill.start)],
           ["Pay with", bill.payWith || "—"],
         ]
+  const options = [...new Set(["Transfer", "MoMo", "Cash", "Card", ...payOptions, ...(bill.payWith ? [bill.payWith] : [])])]
 
   return (
     <ModalSheet
@@ -100,7 +107,7 @@ export default function BillSheet({
     >
       <div className="bill-sheet">
         <div className="bill-sheet__head">
-          <BillTile bill={bill} size={40} />
+          <BillTile bill={bill} size={40} color={billColor(bill)} />
           <h3 className="bill-sheet__name">{bill.name}</h3>
           <p className="t-capture-12-m bill-sheet__status">
             Status: <span className={paid ? "is-done" : ""}>{paid && <Icon name="check-circle-done" size={14} />}{status}</span>
@@ -136,7 +143,25 @@ export default function BillSheet({
           {facts.map(([k, v]) => (
             <div key={k}>
               <dt>{k}</dt>
-              <dd>{v}</dd>
+              {k === "Pay with" && bill.kind !== "installment" && onPayWith ? (
+                <dd>
+                  <select
+                    className="bill-sheet__pay"
+                    aria-label="Pay with"
+                    value={bill.payWith ?? ""}
+                    onChange={(e) => onPayWith(e.target.value || undefined)}
+                  >
+                    <option value="">Choose</option>
+                    {options.map((o) => (
+                      <option key={o} value={o}>
+                        {o}
+                      </option>
+                    ))}
+                  </select>
+                </dd>
+              ) : (
+                <dd>{v}</dd>
+              )}
             </div>
           ))}
         </dl>

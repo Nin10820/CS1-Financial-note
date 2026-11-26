@@ -44,6 +44,24 @@ export const TILE: Record<BillIcon, { solid: string; soft: string; ink: string }
   bell: { solid: "var(--bill-bell)", soft: "var(--bill-bell-soft)", ink: "var(--bill-bell-ink)" },
 }
 
+/** Due's names for the kinds. */
+export const KIND_LABEL: Record<BillKind, string> = { recurring: "Bill", installment: "Installment", oneoff: "Other" }
+
+/**
+ * A bill's colour on Due: a bill (electricity, water…) keeps its icon's colour; every installment
+ * is the same purple; other payments are slate.
+ */
+export function billColor(b: Bill): string {
+  if (b.kind === "installment") return "var(--bill-installment)"
+  if (b.kind === "oneoff") return "var(--bill-other)"
+  return TILE[b.icon].solid
+}
+
+/** Where a bill is paid: the lender, who an Other payment is to, or the bank / wallet it's paid with. */
+export function billSource(b: Bill): string | undefined {
+  return (b.lender ?? b.payWith)?.trim() || undefined
+}
+
 /** Picks a tile from the name the user typed (Vietnamese or English). */
 export function guessIcon(name: string, kind: BillKind): BillIcon {
   const n = name.toLocaleLowerCase("vi")
