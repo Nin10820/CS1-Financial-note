@@ -1,0 +1,105 @@
+import Foundation
+import Observation
+
+/// What the screens share: the open tab, the picked day, and what is open on top.
+@Observable
+final class AppState {
+    /// The four tabs of Navigation Bar (Figma 2026-10-30).
+    enum TabID: Hashable { case today, due, finance, ai }
+
+    var tab: TabID = .today
+    /// Today's date, refreshed when the clock passes midnight.
+    var today = Day.today()
+    /// The day Today shows, "YYYY-MM-DD".
+    var day = Day.today()
+    var range: DayRange = .day
+    /// The month Due shows, "YYYY-MM".
+    var dueMonth = Month.of(Day.today())
+    /// Amounts shown as "••••••": tap the big amount at the top of a page twice to switch.
+    var hidden = false
+    /// The same switch on Finance: one tap-twice hides or shows amounts everywhere.
+    var assetsHidden: Bool {
+        get { hidden }
+        set { hidden = newValue }
+    }
+    /// Something for the AI tab to start with (a day's note, a notice). Taken once by the tab.
+    var assistant: AssistantSeed?
+    var dayNoteOpen = false
+    /// The + menu: Talk With AI, Template, Scan (on Finance: New asset, Scan, Quick note).
+    var actionsOpen = false
+    /// Scan was opened from Finance: what it reads becomes assets, not spending.
+    var scanForAssets = false
+    /// Assets to read from a quick note, a scan or a photo, then check and add.
+    var assetImport: AssetImportSeed?
+    /// A blank entry sheet with a composer (Template).
+    var templateOpen = false
+    /// What a scanned QR code filled in, for the Template sheet.
+    var templatePrefill: EntryEdit?
+    var scanOpen = false
+    /// The + on Due (and New asset on Finance) asks those tabs to open their own "add" form.
+    var addBillRequest = 0
+    var addAssetRequest = 0
+    var addBelongingRequest = 0
+    /// A scanned payment QR, open on the check screen.
+    var transfer: TransferDraft?
+    /// "Open bank app" was tapped; becomes `sentToBank` once the app goes to the background.
+    var handedOff: TransferDraft?
+    /// Handed to a bank app; asked about when the user comes back.
+    var sentToBank: TransferDraft?
+    var profileOpen = false
+    /// The AI tab has a conversation on screen: the tab bar steps aside for its composer.
+    var aiChatting = false
+    /// The tab bar shrinks while you scroll down a list, like the system bar, and comes back
+    /// when you scroll up.
+    var barMinimized = false
+
+    /// Called when the calendar day changes: if Today was showing today, it moves along.
+    func dayChanged() {
+        let old = today
+        today = Day.today()
+        if day == old { day = today }
+    }
+
+    /// Goes to the AI tab on the picked day, optionally with a day's note already read.
+    func openAssistant(date: String? = nil, noteLines: [String]? = nil, scanned: Bool = false, notice: String? = nil, voice: Bool = false) {
+        assistant = AssistantSeed(date: date ?? day, noteLines: noteLines, scanned: scanned, notice: notice, voice: voice)
+        actionsOpen = false
+        tab = .ai
+    }
+}
+
+/// The span the card and list on Today cover.
+enum DayRange: String, CaseIterable, Identifiable {
+    case day, month, year
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .day: "Daily"
+        case .month: "Monthly"
+        case .year: "Yearly"
+        }
+    }
+
+    /// First and last day covered, as ISO strings (compared as text, like the web app).
+    func bounds(for day: String) -> (from: String, to: String) {
+        switch self {
+        case .day: (day, day)
+        case .month: ("\(Month.of(day))-01", "\(Month.of(day))-31")
+        case .year: ("\(day.prefix(4))-01-01", "\(day.prefix(4))-12-31")
+        }
+    }
+}
+
+struct AssistantSeed: Identifiable {
+    let id = UUID()
+    var date: String
+    /// Lines from Notes of the day, read as soon as the Assistant opens.
+    var noteLines: [String]?
+    /// The lines came from the camera (a receipt), so Apple Intelligence reads them when it can.
+    var scanned = false
+    /// A plain message to show first ("… comes later").
+    var notice: String?
+    /// Open straight into Talk With AI (voice).
+    var voice = false
+}

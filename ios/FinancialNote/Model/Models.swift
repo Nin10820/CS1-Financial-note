@@ -1,0 +1,550 @@
+import Foundation
+import SwiftData
+
+// Everything is stored on this phone with SwiftData. No account, no server, no network.
+// Shapes follow `src/lib/store.ts`, `bills.ts` and `assets.ts`; ids are strings so the
+// sample's "sample-…" ids and exported JSON stay the same as in the web app.
+
+/// One saved line. Lines saved together from one note share a `noteId`.
+@Model
+final class Entry {
+    @Attribute(.unique) var id: String
+    /// "YYYY-MM-DD"
+    var date: String
+    var title: String
+    /// Whole đồng.
+    var amount: Int
+    var flowRaw: String
+    var categoryRaw: String
+    var noteId: String
+    /// The note exactly as the user wrote it.
+    var source: String
+    var createdAt: Date
+    /// Set when the entry was created by checking off a bill.
+    var billId: String?
+    /// Part of the sample data (removable in one switch).
+    var sample: Bool
+    /// Tags picked in the entry sheet ("Food", "Drinks", or the user's own).
+    var tags: [String] = []
+    /// The user's own words about this line.
+    var comment: String = ""
+    /// Where the money came from or went to: "Cash", "Card", "Transfer" or an asset's name.
+    var paidFrom: String?
+
+    var flow: Flow {
+        get { Flow(rawValue: flowRaw) ?? .out }
+        set { flowRaw = newValue.rawValue }
+    }
+
+    var category: Category {
+        get { Category(rawValue: categoryRaw) ?? .other }
+        set { categoryRaw = newValue.rawValue }
+    }
+
+    init(
+        id: String = UUID().uuidString, date: String, title: String, amount: Int, flow: Flow,
+        category: Category, noteId: String, source: String, createdAt: Date = .now,
+        billId: String? = nil, sample: Bool = false
+    ) {
+        self.id = id
+        self.date = date
+        self.title = title
+        self.amount = amount
+        self.flowRaw = flow.rawValue
+        self.categoryRaw = category.rawValue
+        self.noteId = noteId
+        self.source = source
+        self.createdAt = createdAt
+        self.billId = billId
+        self.sample = sample
+    }
+}
+
+/// The free-form note for a day: lines as the user wrote them.
+@Model
+final class DayNote {
+    @Attribute(.unique) var date: String
+    var lines: [String]
+    var updatedAt: Date
+    var sample: Bool
+
+    init(date: String, lines: [String], updatedAt: Date = .now, sample: Bool = false) {
+        self.date = date
+        self.lines = lines
+        self.updatedAt = updatedAt
+        self.sample = sample
+    }
+}
+
+/// What was paid for one month of a bill, and which entry recorded it.
+nonisolated struct PaidRecord: Codable, Equatable, Sendable {
+    var amount: Int
+    var at: Date
+    var entryId: String?
+}
+
+/// A bill the user wants to remember. Recurring and installment bills repeat monthly.
+@Model
+final class Bill {
+    @Attribute(.unique) var id: String
+    var kindRaw: String
+    var name: String
+    var iconRaw: String
+    /// Expected amount per payment (an estimate when `varies`).
+    var amount: Int
+    var varies: Bool
+    /// First due date, "YYYY-MM-DD". Repeats on the same day each month.
+    var start: String
+    var code: String?
+    var payWith: String?
+    // Installments only.
+    var lender: String?
+    var principal: Int?
+    var payments: Int?
+    /// Monthly interest, percent.
+    var rate: Double?
+    /// One-time conversion fee, percent of the principal.
+    var fee: Double?
+    /// "YYYY-MM" → PaidRecord, stored as JSON.
+    var paidData: Data
+    var createdAt: Date
+    var sample: Bool
+
+    var kind: BillKind {
+        get { BillKind(rawValue: kindRaw) ?? .recurring }
+        set { kindRaw = newValue.rawValue }
+    }
+
+    var icon: BillIcon {
+        get { BillIcon(rawValue: iconRaw) ?? .bell }
+        set { iconRaw = newValue.rawValue }
+    }
+
+    var paid: [String: PaidRecord] {
+        get { (try? JSONDecoder().decode([String: PaidRecord].self, from: paidData)) ?? [:] }
+        set { paidData = (try? JSONEncoder().encode(newValue)) ?? Data("{}".utf8) }
+    }
+
+    init(
+        id: String = UUID().uuidString, kind: BillKind, name: String, icon: BillIcon, amount: Int,
+        varies: Bool = false, start: String, code: String? = nil, payWith: String? = nil,
+        lender: String? = nil, principal: Int? = nil, payments: Int? = nil, rate: Double? = nil,
+        fee: Double? = nil, paid: [String: PaidRecord] = [:], createdAt: Date = .now, sample: Bool = false
+    ) {
+        self.id = id
+        self.kindRaw = kind.rawValue
+        self.name = name
+        self.iconRaw = icon.rawValue
+        self.amount = amount
+        self.varies = varies
+        self.start = start
+        self.code = code
+        self.payWith = payWith
+        self.lender = lender
+        self.principal = principal
+        self.payments = payments
+        self.rate = rate
+        self.fee = fee
+        self.paidData = (try? JSONEncoder().encode(paid)) ?? Data("{}".utf8)
+        self.createdAt = createdAt
+        self.sample = sample
+    }
+}
+
+/// Something the user owns, written down by hand. Nothing here talks to a bank.
+@Model
+final class Asset {
+    @Attribute(.unique) var id: String
+    var name: String
+    var kindRaw: String
+    var iconRaw: String
+    var amount: Int
+    /// Last time the user updated the amount, "YYYY-MM-DD".
+    /// Not called `updated`: Core Data already uses that name for its own "has changes" flag.
+    var updatedOn: String
+    var sample: Bool
+    /// Anything the user wants to remember about it ("SJC ring, at home", "6-month term").
+    var note: String? = nil
+    /// What you hold, in its own unit: 5 (chỉ), 1000 ($), 0.05 (BTC). With a unit, the worth in
+    /// đồng follows today's price when prices sync. Nil for assets kept in đồng.
+    var quantity: Double? = nil
+    /// The unit of `quantity`, a `HoldingUnit` raw value ("chi", "usd", "btc"…).
+    var unitRaw: String? = nil
+    /// Held in units: its worth follows today's price. Off when the user keeps their own value
+    /// (a shop's gold price, say); then sync leaves it alone.
+    var followsPrice: Bool = true
+
+    var unit: HoldingUnit? {
+        get { unitRaw.flatMap(HoldingUnit.init(rawValue:)) }
+        set { unitRaw = newValue?.rawValue }
+    }
+
+    var kind: AssetKind {
+        get { AssetKind(rawValue: kindRaw) ?? .available }
+        set { kindRaw = newValue.rawValue }
+    }
+
+    var icon: AssetIcon {
+        get { AssetIcon(rawValue: iconRaw) ?? .cash }
+        set { iconRaw = newValue.rawValue }
+    }
+
+    init(id: String = UUID().uuidString, name: String, kind: AssetKind, icon: AssetIcon, amount: Int, updated: String, sample: Bool = false) {
+        self.id = id
+        self.name = name
+        self.kindRaw = kind.rawValue
+        self.iconRaw = icon.rawValue
+        self.amount = amount
+        self.updatedOn = updated
+        self.sample = sample
+    }
+}
+
+/// One change to an asset: money put in (positive) or taken out (negative).
+@Model
+final class AssetMove {
+    @Attribute(.unique) var id: String
+    /// The asset's name when it happened.
+    var title: String
+    var iconRaw: String
+    /// What changed, in đồng: + money put in or a rise in value, − money taken out or a fall.
+    var amount: Int
+    var date: String
+    var sample: Bool
+    /// The asset it belongs to (older and sample moves have none).
+    var assetId: String? = nil
+    /// "in" money put in, "out" money taken out, "value" the worth changed on its own.
+    var kindRaw: String = AssetMoveKind.putIn.rawValue
+
+    var icon: AssetIcon { AssetIcon(rawValue: iconRaw) ?? .cash }
+    var kind: AssetMoveKind { AssetMoveKind(rawValue: kindRaw) ?? .putIn }
+
+    init(id: String = UUID().uuidString, title: String, icon: AssetIcon, amount: Int, date: String, sample: Bool = false,
+         assetId: String? = nil, kind: AssetMoveKind = .putIn) {
+        self.id = id
+        self.title = title
+        self.iconRaw = icon.rawValue
+        self.amount = amount
+        self.date = date
+        self.sample = sample
+        self.assetId = assetId
+        self.kindRaw = kind.rawValue
+    }
+}
+
+nonisolated enum AssetMoveKind: String, Codable, Sendable, CaseIterable {
+    case putIn = "in"
+    case takeOut = "out"
+    case value
+
+    /// "Put in", "Took out", "Value changed" — under the asset's name in History.
+    var label: String {
+        switch self {
+        case .putIn: "Put in"
+        case .takeOut: "Took out"
+        case .value: "Value changed"
+        }
+    }
+}
+
+/// Money given to family — counted as "Taken care of", never as spending.
+@Model
+final class CareGift {
+    @Attribute(.unique) var id: String
+    /// Who it was for: "Parents", "Young brother", "Household"…
+    var who: String
+    var title: String
+    var amount: Int
+    var date: String
+    var sample: Bool
+
+    init(id: String = UUID().uuidString, who: String, title: String, amount: Int, date: String, sample: Bool = false) {
+        self.id = id
+        self.who = who
+        self.title = title
+        self.amount = amount
+        self.date = date
+        self.sample = sample
+    }
+}
+
+/// Money from family that is owed back, with yearly interest: a person ("Mom", "Grand") sends
+/// money ("in"), you pay some back ("back") or pay interest ("interest"). Interest runs on what's
+/// still borrowed, day by day, at `rate` percent a year.
+@Model
+final class FamilyLoan {
+    @Attribute(.unique) var id: String
+    var who: String
+    var title: String
+    /// "in" money received, "back" principal paid back, "interest" interest paid.
+    var kindRaw: String
+    var amount: Int
+    var date: String
+    /// Percent a year, e.g. 6.
+    var rate: Double
+    var sample: Bool
+
+    var kind: LoanMove { LoanMove(rawValue: kindRaw) ?? .received }
+
+    init(id: String = UUID().uuidString, who: String, title: String, kind: LoanMove, amount: Int, date: String,
+         rate: Double = 6, sample: Bool = false) {
+        self.id = id
+        self.who = who
+        self.title = title
+        self.kindRaw = kind.rawValue
+        self.amount = amount
+        self.date = date
+        self.rate = rate
+        self.sample = sample
+    }
+}
+
+nonisolated enum LoanMove: String, Codable, Sendable, CaseIterable {
+    case received = "in"
+    case paidBack = "back"
+    case interest
+
+    var label: String {
+        switch self {
+        case .received: "Received"
+        case .paidBack: "Paid back"
+        case .interest: "Interest paid"
+        }
+    }
+}
+
+/// Something you own whose price is hard to pin down: land, a car, a watch, a bag, Lego.
+/// Its worth is your estimate, what you paid, or what's left after it loses value each year.
+/// It stays out of Total Asset unless you count it in (Finance › ••• ).
+@Model
+final class Belonging {
+    @Attribute(.unique) var id: String
+    var name: String
+    var iconRaw: String
+    /// "estimate", "depreciate" or "paid".
+    var modeRaw: String
+    /// What you paid, in đồng; 0 when you don't know.
+    var paid: Int
+    /// "YYYY-MM-DD" bought.
+    var boughtOn: String
+    /// Your value, in đồng (estimate mode).
+    var estimate: Int
+    /// "YYYY-MM-DD" the estimate was last checked.
+    var estimatedOn: String
+    /// Percent it loses a year (depreciate mode), e.g. 10.
+    var lossPerYear: Double
+    /// It never goes below this percent of what you paid.
+    var floorPct: Double
+    /// A quick sale fetches this percent of its value, e.g. 70.
+    var quickSalePct: Double
+    /// Where the price came from: "Chợ Tốt 12/2026", "shop's quote".
+    var source: String?
+    var note: String?
+    var createdAt: Date
+    var sample: Bool
+    /// A collection (Lego, watches, cards…): worth what its pieces are worth.
+    var isCollection: Bool = false
+    /// The collection this piece belongs to; nil for things on their own.
+    var parentId: String? = nil
+    /// The spending line in Today it was bought with, when kept from there.
+    var entryId: String? = nil
+    /// A piece in a collection: its code or model (a set number, a card number), the year it came
+    /// out, and its condition.
+    var code: String? = nil
+    var year: Int? = nil
+    var conditionRaw: String? = nil
+    /// Its picture, kept small on the phone (a Lego set's from Rebrickable).
+    @Attribute(.externalStorage) var imageData: Data? = nil
+    /// The family's, kept for use (a bed, a dryer): you wouldn't sell it, so no quick-sale number.
+    var keeps: Bool = false
+    /// "YYYY-MM-DD" it was sold, and what it fetched. A sold thing stays in the list, greyed,
+    /// and no longer counts.
+    var soldOn: String? = nil
+    var soldFor: Int? = nil
+
+    var condition: BelongingCondition? {
+        get { conditionRaw.flatMap(BelongingCondition.init(rawValue:)) }
+        set { conditionRaw = newValue?.rawValue }
+    }
+
+    var mode: BelongingValue {
+        get { BelongingValue(rawValue: modeRaw) ?? .estimate }
+        set { modeRaw = newValue.rawValue }
+    }
+
+    var icon: BelongingIcon {
+        get { BelongingIcon(rawValue: iconRaw) ?? .other }
+        set { iconRaw = newValue.rawValue }
+    }
+
+    init(id: String = UUID().uuidString, name: String, icon: BelongingIcon, mode: BelongingValue, paid: Int,
+         boughtOn: String, estimate: Int = 0, estimatedOn: String? = nil, lossPerYear: Double = 10,
+         floorPct: Double = 10, quickSalePct: Double = 70, source: String? = nil, note: String? = nil,
+         createdAt: Date = .now, sample: Bool = false) {
+        self.id = id
+        self.name = name
+        self.iconRaw = icon.rawValue
+        self.modeRaw = mode.rawValue
+        self.paid = paid
+        self.boughtOn = boughtOn
+        self.estimate = estimate
+        self.estimatedOn = estimatedOn ?? boughtOn
+        self.lossPerYear = lossPerYear
+        self.floorPct = floorPct
+        self.quickSalePct = quickSalePct
+        self.source = source
+        self.note = note
+        self.createdAt = createdAt
+        self.sample = sample
+    }
+}
+
+/// How a collected piece is kept. New keeps its price; used and damaged ones are worth less.
+nonisolated enum BelongingCondition: String, Codable, Sendable, CaseIterable {
+    case sealed, likeNew, used, damaged
+
+    var label: String {
+        switch self {
+        case .sealed: "New / sealed"
+        case .likeNew: "Like new"
+        case .used: "Used"
+        case .damaged: "Damaged / missing parts"
+        }
+    }
+
+    var short: String {
+        switch self {
+        case .sealed: "New"
+        case .likeNew: "Like new"
+        case .used: "Used"
+        case .damaged: "Damaged"
+        }
+    }
+
+    /// The share of its price it's usually worth, to start the estimate from.
+    var share: Double {
+        switch self {
+        case .sealed: 1
+        case .likeNew: 0.8
+        case .used: 0.6
+        case .damaged: 0.3
+        }
+    }
+}
+
+nonisolated enum BelongingValue: String, Codable, Sendable, CaseIterable {
+    case estimate, depreciate, paid
+
+    var label: String {
+        switch self {
+        case .estimate: "Your estimate"
+        case .depreciate: "Wears down"
+        case .paid: "What you paid"
+        }
+    }
+}
+
+nonisolated enum BelongingIcon: String, Codable, Sendable, CaseIterable {
+    case land, house, car, motorbike, bicycle, watch, bag, lego, cards, sneakers, figure, boardGame, coins, camera,
+         laptop, phone, gadget, sport, furniture, appliance, art, other
+
+    var symbol: String {
+        switch self {
+        case .land: "map.fill"
+        case .house: "house.fill"
+        case .car: "car.fill"
+        case .motorbike: "scooter"
+        case .bicycle: "bicycle"
+        case .watch: "watch.analog"
+        case .bag: "handbag.fill"
+        case .lego: "puzzlepiece.fill"
+        case .cards: "rectangle.portrait.on.rectangle.portrait.fill"
+        case .sneakers: "shoe.fill"
+        case .figure: "figure.stand"
+        case .boardGame: "dice.fill"
+        case .coins: "dollarsign.circle.fill"
+        case .camera: "camera.fill"
+        case .laptop: "laptopcomputer"
+        case .phone: "iphone"
+        case .gadget: "keyboard.fill"
+        case .sport: "figure.badminton"
+        case .furniture: "bed.double.fill"
+        case .appliance: "washer.fill"
+        case .art: "paintpalette.fill"
+        case .other: "shippingbox.fill"
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .land: "Land"
+        case .house: "House"
+        case .car: "Car"
+        case .motorbike: "Motorbike"
+        case .bicycle: "Bicycle"
+        case .watch: "Watch"
+        case .bag: "Bag"
+        case .lego: "Lego"
+        case .cards: "Cards"
+        case .sneakers: "Sneakers"
+        case .figure: "Figures / models"
+        case .boardGame: "Board games"
+        case .coins: "Coins & notes"
+        case .camera: "Camera"
+        case .laptop: "Laptop"
+        case .phone: "Phone"
+        case .gadget: "Gadget (keyboard, headphones…)"
+        case .sport: "Sports gear"
+        case .furniture: "Furniture (bed, chair…)"
+        case .appliance: "Home appliance"
+        case .art: "Art"
+        case .other: "Other"
+        }
+    }
+}
+
+/// Net worth at the end of a month, for the chart. Only the sample fills it today.
+@Model
+final class WorthPoint {
+    @Attribute(.unique) var month: String
+    var value: Int
+    var sample: Bool
+
+    init(month: String, value: Int, sample: Bool = false) {
+        self.month = month
+        self.value = value
+        self.sample = sample
+    }
+}
+
+/// The one profile on this phone: name and display choices (Prefs in the web app).
+@Model
+final class Profile {
+    var name: String
+    /// Start with amounts hidden every time the app opens.
+    var hideOnOpen: Bool
+    /// Apply the same hiding to the Finance tab.
+    var hideAssets: Bool
+    /// "YYYY-MM-DD" — first time the app was opened on this phone.
+    var joined: String
+    var birthYear: Int?
+    /// Tags the user made with "New Tag".
+    var customTags: [String] = []
+    /// Bank apps the user pays from (VietQR app ids), picked after scanning a QR.
+    var banks: [String] = []
+
+    init(name: String = "Nin", hideOnOpen: Bool = false, hideAssets: Bool = false, joined: String = Day.today(), birthYear: Int? = nil) {
+        self.name = name
+        self.hideOnOpen = hideOnOpen
+        self.hideAssets = hideAssets
+        self.joined = joined
+        self.birthYear = birthYear
+    }
+}
+
+enum AppSchema {
+    static let models: [any PersistentModel.Type] = [
+        Entry.self, DayNote.self, Bill.self, Asset.self, AssetMove.self, CareGift.self, WorthPoint.self, Profile.self,
+        FamilyLoan.self, Belonging.self,
+    ]
+}

@@ -1,0 +1,506 @@
+import SwiftData
+import SwiftUI
+
+/// Profile — Figma Draft › Account (707:7360): profile, data & privacy, display, help.
+/// There is no account in this app, so sign-in, password, Face ID and log-out are left out
+/// rather than shown as switches that do nothing.
+struct ProfileView: View {
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var confirmReset = false
+    @AppStorage("appearance") private var appearance = "system"
+    @Query private var profiles: [Profile]
+    @Query private var entries: [Entry]
+    @Query private var assets: [Asset]
+    @Query private var bills: [Bill]
+
+    static let version = "0.1 · MVP"
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if let p = profiles.first {
+                    Section {
+                        NavigationLink {
+                            ProfileDetail(profile: p)
+                        } label: {
+                            HStack(spacing: Space.s12) {
+                                Avatar(name: p.name, size: 48)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(p.name).font(AppFont.main(16, .semibold))
+                                    Text("Using it since \(FinanceText.monthLabel(Month.of(p.joined)))")
+                                        .font(AppFont.main(12)).foregroundStyle(.secondary)
+                                }
+                            }
+                        }
+                    }
+                    .listRowBackground(Tokens.card)
+
+                    Section("Account") {
+                        NavigationLink("Profile") { ProfileDetail(profile: p) }
+                        LabeledContent("Currency", value: "VND")
+                    }
+                    .listRowBackground(Tokens.card)
+
+                    Section("Display") {
+                        // A dropdown: Auto follows the phone.
+                        HStack {
+                            Text("Appearance")
+                            Spacer()
+                            Menu {
+                                Picker("Appearance", selection: $appearance) {
+                                    Label("Auto", systemImage: "circle.lefthalf.filled").tag("system")
+                                    Label("Light", systemImage: "sun.max.fill").tag("light")
+                                    Label("Dark", systemImage: "moon.fill").tag("dark")
+                                }
+                            } label: {
+                                HStack(spacing: Space.s4) {
+                                    Text(appearance == "light" ? "Light" : appearance == "dark" ? "Dark" : "Auto")
+                                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 12, weight: .semibold))
+                                }
+                                .foregroundStyle(Tokens.grey400)
+                                // Same height as the other rows; the tap area still reaches past the text.
+                                .contentShape(.rect.inset(by: -12))
+                            }
+                        }
+                    }
+                    .listRowBackground(Tokens.card)
+
+                    Section("Help") {
+                        NavigationLink("Report a problem") { ReportView() }
+                        NavigationLink { AboutView() } label: { LabeledContent("About the app", value: Self.version) }
+                    }
+                    .listRowBackground(Tokens.card)
+
+                    Section {
+                        // Three stores that never mix: Nin's own, an empty one, and a full example.
+                        HStack {
+                            row("Data", DataSets.shared.current.hint)
+                            Spacer()
+                            Menu {
+                                Picker("Data", selection: Binding(get: { DataSets.shared.current },
+                                                                  set: { DataSets.shared.switchTo($0) })) {
+                                    ForEach(DataSets.Kind.allCases) { k in
+                                        Text(k.title).tag(k)
+                                    }
+                                }
+                            } label: {
+                                HStack(spacing: Space.s4) {
+                                    Text(DataSets.shared.current.title)
+                                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 12, weight: .semibold))
+                                }
+                                .foregroundStyle(Tokens.grey400)
+                                .contentShape(.rect.inset(by: -12))
+                            }
+                            .accessibilityLabel("Data, \(DataSets.shared.current.title)")
+                        }
+                        if DataSets.shared.current != .nin {
+                            Button(DataSets.shared.current == .example ? "Fresh example data" : "Start empty again") {
+                                confirmReset = true
+                            }
+                            .foregroundStyle(Tokens.brand600)
+                        }
+                        NavigationLink { YourDataView() } label: { row("Your data", "See what the app keeps") }
+                        NavigationLink { AIInfoView() } label: { row("What the AI does with notes", "Only reads what you write") }
+                        NavigationLink { BackupView() } label: {
+                            row("Backup & restore", BackupFolder.shared.folderName.map { "Saving to \($0)" } ?? "Keep a copy in a folder")
+                        }
+                    } header: {
+                        Text("Data & privacy")
+                    } footer: {
+                        Text("No account, no server: everything you write stays on this phone.")
+                            .padding(.top, Space.s8)
+                    }
+                    .listRowBackground(Tokens.card)
+
+                }
+            }
+            .appListSurface()
+            .contentMargins(.top, Space.s8, for: .scrollContent)
+            .font(AppFont.main(14, .medium))
+            .sheetHeader("Profile")
+            .confirmationDialog(DataSets.shared.current == .example ? "Put back a fresh full example?" : "Empty this data set?",
+                                isPresented: $confirmReset, titleVisibility: .visible) {
+                Button(DataSets.shared.current == .example ? "Fresh example" : "Empty it", role: .destructive) {
+                    DataSets.shared.reset()
+                }
+            } message: {
+                Text("Only the \(DataSets.shared.current.title) set changes. Nin's data is not touched.")
+            }
+            .tint(Tokens.brand600)
+        }
+    }
+
+    private func row(_ title: String, _ sub: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+            Text(sub).font(AppFont.main(12)).foregroundStyle(.secondary)
+        }
+    }
+
+    private func save() { try? context.save() }
+}
+
+/// Two-letter circle for the name (there is no photo — no account).
+struct Avatar: View {
+    var name: String
+    var size: CGFloat
+
+    var body: some View {
+        Text(String(name.prefix(2)).uppercased())
+            .font(AppFont.main(size * 0.36, .semibold))
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(Color(hex: 0xE5562A), in: .circle)
+            .overlay(Circle().strokeBorder(Tokens.brand400, lineWidth: 2))
+            .accessibilityHidden(true)
+    }
+}
+
+/// Share sheet with everything as a JSON file.
+struct ExportLink: View {
+    var label: String
+    @Environment(\.modelContext) private var context
+
+    var body: some View {
+        let file = ExportFile(store: LocalStore(context: context))
+        let data = (try? file.data()) ?? Data()
+        ShareLink(item: ExportDocument(data: data, fileName: "financial-note-\(Day.today()).json"),
+                  preview: SharePreview("Financial Note data", image: Image(systemName: "doc.text"))) {
+            Label(label, systemImage: "square.and.arrow.up")
+        }
+    }
+}
+
+// MARK: - Profile and name
+
+private struct ProfileDetail: View {
+    @Bindable var profile: Profile
+    @Environment(\.modelContext) private var context
+    @State private var editing = false
+    @State private var name = ""
+
+    var body: some View {
+        let days = max(1, Int((Day.date(Day.today()).timeIntervalSince(Day.date(profile.joined)) / 86_400).rounded()) + 1)
+        List {
+            Section {
+                VStack(spacing: Space.s8) {
+                    Avatar(name: profile.name, size: 72)
+                    Text(profile.name).font(AppFont.page)
+                    Text("On this phone since \(DueText.ddmmyyyy(profile.joined)) · \(days) days")
+                        .font(AppFont.main(12)).foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .listRowBackground(Color.clear)
+            }
+            Section {
+                Button {
+                    name = profile.name
+                    editing = true
+                } label: {
+                    LabeledContent("Display name", value: profile.name)
+                }
+                .foregroundStyle(Tokens.text900)
+            } header: {
+                Text("Info")
+            } footer: {
+                Text("The app doesn't ask for your income, your job or your money goals — it doesn't need them to work.")
+            }
+            .listRowBackground(Tokens.card)
+        }
+        .appListSurface()
+        .font(AppFont.main(16))
+        .navigationTitle("Profile")
+        .toolbarTitleDisplayMode(.inline)
+        .sheet(isPresented: $editing) { Group {
+            NavigationStack {
+                Form {
+                    Section {
+                        TextField("Display name", text: $name)
+                            .onChange(of: name) { _, v in if v.count > 40 { name = String(v.prefix(40)) } }
+                    } footer: {
+                        Text("This is the name in “Good morning, …”. It stays on this phone.")
+                    }
+                    .listRowBackground(Tokens.card)
+                }
+                .appListSurface()
+                .sheetHeader("Edit profile", trailing: .save(enabled: !name.trimmingCharacters(in: .whitespaces).isEmpty) {
+                    profile.name = name.trimmingCharacters(in: .whitespaces)
+                    try? context.save()
+                    editing = false
+                })
+            }
+            .presentationDetents([.medium])
+        }.sheetSurface() }
+    }
+}
+
+// MARK: - Data & privacy
+
+private struct YourDataView: View {
+    @Query private var entries: [Entry]
+    @Query private var assets: [Asset]
+    @Query private var bills: [Bill]
+
+    var body: some View {
+        List {
+            Section {
+                intro("What the app keeps", "The full list. Nothing hidden.")
+            }
+            .listRowBackground(Tokens.card)
+            Section("On your phone") {
+                LabeledContent("Spending notes", value: "\(entries.count) \(entries.count == 1 ? "line" : "lines")")
+                LabeledContent("Assets", value: "\(assets.count)")
+                LabeledContent("Bills", value: "\(bills.count)")
+            }
+            .listRowBackground(Tokens.card)
+            Section("Sent to a server") {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Nothing")
+                    Text("Notes are read on this phone. Paying a scanned QR saves a QR with the amount to your Photos and copies the details on this phone (cleared after 10 minutes), then opens your bank app.").font(AppFont.main(12)).foregroundStyle(.secondary)
+                }
+            }
+            .listRowBackground(Tokens.card)
+            Section {
+                Text("Bank accounts")
+                Text("Location")
+                Text("Contacts")
+            } header: {
+                Text("Never collected")
+            } footer: {
+                Text("The app doesn't connect to a bank and never moves money: transfers are confirmed in your bank's own app.")
+            }
+            .listRowBackground(Tokens.card)
+            Section {
+                ExportLink(label: "Download your data")
+                NavigationLink { DeleteAllView() } label: {
+                    Text("Delete everything").foregroundStyle(Tokens.text900)
+                }
+            }
+            .listRowBackground(Tokens.card)
+        }
+        .appListSurface()
+        .font(AppFont.main(16))
+        .navigationTitle("Your data")
+        .toolbarTitleDisplayMode(.inline)
+    }
+}
+
+private struct AIInfoView: View {
+    var body: some View {
+        List {
+            Section { intro("The note reader does one thing", "The app still works if you type everything yourself.") }
+            .listRowBackground(Tokens.card)
+            Section("On") {
+                LabeledContent {
+                    Text("On").foregroundStyle(Tokens.brand700)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Reads your notes")
+                        Text("Splits items, amounts and days").font(AppFont.main(12)).foregroundStyle(.secondary)
+                    }
+                }
+                LabeledContent {
+                    Text(ReceiptAI.isAvailable ? "On" : "Not on this iPhone")
+                        .foregroundStyle(ReceiptAI.isAvailable ? Tokens.brand700 : .secondary)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Reads scanned receipts")
+                        Text("Apple Intelligence, on the phone · iPhone 15 Pro or later").font(AppFont.main(12)).foregroundStyle(.secondary)
+                    }
+                }
+                LabeledContent {
+                    Text("Later").foregroundStyle(.secondary)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Answers when you ask")
+                        Text("Comes later · it never speaks first").font(AppFont.main(12)).foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .listRowBackground(Tokens.card)
+            Section {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Investment tips")
+                    Text("Left out on purpose, not “not yet”").font(AppFont.main(12)).foregroundStyle(.secondary)
+                }
+                Text("Comments on how you spend")
+                Text("Overspending alerts")
+                Text("Spending or moving money")
+            } header: {
+                Text("Not in the app")
+            } footer: {
+                Text("These four were cut, not postponed: in our survey 38% refused investment tips, 31% refused being judged on their spending, and 63% didn't want an app touching their money.\n\nIn this version the note reader runs on your phone — no note leaves it.")
+            }
+            .listRowBackground(Tokens.card)
+        }
+        .appListSurface()
+        .font(AppFont.main(16))
+        .navigationTitle("What the AI does")
+        .toolbarTitleDisplayMode(.inline)
+    }
+}
+
+/// Deleting everything is permanent, so it asks for DELETE to be typed first.
+struct DeleteAllView: View {
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @Query private var entries: [Entry]
+    @Query private var assets: [Asset]
+    @Query private var bills: [Bill]
+    @State private var typed = ""
+    @State private var done = false
+
+    static func confirms(_ text: String) -> Bool {
+        text.trimmingCharacters(in: .whitespaces).uppercased() == "DELETE"
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                VStack(alignment: .leading, spacing: Space.s6) {
+                    Text("Deleting is permanent").font(AppFont.main(16, .semibold))
+                    Text("\(entries.count) notes, \(assets.count) assets and \(bills.count) bills will be gone. There is no undo.")
+                        .font(AppFont.main(14))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .listRowBackground(Tokens.card)
+            Section {
+                ExportLink(label: "Download a copy first")
+            } footer: {
+                Text("Saves a file you keep, before anything is removed.")
+            }
+            .listRowBackground(Tokens.card)
+            Section("Type DELETE to confirm") {
+                TextField("DELETE", text: $typed)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+            }
+            .listRowBackground(Tokens.card)
+            Section {
+                Button("Delete everything", role: .destructive) {
+                    LocalStore(context: context).clearAll()
+                    done = true
+                }
+                .disabled(!Self.confirms(typed))
+                Button("No, keep it") { dismiss() }
+            }
+            .listRowBackground(Tokens.card)
+        }
+        .appListSurface()
+        .font(AppFont.main(16))
+        .navigationTitle("Delete data")
+        .toolbarTitleDisplayMode(.inline)
+        .alert("Everything is deleted", isPresented: $done) {
+            Button("OK") { dismiss() }
+        } message: {
+            Text("This phone now starts clean. You can turn sample data back on in Profile.")
+        }
+    }
+}
+
+// MARK: - Display and help
+
+
+private struct ReportView: View {
+    static let topics = ["Misread my note", "Slow", "Wrong number", "Other"]
+    @State private var topic = topics[0]
+    @State private var text = ""
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        Form {
+            Section { intro("What went wrong?", "Write it any way you like.") }
+            .listRowBackground(Tokens.card)
+            Section("Topic") {
+                Picker("Topic", selection: $topic) {
+                    ForEach(Self.topics, id: \.self) { Text($0).tag($0) }
+                }
+                .pickerStyle(.menu)
+            }
+            .listRowBackground(Tokens.card)
+            Section {
+                TextField("I typed “cà phê 24k” and it read 240k…", text: $text, axis: .vertical)
+                    .lineLimit(5...10)
+            } footer: {
+                Text("Only the app version and your iOS version go with it. No amounts, no notes.")
+            }
+            .listRowBackground(Tokens.card)
+            Section {
+                Button("Send by email", systemImage: "envelope") {
+                    if let url = ReportView.mailURL(topic: topic, text: text) { openURL(url) }
+                }
+                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            .listRowBackground(Tokens.card)
+        }
+        .appListSurface()
+        .font(AppFont.main(16))
+        .navigationTitle("Report a problem")
+        .toolbarTitleDisplayMode(.inline)
+    }
+
+    static func mailURL(topic: String, text: String) -> URL? {
+        var c = URLComponents()
+        c.scheme = "mailto"
+        c.path = ""
+        c.queryItems = [
+            URLQueryItem(name: "subject", value: "Financial Note: \(topic)"),
+            URLQueryItem(name: "body", value: "\(topic)\n\n\(text)\n\n— Financial Note \(ProfileView.version), iOS \(UIDevice.current.systemVersion)"),
+        ]
+        return c.url
+    }
+}
+
+private struct AboutView: View {
+    var body: some View {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: Space.s6) {
+                    Text("PRINCIPLE").font(AppFont.main(11, .semibold)).tracking(0.6).foregroundStyle(Tokens.onDarkMuted)
+                    Text("A layer to look through, not a layer of control")
+                        .font(AppFont.heading(20, .semibold))
+                        .foregroundStyle(.white)
+                }
+                .padding(.vertical, Space.s8)
+                .listRowBackground(Color(hex: 0x0D121C))
+            }
+            Section("This app does not") {
+                sub("Hold or move your money", "63% don't want an app spending for them")
+                sub("Suggest investments or products", "38% refused")
+                sub("Comment on how you spend", "31% refused")
+                sub("Read your bank account", "78% worry an app knows too much")
+            }
+            .listRowBackground(Tokens.card)
+            Section {
+                LabeledContent("Version", value: ProfileView.version)
+            } footer: {
+                Text("WUD Design Challenge 2026 · Nin Nguyễn · Pham Nguyen Studio")
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, Space.s16)
+            }
+            .listRowBackground(Tokens.card)
+        }
+        .appListSurface()
+        .font(AppFont.main(16))
+        .navigationTitle("About the app")
+        .toolbarTitleDisplayMode(.inline)
+    }
+
+    private func sub(_ title: String, _ s: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+            Text(s).font(AppFont.main(12)).foregroundStyle(.secondary)
+        }
+    }
+}
+
+private func intro(_ title: String, _ sub: String) -> some View {
+    VStack(alignment: .leading, spacing: Space.s4) {
+        Text(title).font(AppFont.section).foregroundStyle(Tokens.text900)
+        Text(sub).font(AppFont.main(14)).foregroundStyle(.secondary)
+    }
+    .listRowBackground(Color.clear)
+    .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4))
+}
