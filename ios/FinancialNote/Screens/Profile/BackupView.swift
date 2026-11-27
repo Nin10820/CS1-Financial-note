@@ -7,7 +7,10 @@ import UniformTypeIdentifiers
 struct BackupView: View {
     @Environment(\.modelContext) private var context
     @State private var backup = BackupFolder.shared
-    @State private var picking: Pick?
+    /// What the Files picker is for. Kept after the picker closes: SwiftUI closes it
+    /// (clearing `showPicker`) before it hands back the result.
+    @State private var picking: Pick = .folder
+    @State private var showPicker = false
     /// A file read and waiting for "Replace everything?".
     @State private var restoring: ExportFile?
     @State private var result: String?
@@ -21,7 +24,7 @@ struct BackupView: View {
                     LabeledContent("Folder", value: name)
                     LabeledContent("Last saved", value: backup.lastSaved.map(Self.when) ?? "Not yet")
                 }
-                Button(backup.isOn ? "Change folder" : "Choose a folder", systemImage: "folder") { picking = .folder }
+                Button(backup.isOn ? "Change folder" : "Choose a folder", systemImage: "folder") { pick(.folder) }
                 if backup.isOn {
                     Button("Save now", systemImage: "arrow.clockwise") { backup.saveNow(container: context.container) }
                     Button("Stop backing up", systemImage: "xmark.circle") { backup.stop() }
@@ -41,7 +44,7 @@ struct BackupView: View {
                 if backup.isOn {
                     Button("Restore from the backup folder", systemImage: "clock.arrow.circlepath") { readFolder() }
                 }
-                Button("Restore from a file", systemImage: "doc") { picking = .file }
+                Button("Restore from a file", systemImage: "doc") { pick(.file) }
             } header: {
                 Text("Restore")
             } footer: {
@@ -54,12 +57,9 @@ struct BackupView: View {
         .tint(Tokens.brand600)
         .navigationTitle("Backup & restore")
         .toolbarTitleDisplayMode(.inline)
-        .fileImporter(isPresented: Binding(get: { picking != nil }, set: { if !$0 { picking = nil } }),
-                      allowedContentTypes: picking == .folder ? [.folder] : [.json]) { picked in
-            let kind = picking
-            picking = nil
+        .fileImporter(isPresented: $showPicker, allowedContentTypes: picking == .folder ? [.folder] : [.json]) { picked in
             guard case let .success(url) = picked else { return }
-            if kind == .folder { backup.choose(url, container: context.container) } else { readFile(url) }
+            if picking == .folder { backup.choose(url, container: context.container) } else { readFile(url) }
         }
         .confirmationDialog("Replace everything on this phone?", isPresented: Binding(
             get: { restoring != nil }, set: { if !$0 { restoring = nil } }), titleVisibility: .visible, presenting: restoring) { file in
@@ -71,6 +71,11 @@ struct BackupView: View {
         .alert(result ?? "", isPresented: Binding(get: { result != nil }, set: { if !$0 { result = nil } })) {
             Button("OK") {}
         }
+    }
+
+    private func pick(_ kind: Pick) {
+        picking = kind
+        showPicker = true
     }
 
     private func readFile(_ url: URL) {

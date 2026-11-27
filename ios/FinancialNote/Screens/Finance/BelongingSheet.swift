@@ -919,27 +919,26 @@ struct CollectionSheet: View {
                             .buttonStyle(.plain)
                             .accessibilityLabel("Edit the collection")
                         }
-                        VStack(spacing: 0) {
+                        // Two cards a row: the set's picture on top, its name, value under it.
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: Space.s12), GridItem(.flexible())],
+                                  spacing: Space.s12) {
                             ForEach(pieces) { p in
-                                BelongingRow(belonging: p, all: all, today: app.today, hidden: hidden) { open = .edit(p.id) }
-                                Divider().overlay(Tokens.bd0).padding(.leading, 56)
+                                PieceCard(piece: p, today: app.today, hidden: hidden) { open = .edit(p.id) }
                             }
-                            // Text and icon, no border: the same as Sync.
-                            Button { addingPiece = true } label: {
-                                HStack(spacing: Space.s4) {
-                                    Image(systemName: "plus")
-                                    Text("Add a piece")
-                                }
-                                .font(AppFont.main(14, .semibold))
-                                .foregroundStyle(Tokens.brand600)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .frame(minHeight: 52)
-                                .contentShape(.rect)
-                            }
-                            .buttonStyle(.plain)
                         }
-                        .padding(.horizontal, Space.s16)
-                        .background(Tokens.card, in: .rect(cornerRadius: Corner.c20))
+                        // Text and icon, no border: the same as Sync.
+                        Button { addingPiece = true } label: {
+                            HStack(spacing: Space.s4) {
+                                Image(systemName: "plus")
+                                Text("Add a piece")
+                            }
+                            .font(AppFont.main(14, .semibold))
+                            .foregroundStyle(Tokens.brand600)
+                            .frame(minHeight: 44)
+                            .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, Space.s4)
                         let missing = c.icon == .lego ? pieces.filter { $0.imageData == nil && $0.code.flatMap(LegoCatalog.find) != nil } : []
                         if !missing.isEmpty {
                             // Text and icon, no border: the same as Sync.
@@ -995,6 +994,67 @@ struct CollectionSheet: View {
     }
 }
 
+/// One piece of a collection as a card, two to a row: the picture (or its tile), the name,
+/// "code · year · condition", then its value and the quick-sale number. Sold ones are greyed.
+struct PieceCard: View {
+    var piece: Belonging
+    var today: String
+    var hidden: Bool
+    var onTap: () -> Void
+
+    var body: some View {
+        let p = piece
+        let sold = p.soldOn != nil
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: Space.s8) {
+                Group {
+                    if let d = p.imageData, let image = UIImage(data: d) {
+                        Image(uiImage: image).resizable().scaledToFit().padding(Space.s8)
+                    } else {
+                        BelongingTile(icon: p.icon, size: 48, color: BelongingMath.group(p).tint.accent)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 112)
+                .background(.white, in: .rect(cornerRadius: Corner.c12))
+                .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(p.name)
+                        .font(AppFont.table(14, .semibold)).foregroundStyle(Tokens.text900)
+                        .lineLimit(2, reservesSpace: true)
+                        .multilineTextAlignment(.leading)
+                    Text(BelongingMath.line(p, today: today))
+                        .font(AppFont.table(12)).foregroundStyle(Tokens.grey400).lineLimit(1)
+                }
+                HStack(alignment: .firstTextBaseline) {
+                    if sold {
+                        Text(hidden ? "•••" : p.soldFor.map { AnalyticsView.compact($0) + "đ" } ?? "—")
+                            .font(AppFont.heading(16, .semibold)).foregroundStyle(Tokens.grey400)
+                        Spacer(minLength: Space.s4)
+                        Text("sold").font(AppFont.table(12)).foregroundStyle(Tokens.grey400)
+                    } else {
+                        Text(hidden ? "•••" : AnalyticsView.compact(BelongingMath.value(p, today: today)) + "đ")
+                            .font(AppFont.heading(16, .semibold)).foregroundStyle(Tokens.text900)
+                        Spacer(minLength: Space.s4)
+                        Text(hidden ? "quick •••" : "quick " + AnalyticsView.compact(BelongingMath.quickSale(p, today: today)) + "đ")
+                            .font(AppFont.table(12)).foregroundStyle(Tokens.grey400)
+                    }
+                }
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            }
+            .padding(Space.s12)
+            .background(Tokens.card, in: .rect(cornerRadius: Corner.c16))
+            .opacity(sold ? 0.6 : 1)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens it to update the value")
+    }
+}
+
 extension BelongingGroup {
     var tint: LifeTint {
         switch self {
@@ -1023,28 +1083,23 @@ struct BelongingCards: View {
                         .font(AppFont.main(14, .semibold)).foregroundStyle(Tokens.text700).monospacedDigit()
                 }
             }
-            ScrollView(.horizontal) {
-                HStack(spacing: Space.s12) {
-                    ForEach(BelongingGroup.allCases, id: \.self) { g in
-                        let items = BelongingMath.counted(g, in: belongings)
-                        let shown = BelongingMath.shown(g, in: belongings)
-                        Button { belongings.isEmpty ? onAdd() : onOpen(g) } label: {
-                            LifeCard(tint: g.tint, title: g.title,
-                                     amount: BelongingMath.total(items, today: today),
-                                     sub: shown.isEmpty ? g.emptyLine : Self.count(shown.count, g)
-                                         + " · " + shown.prefix(2).map(\.name).joined(separator: ", "),
-                                     hidden: hidden,
-                                     amountText: shown.isEmpty ? "Nothing yet"
-                                         : items.isEmpty ? "Nothing inside yet" : nil)
-                                .frame(width: 168)
-                        }
-                        .buttonStyle(.plain)
+            // One full-width card per group, stacked (not a sideways scroll).
+            VStack(spacing: Space.s12) {
+                ForEach(BelongingGroup.allCases, id: \.self) { g in
+                    let items = BelongingMath.counted(g, in: belongings)
+                    let shown = BelongingMath.shown(g, in: belongings)
+                    Button { belongings.isEmpty ? onAdd() : onOpen(g) } label: {
+                        LifeRowCard(tint: g.tint, title: g.title,
+                                    amount: BelongingMath.total(items, today: today),
+                                    sub: shown.isEmpty ? g.emptyLine : Self.count(shown.count, g)
+                                        + " · " + shown.prefix(2).map(\.name).joined(separator: ", "),
+                                    hidden: hidden,
+                                    amountText: shown.isEmpty ? "Nothing yet"
+                                        : items.isEmpty ? "Nothing inside yet" : nil)
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, Space.s20)
             }
-            .scrollIndicators(.hidden)
-            .padding(.horizontal, -Space.s20)
             Text(counted ? "Counted in your Total Asset." : "Kept apart from your Total Asset.")
                 .font(AppFont.main(12)).foregroundStyle(Tokens.grey400)
                 .padding(.horizontal, Space.s4)

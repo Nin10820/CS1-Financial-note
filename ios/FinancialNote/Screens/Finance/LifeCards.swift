@@ -99,6 +99,54 @@ struct LifeCard: View {
     }
 }
 
+/// A LifeCard laid out as one wide row, for cards stacked down the page: the tile, the title over
+/// a grey line, the amount on the right.
+struct LifeRowCard: View {
+    var tint: LifeTint
+    var title: String
+    var amount: Int
+    var sub: String
+    var hidden: Bool
+    var amountText: String? = nil
+
+    var body: some View {
+        HStack(spacing: Space.s12) {
+            Image(systemName: tint.symbol)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 40, height: 40)
+                .background(tint.accent, in: .circle)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(AppFont.table(15, .semibold)).foregroundStyle(tint.accent).lineLimit(1)
+                Text(sub).font(AppFont.table(12)).foregroundStyle(Tokens.text700).lineLimit(1)
+            }
+            Spacer(minLength: Space.s8)
+            Group {
+                if let amountText {
+                    Text(amountText).font(AppFont.table(13, .medium)).foregroundStyle(Tokens.grey400)
+                } else {
+                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                        Text(hidden ? "•••" : AnalyticsView.compact(amount))
+                            .font(AppFont.heading(18, .semibold)).foregroundStyle(Tokens.text900).monospacedDigit()
+                        Text("đ").font(AppFont.currency(for: 18)).foregroundStyle(Tokens.grey400)
+                    }
+                }
+            }
+            .fixedSize()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Tokens.grey400)
+        }
+        .padding(.horizontal, Space.s16)
+        .frame(maxWidth: .infinity, minHeight: 72)
+        .background(tint.gradient, in: .rect(cornerRadius: Corner.c20))
+        .overlay(RoundedRectangle(cornerRadius: Corner.c20).strokeBorder(tint.accent.opacity(0.25), lineWidth: 0.5))
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens what's in it")
+    }
+}
+
 /// Shows one quiet line for a moment, then fades into the page.
 struct RevealPage<Content: View>: View {
     var tint: LifeTint

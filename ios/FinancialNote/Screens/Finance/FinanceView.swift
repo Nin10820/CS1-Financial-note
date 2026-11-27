@@ -1070,6 +1070,8 @@ private struct DebtSection: View {
     @State private var addingLoan = false
     @State private var openPerson: String?
     @State private var showHistory = false
+    /// The installment opened from the table (its own sheet: edit, Check this month).
+    @State private var openBill: Bill?
 
     var body: some View {
         let d = FinanceText.debt(bills)
@@ -1109,7 +1111,7 @@ private struct DebtSection: View {
                         Text("Installment").frame(maxWidth: .infinity, alignment: .leading)
                         Text("Paid").frame(width: 52, alignment: .trailing)
                         Text("Left").frame(width: 72, alignment: .trailing)
-                        Text(Day.monthsShort[Day.parts(today).m - 1]).frame(width: 44, alignment: .center)
+                        Color.clear.frame(width: 12, height: 1)
                     }
                     .font(AppFont.table(11, .semibold))
                     .tracking(0.3)
@@ -1118,9 +1120,10 @@ private struct DebtSection: View {
                     .padding(.vertical, Space.s8)
                     .accessibilityHidden(true)
                     Divider().overlay(Tokens.bd0)
+                    // A record of what's owed, not a checklist: tap a row for the installment,
+                    // where ✏️ edits it and Check marks this month paid.
                     ForEach(d.rows, id: \.bill.id) { r in
-                        let due = BillMath.dueIn(r.bill, month: month) != nil
-                        let paidNow = r.bill.paid[month] != nil
+                        Button { openBill = r.bill } label: {
                         HStack(spacing: Space.s8) {
                             VStack(alignment: .leading, spacing: Space.s4) {
                                 Text(r.bill.name).font(AppFont.table(14, .semibold)).foregroundStyle(Tokens.text900).lineLimit(1)
@@ -1136,27 +1139,20 @@ private struct DebtSection: View {
                             Text(hidden ? "•••" : AnalyticsView.compact(r.owe))
                                 .font(AppFont.table(14, .semibold)).foregroundStyle(Tokens.text900).monospacedDigit()
                                 .frame(width: 72, alignment: .trailing)
-                            Button {
-                                withAnimation(.snappy) {
-                                    LocalStore(context: context).setBillPaid(r.bill, month: month, paid: !paidNow, date: today)
-                                }
-                            } label: {
-                                Image(systemName: paidNow ? "checkmark.circle.fill" : "circle")
-                                    .font(.system(size: 22, weight: paidNow ? .regular : .light))
-                                    .foregroundStyle(paidNow ? Tokens.brand500 : Tokens.grey300)
-                                    .contentTransition(.symbolEffect(.replace))
-                                    .frame(width: 44, height: 44)
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(!due)
-                            .opacity(due ? 1 : 0.3)
-                            .sensoryFeedback(.success, trigger: paidNow)
-                            .accessibilityLabel(paidNow ? "Mark this month's \(r.bill.name) as not paid" : "Mark this month's \(r.bill.name) as paid")
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Tokens.grey300)
+                                .frame(width: 12)
+                                .accessibilityHidden(true)
                         }
                         .padding(.vertical, Space.s12)
+                        .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Opens the installment to edit it or mark a payment")
                         Divider().overlay(Tokens.bd0)
                     }
-                    Text("Tick a month here or in Due — both stay in step.")
+                    Text("Tap an installment to edit it or mark a payment.")
                         .font(AppFont.table(11)).foregroundStyle(Tokens.grey400)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.vertical, Space.s12)
@@ -1165,6 +1161,9 @@ private struct DebtSection: View {
                 .background(Tokens.bgWhite, in: .rect(cornerRadius: Corner.c20))
                 }
             }
+        }
+        .sheet(item: $openBill) { bill in
+            BillDetailSheet(bill: bill, month: month)
         }
     }
 
